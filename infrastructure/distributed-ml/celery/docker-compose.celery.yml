@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # Celery Worker - ML Queue
+  celery-worker-ml:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: celery-worker-ml
+    hostname: celery-worker-ml
+    command: celery -A tasks worker --loglevel=info --queues=ml --concurrency=2
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/1
+      - RAY_ADDRESS=ray://10.0.0.84:10001
+      - NEW_DATA_DIR=/datasets/new
+    volumes:
+      - /home/wizardsofts/ml-datasets:/datasets:rw
+      - /home/wizardsofts/ml-models:/models:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=celery-worker"
+      - "com.wizardsofts.queue=ml"
+      - "com.wizardsofts.environment=production"
+
+  # Celery Worker - Data Queue
+  celery-worker-data:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: celery-worker-data
+    hostname: celery-worker-data
+    command: celery -A tasks worker --loglevel=info --queues=data --concurrency=4
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/1
+      - RAY_ADDRESS=ray://10.0.0.84:10001
+      - NEW_DATA_DIR=/datasets/new
+    volumes:
+      - /home/wizardsofts/ml-datasets:/datasets:rw
+      - /home/wizardsofts/ml-models:/models:rw
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=celery-worker"
+      - "com.wizardsofts.queue=data"
+      - "com.wizardsofts.environment=production"
+
+  # Celery Worker - Default Queue
+  celery-worker-default:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: celery-worker-default
+    hostname: celery-worker-default
+    command: celery -A tasks worker --loglevel=info --queues=default --concurrency=4
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/1
+      - RAY_ADDRESS=ray://10.0.0.84:10001
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=celery-worker"
+      - "com.wizardsofts.queue=default"
+      - "com.wizardsofts.environment=production"
+
+  # Celery Beat - Scheduler
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: celery-beat
+    hostname: celery-beat
+    command: celery -A tasks beat --loglevel=info
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/1
+    volumes:
+      - celery-beat-schedule:/app/schedule
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=celery-beat"
+      - "com.wizardsofts.component=scheduler"
+      - "com.wizardsofts.environment=production"
+
+  # Flower - Monitoring Dashboard
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    container_name: flower
+    hostname: flower
+    command: celery -A tasks flower --port=5555 --broker=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@127.0.0.1:6380/1
+      - FLOWER_PORT=5555
+      - FLOWER_BASIC_AUTH=${FLOWER_USER}:${FLOWER_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=flower"
+      - "com.wizardsofts.component=monitoring"
+      - "com.wizardsofts.environment=production"
+
+volumes:
+  celery-beat-schedule:
+    driver: local

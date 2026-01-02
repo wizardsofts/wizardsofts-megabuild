@@ -1,0 +1,106 @@
+version: '3.8'
+
+# Multi-worker Ray deployment
+# Each worker runs in isolated container with resource limits
+# Scale by adding more worker-N services
+
+services:
+  ray-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-worker
+    container_name: ray-worker-1
+    hostname: ray-worker-1
+    environment:
+      - RAY_HEAD_ADDRESS=${RAY_HEAD_ADDRESS}
+      - RAY_NUM_CPUS=${RAY_WORKER_CPUS:-2}
+      - RAY_NUM_GPUS=0
+      - RAY_OBJECT_STORE_MEMORY=${RAY_OBJECT_STORE_MEMORY:-2000000000}
+    deploy:
+      resources:
+        limits:
+          cpus: '${RAY_WORKER_CPUS:-2}'
+          memory: ${RAY_WORKER_MEMORY:-6G}
+        reservations:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=ray-worker"
+      - "com.wizardsofts.worker-id=1"
+
+  ray-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-worker
+    container_name: ray-worker-2
+    hostname: ray-worker-2
+    environment:
+      - RAY_HEAD_ADDRESS=${RAY_HEAD_ADDRESS}
+      - RAY_NUM_CPUS=${RAY_WORKER_CPUS:-2}
+      - RAY_NUM_GPUS=0
+      - RAY_OBJECT_STORE_MEMORY=${RAY_OBJECT_STORE_MEMORY:-2000000000}
+    deploy:
+      resources:
+        limits:
+          cpus: '${RAY_WORKER_CPUS:-2}'
+          memory: ${RAY_WORKER_MEMORY:-6G}
+        reservations:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=ray-worker"
+      - "com.wizardsofts.worker-id=2"
+
+  ray-worker-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-worker
+    container_name: ray-worker-3
+    hostname: ray-worker-3
+    environment:
+      - RAY_HEAD_ADDRESS=${RAY_HEAD_ADDRESS}
+      - RAY_NUM_CPUS=${RAY_WORKER_CPUS:-2}
+      - RAY_NUM_GPUS=0
+      - RAY_OBJECT_STORE_MEMORY=${RAY_OBJECT_STORE_MEMORY:-2000000000}
+    deploy:
+      resources:
+        limits:
+          cpus: '${RAY_WORKER_CPUS:-2}'
+          memory: ${RAY_WORKER_MEMORY:-6G}
+        reservations:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=ray-worker"
+      - "com.wizardsofts.worker-id=3"
+
+  ray-worker-4:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-worker
+    container_name: ray-worker-4
+    hostname: ray-worker-4
+    environment:
+      - RAY_HEAD_ADDRESS=${RAY_HEAD_ADDRESS}
+      - RAY_NUM_CPUS=${RAY_WORKER_CPUS:-2}
+      - RAY_NUM_GPUS=0
+      - RAY_OBJECT_STORE_MEMORY=${RAY_OBJECT_STORE_MEMORY:-2000000000}
+    deploy:
+      resources:
+        limits:
+          cpus: '${RAY_WORKER_CPUS:-2}'
+          memory: ${RAY_WORKER_MEMORY:-6G}
+        reservations:
+          cpus: '1'
+          memory: 2G
+    restart: unless-stopped
+    network_mode: host
+    labels:
+      - "com.wizardsofts.service=ray-worker"
+      - "com.wizardsofts.worker-id=4"

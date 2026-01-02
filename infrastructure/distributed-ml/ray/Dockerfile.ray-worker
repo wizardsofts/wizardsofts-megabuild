@@ -1,0 +1,24 @@
+FROM rayproject/ray:2.40.0-py310
+
+# Install same ML libraries as head node
+RUN pip install --no-cache-dir \
+    pandas==2.1.4 \
+    numpy==1.26.3 \
+    scikit-learn==1.4.0 \
+    xgboost==2.0.3 \
+    torch==2.1.2 \
+    ray[tune,serve,data]==2.40.0
+
+WORKDIR /app
+
+# Use entrypoint script to handle environment variables properly
+RUN echo '#!/bin/bash\n\
+ray start \
+  --address="${RAY_HEAD_ADDRESS}" \
+  --num-cpus="${RAY_NUM_CPUS:-2}" \
+  --num-gpus="${RAY_NUM_GPUS:-0}" \
+  --object-store-memory="${RAY_OBJECT_STORE_MEMORY:-2000000000}" \
+  --block' > /app/start-worker.sh && \
+  chmod +x /app/start-worker.sh
+
+CMD ["/app/start-worker.sh"]

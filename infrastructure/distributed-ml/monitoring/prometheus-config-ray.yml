@@ -1,0 +1,9 @@
+# Add this to /opt/prometheus/prometheus.yml on Server 84
+
+scrape_configs:
+  - job_name: 'ray-cluster'
+    static_configs:
+      - targets: ['10.0.0.84:9091']  # Ray head node metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'

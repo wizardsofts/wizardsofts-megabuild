@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis-celery
+    hostname: redis-celery
+    command: >
+      redis-server
+      --port 6380
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --save 300 100
+      --save 900 1
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - redis-data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    restart: unless-stopped
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.wizardsofts.service=redis-celery"
+      - "com.wizardsofts.environment=production"
+      - "com.wizardsofts.component=message-broker"
+
+volumes:
+  redis-data:
+    driver: local
