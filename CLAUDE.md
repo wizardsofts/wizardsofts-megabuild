@@ -501,3 +501,157 @@ For detailed instructions, see [docs/WS_GATEWAY_HANDOFF.md](docs/WS_GATEWAY_HAND
 ```
 
 For detailed configuration options and best practices, see [AGENT_GUIDELINES.md](AGENT_GUIDELINES.md#-browser-automation-playwright-mcp)
+
+---
+
+## Claude + Slack Integration
+
+**Status:** Phase 1 Complete (Official App Installed) | Repository Connection Ready ✅
+**Documentation:** [docs/CLAUDE_SLACK_POC.md](docs/CLAUDE_SLACK_POC.md)
+**Test Results:** [docs/CLAUDE_SLACK_TEST_PLAN.md](docs/CLAUDE_SLACK_TEST_PLAN.md)
+
+### Overview
+
+Integrate Claude with Slack to enable AI-assisted development directly from team conversations.
+
+**Key Capabilities:**
+- ✅ Task assignment via @Claude mentions in Slack
+- ✅ Automatic code generation from bug reports and feature requests
+- ✅ GitLab MR creation with human approval workflows
+- ✅ Code review automation
+- ✅ Integration with existing CI/CD pipelines
+
+### Quick Start
+
+#### Phase 1: Official Claude Code in Slack (Installed ✓)
+
+The Claude app is already installed in the WizardSofts Slack workspace.
+
+**Usage:**
+```
+# In any Slack channel where Claude is invited:
+@Claude add a health check endpoint to ws-gateway that returns the Git commit SHA
+
+# Claude will:
+# 1. Analyze the repository
+# 2. Generate code changes
+# 3. Post preview for review
+# 4. Create PR/MR on approval
+```
+
+**Getting Started:**
+1. Invite Claude to your channel: `/invite @Claude`
+2. Authenticate your Claude account (one-time setup)
+3. Connect GitHub mirror at https://code.claude.com/
+   - Repository: https://github.com/wizardsofts/wizardsofts-megabuild
+   - **Note:** GitLab automatically mirrors to GitHub for Claude access
+   - Primary repo: http://10.0.0.84:8090/wizardsofts/wizardsofts-megabuild
+4. Start using @Claude mentions
+
+**Example Workflows:**
+```
+# Bug fix from error logs
+@Claude The /api/trades endpoint is returning 500 errors
+when the market is closed. See attached logs.
+[Attach error-logs.txt]
+
+# Feature request
+@Claude Add rate limiting to ws-gateway. Use Redis for
+storage and limit to 100 requests per minute per IP.
+
+# Code review
+@Claude Review this merge request for security issues:
+https://gitlab.wizardsofts.com/.../merge_requests/42
+```
+
+#### Phase 2: Custom Slack Bot (Optional)
+
+For advanced workflows with direct GitLab integration on Server 84:
+
+```bash
+# Deploy custom bot
+cd /opt/wizardsofts-megabuild/infrastructure/claude-slack-bot
+docker-compose up -d
+
+# Check status
+docker logs claude-slack-bot -f
+curl http://localhost:3000/health
+```
+
+**Features (Custom Bot):**
+- Direct GitLab API integration (no GitHub mirror needed)
+- Custom approval workflows
+- Internal network security
+- Prometheus metrics & Grafana dashboards
+- Full control over rate limiting and costs
+
+### Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [CLAUDE_SLACK_POC.md](docs/CLAUDE_SLACK_POC.md) | Complete setup guide, workflows, troubleshooting |
+| [CLAUDE_SLACK_CUSTOM_BOT.md](docs/CLAUDE_SLACK_CUSTOM_BOT.md) | Custom bot implementation (Phase 2) |
+| [CLAUDE_SLACK_README.md](docs/CLAUDE_SLACK_README.md) | Quick reference and team onboarding |
+| [CLAUDE_SLACK_TEST_PLAN.md](docs/CLAUDE_SLACK_TEST_PLAN.md) | Test results and validation |
+
+### Common Tasks
+
+**Test the Integration:**
+```
+# In Slack:
+@Claude What services are in the wizardsofts-megabuild repository?
+```
+
+**Create a Bug Fix MR:**
+```
+# In #bugs channel:
+[User posts bug report with logs]
+@Claude Investigate and fix this issue
+[Claude analyzes, proposes fix, creates MR]
+```
+
+**Code Review:**
+```
+# In #code-review channel:
+@Claude Review MR !42 for security and performance issues
+```
+
+### Security Best Practices
+
+1. **Channel Access Control**
+   - Only invite Claude to development channels
+   - Keep Claude out of #hr, #finance, #customer-data
+
+2. **Never Share in Slack Threads**
+   - API keys, passwords, credentials
+   - Customer PII or sensitive data
+   - Production database connection strings
+
+3. **Review Before Merging**
+   - Always review Claude's proposed changes
+   - Ensure CI/CD security scans pass
+   - Verify branch protection rules are enforced
+
+4. **Monitor Usage**
+   - Track API costs in Anthropic console
+   - Review Claude's commit history periodically
+   - Set budget alerts
+
+### Troubleshooting
+
+**Claude doesn't respond to @mentions:**
+```bash
+# 1. Check if Claude is in the channel
+/invite @Claude
+
+# 2. Re-authenticate your account
+# Slack → Apps → Claude → Re-authenticate
+```
+
+**Repository not found:**
+```
+# Connect repository at https://code.claude.com/
+# Use GitHub mirror: https://github.com/wizardsofts/wizardsofts-megabuild
+```
+
+**See full troubleshooting guide:** [docs/CLAUDE_SLACK_POC.md](docs/CLAUDE_SLACK_POC.md#troubleshooting)
