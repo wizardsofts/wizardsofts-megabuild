@@ -39,11 +39,41 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 
 | Server | IP | Purpose |
 |--------|-----|---------|
-| Server 80 | 10.0.0.80 | GIBD Services |
-| Server 81 | 10.0.0.81 | Database Server |
-| Server 82 | 10.0.0.82 | HPR Server (Monitoring) |
-| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, central monitoring) |
+| Server 80 | 10.0.0.80 | GIBD Services + Ray Worker |
+| Server 81 | 10.0.0.81 | Database Server + Ray Worker |
+| Server 82 | 10.0.0.82 | HPR Server (Monitoring) + Ray Worker |
+| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring, **Ray + Celery**) |
 | Hetzner | 178.63.44.221 | External services |
+
+### Distributed ML Infrastructure (Server 84)
+
+**Status:** ✅ Production (Phase 1 & 2 Complete)
+
+| Component | Port | Access | Documentation |
+|-----------|------|--------|---------------|
+| **Ray Head** | 8265 (dashboard), 10001 (client) | Local network | [README](infrastructure/distributed-ml/README.md) |
+| **Redis (Celery)** | 6380 | Local network | [Celery README](infrastructure/distributed-ml/celery/README.md) |
+| **Flower** | 5555 | Local network | [Celery README](infrastructure/distributed-ml/celery/README.md) |
+| **Celery Workers** | - | Internal | 10 workers (ml/data/default queues) |
+| **Celery Beat** | - | Internal | Scheduled task runner |
+
+**Deployment Reports:**
+- [Phase 1: Ray Cluster](docs/PHASE1_DEPLOYMENT_SUMMARY.md) - 9 nodes, 25 CPUs
+- [Phase 2: Celery Integration](docs/PHASE2_CELERY_VALIDATION_REPORT.md) - Task queue + orchestration
+- [Networking Architecture](docs/DISTRIBUTED_ML_NETWORKING.md) - Host networking rationale
+
+**Quick Access:**
+```bash
+# Flower dashboard credentials
+ssh wizardsofts@10.0.0.84 'grep FLOWER_PASSWORD ~/celery/.env.celery'
+
+# Ray dashboard
+ssh -L 8265:127.0.0.1:8265 wizardsofts@10.0.0.84
+# Then: http://localhost:8265
+
+# Submit test task
+python3 infrastructure/distributed-ml/celery/example_usage.py
+```
 
 ## Common Tasks
 
@@ -238,6 +268,48 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 - [SECURITY_IMPROVEMENTS_CHANGELOG.md](docs/SECURITY_IMPROVEMENTS_CHANGELOG.md) - Full change history
 - [SECURITY_MONITORING.md](docs/SECURITY_MONITORING.md) - Prometheus alerts and monitoring
 - [GITLAB_CICD_SECRETS.md](docs/GITLAB_CICD_SECRETS.md) - Credential management
+
+## Infrastructure Lessons Learned
+
+### Host Networking vs Bridge Networking (2026-01-02)
+
+**Context:** During Phase 2 Celery deployment, encountered persistent Docker bridge networking failures on Server 84.
+
+**Decision:** Switched entire distributed ML stack (Ray + Celery + Redis) to **host networking**.
+
+**Rationale:**
+1. **Server 84 Bridge Network Unreliability:** Despite containers being on the same Docker network, workers couldn't connect to Redis. Multiple troubleshooting attempts (DNS resolution, direct IP, socket tests) all failed.
+2. **Ray Precedent:** Ray cluster already successfully uses host networking across all 9 nodes (proven approach).
+3. **No Viable Alternative:** Bridge networking simply doesn't work reliably on Server 84 (20+ Docker networks, complex state).
+4. **Performance Benefit:** Host networking eliminates NAT overhead for distributed computing workloads.
+5. **Security Maintained:** UFW firewall restricts access to local network (10.0.0.0/24), Redis requires password authentication, services run on non-standard ports.
+
+**Key Lessons:**
+
+1. **When to Use Host Networking:**
+   - ✅ Distributed computing frameworks (Ray, Celery, Spark)
+   - ✅ High-performance inter-service communication
+   - ✅ When bridge networking proves unreliable
+   - ✅ Services that need consistent port access across nodes
+
+2. **When to Use Bridge Networking:**
+   - ✅ Web applications with Traefik reverse proxy
+   - ✅ Services requiring network isolation
+   - ✅ Port mapping needed (container:host different)
+   - ✅ Multiple instances of same service on one host
+
+3. **Security with Host Networking:**
+   - **Always** use UFW or iptables to restrict access to local network
+   - **Always** use authentication (passwords, API keys)
+   - **Always** use non-standard ports to avoid conflicts
+   - **Never** expose host-networked services to public internet directly
+
+4. **Deployment Considerations:**
+   - Docker Compose v1 (Server 84) uses `docker-compose` (hyphen), auto-loads `.env`
+   - Docker Compose v2 (Servers 80, 81, 82) uses `docker compose` (space), may need `--env-file`
+   - Always verify environment variable loading method before deployment
+
+**Full Documentation:** [docs/DISTRIBUTED_ML_NETWORKING.md](docs/DISTRIBUTED_ML_NETWORKING.md)
 
 ## Git Worktree Workflow - MANDATORY (Parallel Agent Support)
 
