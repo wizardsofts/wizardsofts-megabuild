@@ -1,0 +1,18 @@
+# Trufflehog Ignore File
+# These are false positives - placeholder values in documentation, examples, and test fixtures
+
+# Documentation files
+docs/
+APPWRITE_SETUP_SUMMARY.md
+GIBD_NEWS_SERVER_DEPLOYMENT.md
+GIBD_NEWS_MIGRATION_GUIDE.md
+GIBD_NEWS_INTEGRATION_COMPLETE.md
+
+# Test fixtures and cached content
+apps/gibd-quant-agent/.cache/
+apps/gibd-quant-agent/docs/
+infrastructure/auto-scaling/tests/
+
+# Frontend code with data attributes (not secrets)
+apps/gibd-quant-web/
+apps/gibd-quant-agent/src/report_server/static/

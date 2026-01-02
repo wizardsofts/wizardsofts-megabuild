@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  fail2ban-exporter:
+    image: registry.gitlab.com/hectorjsmith/fail2ban-prometheus-exporter:latest
+    container_name: fail2ban-exporter
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/fail2ban:/var/run/fail2ban:ro
+      - /var/log/fail2ban.log:/var/log/fail2ban.log:ro
+    environment:
+      - F2B_DB_PATH=/var/lib/fail2ban/fail2ban.sqlite3
+    ports:
+      - "127.0.0.1:9191:9191"
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9191/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

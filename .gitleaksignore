@@ -1,0 +1,32 @@
+# Gitleaks Ignore File
+# These are false positives - placeholder values in documentation, examples, and test fixtures
+
+# Documentation files with placeholder/example secrets
+docs/GITLAB_RUNNER_SETUP.md:token = "YOUR_RUNNER_TOKEN"
+docs/GITLAB_CICD_SECRETS.md
+docs/APPWRITE_DEPLOYMENT.md
+docs/MAILCOW_HANDOFF.md
+
+# Example/template configuration references in documentation
+APPWRITE_SETUP_SUMMARY.md
+GIBD_NEWS_SERVER_DEPLOYMENT.md
+
+# Security review reports that quote secrets for documentation purposes
+docs/ARCHITECTURAL_REVIEW_REPORT.md
+docs/ARCHITECTURAL_REVIEW_REPORT_v2.md
+docs/SECURITY_IMPROVEMENTS_CHANGELOG.md
+
+# Test fixtures and example code
+infrastructure/auto-scaling/test_imports.py
+infrastructure/auto-scaling/tests/
+infrastructure/gitlab-runner/README.md
+
+# Cached PDF files with embedded captcha keys (third-party content)
+apps/gibd-quant-agent/.cache/
+
+# Frontend/UI code with dataKey attributes (not secrets)
+apps/gibd-quant-web/
+apps/gibd-quant-agent/src/report_server/static/
+
+# Example/documentation files in apps
+apps/gibd-quant-agent/docs/

@@ -1,0 +1,99 @@
+# ========================================================================
+# Server 82 Metrics Exporters
+# ========================================================================
+# This docker-compose file sets up metric exporters for server 10.0.0.82
+# Metrics are scraped by central Prometheus on server 84 (10.0.0.84:9090)
+# Visualization via central Grafana on server 84 (http://10.0.0.84:3002)
+#
+# Components:
+# - Prometheus Node Exporter: System metrics (CPU, memory, disk, network)
+# - cAdvisor: Container metrics
+#
+# Deploy: docker compose -f infrastructure/server-82/docker-compose.yml up -d
+# ========================================================================
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  # ========================================================================
+  # NODE EXPORTER - System Metrics
+  # ========================================================================
+  # Exposes hardware and OS metrics for Prometheus to scrape
+  # Port 9100 is accessible only from local network (10.0.0.0/24)
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter-82
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"  # Accessible from local network only (firewall enforced)
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring
+
+    # SECURITY HARDENING
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_TIME  # Required for time-related metrics
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    tmpfs:
+      - /tmp
+
+  # ========================================================================
+  # CADVISOR - Container Metrics
+  # ========================================================================
+  # Analyzes resource usage and performance of running containers
+  # Port 8080 is accessible from local network only
+  # NOTE: Requires privileged mode to access container statistics
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor-82
+    restart: unless-stopped
+    ports:
+      - "8080:8080"  # Accessible from local network only (firewall enforced)
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
+
+    # SECURITY HARDENING
+    # NOTE: cAdvisor requires privileged mode for container inspection
+    privileged: true
+    devices:
+      - /dev/kmsg
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M

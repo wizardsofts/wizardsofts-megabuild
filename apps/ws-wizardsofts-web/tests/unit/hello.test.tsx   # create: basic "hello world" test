@@ -1,0 +1,9 @@
+import React from 'react';
+import { render } from '@testing-library/react';
+import Hello from '../../src/Hello'; // Adjust the import based on your component's location
+
+test('renders hello world', () => {
+  const { getByText } = render(<Hello />);
+  const linkElement = getByText(/hello world/i);
+  expect(linkElement).toBeInTheDocument();
+});

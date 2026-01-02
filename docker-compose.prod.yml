@@ -1,0 +1,234 @@
+# Production Docker Compose Override
+# Use: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# SECURITY: This file removes all direct port exposures except Traefik
+# All services accessed via Traefik reverse proxy with SSL
+
+version: '3.8'
+
+networks:
+  traefik-public:
+    driver: bridge
+  socket-proxy:
+    internal: true  # SECURITY: Isolated network for Docker socket proxy
+
+services:
+  # ========================================================================
+  # DOCKER SOCKET PROXY - Security layer for Docker API access (Production)
+  # ========================================================================
+
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 0
+      TASKS: 0
+      NODES: 0
+      SWARM: 0
+      SECRETS: 0
+      CONFIGS: 0
+      PLUGINS: 0
+      INFO: 0
+      AUTH: 0
+      BUILD: 0
+      COMMIT: 0
+      EXEC: 0
+      IMAGES: 0
+      VOLUMES: 0
+      EVENTS: 1
+      POST: 0  # CRITICAL: Deny all write operations
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy
+    read_only: true
+    tmpfs:
+      - /run
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:2375/_ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ========================================================================
+  # TRAEFIK - ONLY exposed ports in production
+  # ========================================================================
+
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    ports:
+      - "80:80"       # HTTP (redirects to HTTPS)
+      - "443:443"     # HTTPS only
+      - "8080:8080"   # Dashboard
+    volumes:
+      # SECURITY: No longer mounting Docker socket directly
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic_conf.yml:/etc/traefik/dynamic_conf.yml
+      - traefik-ssl:/letsencrypt
+    networks:
+      - gibd-network
+      - traefik-public
+      - socket-proxy
+    environment:
+      - ACME_EMAIL=admin@wizardsofts.com
+      - DOCKER_HOST=tcp://socket-proxy:2375
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+    restart: unless-stopped
+
+  # ========================================================================
+  # PUBLIC WEB APPLICATIONS - No direct port access
+  # ========================================================================
+
+  ws-wizardsofts-web:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wizardsofts.rule=Host(`www.wizardsofts.com`)"
+      - "traefik.http.routers.wizardsofts.entrypoints=websecure"
+      - "traefik.http.routers.wizardsofts.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.wizardsofts.middlewares=rate-limit"
+      - "traefik.http.services.wizardsofts.loadbalancer.server.port=3000"
+      - "traefik.docker.network=wizardsofts-megabuild_gibd-network"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.wizardsofts-http.rule=Host(`www.wizardsofts.com`)"
+      - "traefik.http.routers.wizardsofts-http.entrypoints=web"
+      - "traefik.http.routers.wizardsofts-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    networks:
+      - gibd-network
+      - traefik-public
+    # SECURITY: Remove all port exposures
+    ports: []
+
+  ws-daily-deen-web:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dailydeen.rule=Host(`dailydeenguide.wizardsofts.com`)"
+      - "traefik.http.routers.dailydeen.entrypoints=websecure"
+      - "traefik.http.routers.dailydeen.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dailydeen.middlewares=rate-limit"
+      - "traefik.http.services.dailydeen.loadbalancer.server.port=3000"
+      - "traefik.docker.network=wizardsofts-megabuild_gibd-network"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.dailydeen-http.rule=Host(`dailydeenguide.wizardsofts.com`)"
+      - "traefik.http.routers.dailydeen-http.entrypoints=web"
+      - "traefik.http.routers.dailydeen-http.middlewares=redirect-to-https"
+    networks:
+      - gibd-network
+      - traefik-public
+    ports: []
+
+  gibd-quant-web:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.quant.rule=Host(`quant.wizardsofts.com`)"
+      - "traefik.http.routers.quant.entrypoints=websecure"
+      - "traefik.http.routers.quant.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.quant.middlewares=rate-limit"
+      - "traefik.http.services.quant.loadbalancer.server.port=3000"
+      - "traefik.docker.network=wizardsofts-megabuild_gibd-network"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.quant-http.rule=Host(`quant.wizardsofts.com`)"
+      - "traefik.http.routers.quant-http.entrypoints=web"
+      - "traefik.http.routers.quant-http.middlewares=redirect-to-https"
+    networks:
+      - gibd-network
+      - traefik-public
+    ports: []
+
+  # ========================================================================
+  # INFRASTRUCTURE - Internal access only (with auth)
+  # ========================================================================
+
+  ws-discovery:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.eureka.rule=Host(`eureka.wizardsofts.com`)"
+      - "traefik.http.routers.eureka.entrypoints=websecure"
+      - "traefik.http.routers.eureka.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.eureka.middlewares=admin-auth"
+      - "traefik.http.services.eureka.loadbalancer.server.port=8761"
+      - "traefik.docker.network=wizardsofts-megabuild_gibd-network"
+    networks:
+      - gibd-network
+      - traefik-public
+    # SECURITY: Remove port exposure (was 8762:8761)
+    ports: []
+
+  ws-gateway:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`api.wizardsofts.com`)"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.gateway.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gateway.loadbalancer.server.port=8080"
+      - "traefik.docker.network=wizardsofts-megabuild_gibd-network"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.gateway-http.rule=Host(`api.wizardsofts.com`)"
+      - "traefik.http.routers.gateway-http.entrypoints=web"
+      - "traefik.http.routers.gateway-http.middlewares=redirect-to-https"
+    networks:
+      - gibd-network
+      - traefik-public
+    # SECURITY: Remove port exposure (was 8080:8080)
+    ports: []
+
+  # ========================================================================
+  # SPRING BOOT APIS - Backend only (no external access)
+  # ========================================================================
+
+  ws-trades:
+    # SECURITY: Remove port exposure (was 8182:8182)
+    ports: []
+
+  ws-company:
+    # SECURITY: Remove port exposure (was 8183:8183)
+    ports: []
+
+  ws-news:
+    # SECURITY: Remove port exposure (was 8184:8184)
+    ports: []
+
+  # ========================================================================
+  # PYTHON ML SERVICES - Internal API only (access via Gateway)
+  # ========================================================================
+
+  gibd-quant-signal:
+    # SECURITY: Remove port exposure (was 5001:5001)
+    ports: []
+
+  gibd-quant-nlq:
+    # SECURITY: Remove port exposure (was 5002:5002)
+    ports: []
+
+  gibd-quant-calibration:
+    # SECURITY: Remove port exposure (was 5003:5003)
+    ports: []
+
+  gibd-quant-agent:
+    # SECURITY: Remove port exposure (was 5004:5004)
+    ports: []
+
+  # ========================================================================
+  # DATABASES - NEVER expose externally
+  # ========================================================================
+
+  postgres:
+    # SECURITY: Remove port exposure (was 5433:5432)
+    # Database should NEVER be accessible from internet
+    ports: []
+
+  redis:
+    # SECURITY: Remove port exposure (was 6379:6379)
+    # Cache should NEVER be accessible from internet
+    ports: []
+
+volumes:
+  traefik-ssl:

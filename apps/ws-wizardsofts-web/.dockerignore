@@ -1,0 +1,18 @@
+node_modules
+npm-debug.log*
+.next
+out
+dist
+.env*
+.env
+.DS_Store
+.git
+.gitignore
+coverage
+# prisma removed: data persisted under /app/data
+frontend/.idea
+.vscode
+yarn.lock
+
+# exclude macOS resource fork files
+**/._*

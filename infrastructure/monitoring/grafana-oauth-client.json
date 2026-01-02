@@ -1,0 +1,99 @@
+{
+  "clientId": "grafana",
+  "name": "Grafana Monitoring Dashboard",
+  "description": "Grafana SSO via Keycloak OAuth2/OIDC",
+  "enabled": true,
+  "clientAuthenticatorType": "client-secret",
+  "secret": "grafana-client-secret-change-in-production",
+  "redirectUris": [
+    "http://10.0.0.81:3002/login/generic_oauth",
+    "http://10.0.0.81:3002/*",
+    "https://grafana.wizardsofts.com/login/generic_oauth",
+    "https://grafana.wizardsofts.com/*"
+  ],
+  "webOrigins": [
+    "http://10.0.0.81:3002",
+    "https://grafana.wizardsofts.com"
+  ],
+  "publicClient": false,
+  "protocol": "openid-connect",
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "authorizationServicesEnabled": false,
+  "fullScopeAllowed": true,
+  "defaultClientScopes": [
+    "openid",
+    "profile",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "roles"
+  ],
+  "attributes": {
+    "oauth2.device.authorization.grant.enabled": "false",
+    "oidc.ciba.grant.enabled": "false",
+    "post.logout.redirect.uris": "http://10.0.0.81:3002/*##https://grafana.wizardsofts.com/*",
+    "access.token.lifespan": "300",
+    "client.secret.creation.time": "0",
+    "backchannel.logout.session.required": "true",
+    "backchannel.logout.revoke.offline.tokens": "false"
+  },
+  "protocolMappers": [
+    {
+      "name": "email",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "userinfo.token.claim": "true",
+        "user.attribute": "email",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "email",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "preferred_username",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "userinfo.token.claim": "true",
+        "user.attribute": "username",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "preferred_username",
+        "jsonType.label": "String"
+      }
+    },
+    {
+      "name": "roles",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-realm-role-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "role",
+        "access.token.claim": "true",
+        "claim.name": "roles",
+        "jsonType.label": "String",
+        "multivalued": "true"
+      }
+    },
+    {
+      "name": "groups",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-group-membership-mapper",
+      "consentRequired": false,
+      "config": {
+        "full.path": "false",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "claim.name": "groups",
+        "userinfo.token.claim": "true"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: gibd-redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - /mnt/data/docker/redis/data:/data
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gibd-network:
+    external: true  # Use the network we created manually

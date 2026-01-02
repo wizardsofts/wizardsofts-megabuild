@@ -1,0 +1,44 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:18.4.1-ce.0
+    container_name: gitlab
+    restart: always
+    hostname: '10.0.0.84'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://10.0.0.84:8090'
+        registry_external_url 'http://10.0.0.84:5050'
+        gitlab_rails['registry_enabled'] = true
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        postgresql['enable'] = false
+        gitlab_rails['db_adapter'] = 'postgresql'
+        gitlab_rails['db_encoding'] = 'unicode'
+        gitlab_rails['db_host'] = '10.0.0.80'
+        gitlab_rails['db_port'] = 5435
+        gitlab_rails['db_database'] = '${GITLAB_DB_NAME}'
+        gitlab_rails['db_username'] = '${GITLAB_DB_USER}'
+        gitlab_rails['db_password'] = '${GITLAB_DB_PASSWORD}'
+        redis['enable'] = false
+        gitlab_rails['redis_host'] = '10.0.0.80'
+        gitlab_rails['redis_port'] = 6380
+    ports:
+      - '8090:8090'
+      - '8443:8443'
+      - '2222:22'
+      - '5050:5050'
+    volumes:
+      - /mnt/data/docker/gitlab/config:/etc/gitlab
+      - /mnt/data/docker/gitlab/logs:/var/log/gitlab
+      - /mnt/data/docker/gitlab/data:/var/opt/gitlab
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gibd-network:
+    external: true
+

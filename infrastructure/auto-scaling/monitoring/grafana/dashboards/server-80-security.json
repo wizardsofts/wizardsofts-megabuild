@@ -1,0 +1,209 @@
+{
+  "uid": "security-overview-80",
+  "title": "Server 80 Security Dashboard",
+  "tags": ["security", "server-80", "monitoring"],
+  "style": "dark",
+  "timezone": "browser",
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "version": 1,
+  "time": {"from": "now-24h", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Security Status",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "security_scan_status{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"1": {"text": "SECURE", "color": "green"}, "0": {"text": "ALERT", "color": "red"}}}], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Critical Vulnerabilities",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_vulnerabilities{severity=\"critical\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 3, "type": "stat", "title": "High Vulnerabilities",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_vulnerabilities{severity=\"high\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "orange", "value": 20}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Malware Detected",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "security_malware_detected{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 5, "type": "stat", "title": "Suspicious Processes",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "security_suspicious_processes{type=\"total\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 6, "type": "stat", "title": "Last Scan",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 4},
+      "targets": [{"expr": "time() - security_scan_timestamp{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "value"},
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1800}, {"color": "red", "value": 3600}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 7, "type": "gauge", "title": "Failed Login Attempts (24h)",
+      "gridPos": {"x": 0, "y": 4, "w": 6, "h": 5},
+      "targets": [{"expr": "security_failed_logins{type=\"total\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"showThresholdLabels": false, "showThresholdMarkers": true},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "orange", "value": 50}, {"color": "red", "value": 100}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 8, "type": "gauge", "title": "Open Ports",
+      "gridPos": {"x": 6, "y": 4, "w": 6, "h": 5},
+      "targets": [{"expr": "security_open_ports{type=\"total\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"showThresholdLabels": false, "showThresholdMarkers": true},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 30}, {"color": "orange", "value": 50}, {"color": "red", "value": 80}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 9, "type": "gauge", "title": "SUID Files",
+      "gridPos": {"x": 12, "y": 4, "w": 6, "h": 5},
+      "targets": [{"expr": "security_suid_files{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"showThresholdLabels": false, "showThresholdMarkers": true},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 50, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 15}, {"color": "red", "value": 30}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 10, "type": "gauge", "title": "World-Writable Files",
+      "gridPos": {"x": 18, "y": 4, "w": 6, "h": 5},
+      "targets": [{"expr": "security_world_writable_files{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"showThresholdLabels": false, "showThresholdMarkers": true},
+      "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 20, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 5}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 11, "type": "piechart", "title": "Docker Vulnerabilities by Severity",
+      "gridPos": {"x": 0, "y": 9, "w": 8, "h": 7},
+      "targets": [{"expr": "security_docker_vulnerabilities{job=\"security-80\",severity!=\"total\"}", "refId": "A", "legendFormat": "{{severity}}", "instant": true}],
+      "options": {"legend": {"displayMode": "table", "placement": "right", "values": ["value"]}, "pieType": "pie"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": [{"matcher": {"id": "byName", "options": "critical"}, "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}]}, {"matcher": {"id": "byName", "options": "high"}, "properties": [{"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}}]}, {"matcher": {"id": "byName", "options": "medium"}, "properties": [{"id": "color", "value": {"fixedColor": "yellow", "mode": "fixed"}}]}, {"matcher": {"id": "byName", "options": "low"}, "properties": [{"id": "color", "value": {"fixedColor": "blue", "mode": "fixed"}}]}]},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 12, "type": "bargauge", "title": "Failed Logins by Type",
+      "gridPos": {"x": 8, "y": 9, "w": 8, "h": 7},
+      "targets": [{"expr": "security_failed_logins{job=\"security-80\",type!=\"total\"}", "refId": "A", "legendFormat": "{{type}}", "instant": true}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 20}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 13, "type": "bargauge", "title": "Docker Security Issues",
+      "gridPos": {"x": 16, "y": 9, "w": 8, "h": 7},
+      "targets": [{"expr": "security_docker_config{job=\"security-80\"}", "refId": "A", "legendFormat": "{{check}}", "instant": true}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 14, "type": "timeseries", "title": "Failed Login Attempts (Trend)",
+      "gridPos": {"x": 0, "y": 16, "w": 12, "h": 6},
+      "targets": [{"expr": "security_failed_logins{type=\"total\",job=\"security-80\"}", "refId": "A", "legendFormat": "Total Failed Logins"}],
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 20}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 50}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 15, "type": "timeseries", "title": "Open Ports (Trend)",
+      "gridPos": {"x": 12, "y": 16, "w": 12, "h": 6},
+      "targets": [{"expr": "security_open_ports{type=\"total\",job=\"security-80\"}", "refId": "A", "legendFormat": "Open Ports"}, {"expr": "security_open_ports{type=\"docker_related\",job=\"security-80\"}", "refId": "B", "legendFormat": "Docker Ports"}],
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}},
+      "fieldConfig": {"defaults": {"unit": "short", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 16, "type": "stat", "title": "Privileged Containers",
+      "gridPos": {"x": 0, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_config{check=\"privileged_containers\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 17, "type": "stat", "title": "Root Containers",
+      "gridPos": {"x": 4, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_config{check=\"root_containers\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 2}, {"color": "orange", "value": 5}, {"color": "red", "value": 10}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 18, "type": "stat", "title": "Host Network Containers",
+      "gridPos": {"x": 8, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_config{check=\"host_network\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 2}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 19, "type": "stat", "title": "Socket Exposed",
+      "gridPos": {"x": 12, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_docker_config{check=\"socket_exposed\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "SAFE", "color": "green"}, "1": {"text": "EXPOSED", "color": "red"}}}], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 20, "type": "stat", "title": "Container Issues",
+      "gridPos": {"x": 16, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_container_issues{job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 20}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 21, "type": "stat", "title": "High CPU Processes",
+      "gridPos": {"x": 20, "y": 22, "w": 4, "h": 4},
+      "targets": [{"expr": "security_suspicious_processes{type=\"high_cpu\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background"},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 3}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 22, "type": "row", "title": "Suspicious Activity Monitoring",
+      "gridPos": {"x": 0, "y": 26, "w": 24, "h": 1}, "collapsed": false
+    },
+    {
+      "id": 23, "type": "stat", "title": "Crypto Miners",
+      "gridPos": {"x": 0, "y": 27, "w": 6, "h": 4},
+      "targets": [{"expr": "security_suspicious_processes{type=\"crypto_miners\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background", "textMode": "value_and_name"},
+      "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "NONE DETECTED", "color": "green"}}}], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 24, "type": "stat", "title": "Reverse Shells",
+      "gridPos": {"x": 6, "y": 27, "w": 6, "h": 4},
+      "targets": [{"expr": "security_suspicious_processes{type=\"reverse_shells\",job=\"security-80\"}", "refId": "A", "instant": true}],
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "graphMode": "none", "colorMode": "background", "textMode": "value_and_name"},
+      "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "NONE DETECTED", "color": "green"}}}], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    },
+    {
+      "id": 25, "type": "bargauge", "title": "Open Ports by Type",
+      "gridPos": {"x": 12, "y": 27, "w": 12, "h": 4},
+      "targets": [{"expr": "security_open_ports{job=\"security-80\"}", "refId": "A", "legendFormat": "{{type}}", "instant": true}],
+      "options": {"orientation": "horizontal", "displayMode": "gradient", "showUnfilled": true},
+      "fieldConfig": {"defaults": {"unit": "short", "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 5}, {"color": "yellow", "value": 20}]}}},
+      "datasource": {"type": "prometheus", "uid": "prometheus"}
+    }
+  ]
+}

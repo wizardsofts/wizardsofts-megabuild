@@ -1,0 +1,54 @@
+services:
+  gitlab-runner-dailydeenguide:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner-dailydeenguide
+    restart: always
+    volumes:
+      # Only mount docker.sock if absolutely required for Docker executor
+      # - /var/run/docker.sock:/var/run/docker.sock
+      - ${GITLAB_RUNNER_DATA_PATH:-/mnt/data/docker}/gitlab-runner/dailydeenguide/config:/etc/gitlab-runner
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "gitlab-runner", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gitlab-runner-wizardsofts:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner-wizardsofts
+    restart: always
+    volumes:
+      # Only mount docker.sock if absolutely required for Docker executor
+      # - /var/run/docker.sock:/var/run/docker.sock
+      - ${GITLAB_RUNNER_DATA_PATH:-/mnt/data/docker}/gitlab-runner/wizardsofts/config:/etc/gitlab-runner
+      - ${GITLAB_RUNNER_DATA_PATH:-/mnt/data/docker}/gitlab-runner/wizardsofts/cache:/cache
+      - ${GITLAB_RUNNER_DATA_PATH:-/mnt/data/docker}/gitlab-runner/wizardsofts/data:/builds
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "gitlab-runner", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  gitlab-runner-gibd:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner-gibd
+    restart: always
+    volumes:
+      # Only mount docker.sock if absolutely required for Docker executor
+      # - /var/run/docker.sock:/var/run/docker.sock
+      - ${GITLAB_RUNNER_DATA_PATH:-/mnt/data/docker}/gitlab-runner/gibd/config:/etc/gitlab-runner
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "gitlab-runner", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gibd-network:
+    external: true

@@ -1,0 +1,754 @@
+{
+  "uid": "server-80-executive",
+  "title": "Server 80 - Executive Dashboard",
+  "description": "Executive summary for GIBD Server (10.0.0.80)",
+  "tags": ["executive", "server-80", "gibd", "production"],
+  "style": "dark",
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "version": 1,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "annotations": {
+    "list": []
+  },
+  "templating": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "🖥️ Server Health Overview",
+      "gridPos": {"x": 0, "y": 0, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Server Status",
+      "description": "Server 80 availability",
+      "gridPos": {"x": 0, "y": 1, "w": 4, "h": 4},
+      "targets": [
+        {
+          "expr": "up{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "graphMode": "none",
+        "colorMode": "background",
+        "orientation": "auto",
+        "textMode": "value_and_name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"1": {"text": "ONLINE", "color": "green"}}},
+            {"type": "value", "options": {"0": {"text": "OFFLINE", "color": "red"}}}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "green", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "CPU Usage",
+      "gridPos": {"x": 4, "y": 1, "w": 5, "h": 4},
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{job=\"node-exporter-80\",mode=\"idle\"}[5m])) * 100)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "orientation": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 60},
+              {"color": "orange", "value": 80},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "gauge",
+      "title": "Memory Usage",
+      "gridPos": {"x": 9, "y": 1, "w": 5, "h": 4},
+      "targets": [
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter-80\"} / node_memory_MemTotal_bytes{job=\"node-exporter-80\"}))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "orange", "value": 85},
+              {"color": "red", "value": 95}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "Root Disk Usage",
+      "gridPos": {"x": 14, "y": 1, "w": 5, "h": 4},
+      "targets": [
+        {
+          "expr": "100 - ((node_filesystem_avail_bytes{job=\"node-exporter-80\",mountpoint=\"/\",fstype!=\"rootfs\"} * 100) / node_filesystem_size_bytes{job=\"node-exporter-80\",mountpoint=\"/\",fstype!=\"rootfs\"})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "orange", "value": 85},
+              {"color": "red", "value": 95}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "gauge",
+      "title": "Swap Usage",
+      "gridPos": {"x": 19, "y": 1, "w": 5, "h": 4},
+      "targets": [
+        {
+          "expr": "((node_memory_SwapTotal_bytes{job=\"node-exporter-80\"} - node_memory_SwapFree_bytes{job=\"node-exporter-80\"}) / node_memory_SwapTotal_bytes{job=\"node-exporter-80\"}) * 100",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 25},
+              {"color": "orange", "value": 50},
+              {"color": "red", "value": 75}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "📊 System Statistics",
+      "gridPos": {"x": 0, "y": 5, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Uptime",
+      "gridPos": {"x": 0, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "node_time_seconds{job=\"node-exporter-80\"} - node_boot_time_seconds{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "yellow", "value": null},
+              {"color": "green", "value": 86400}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Total RAM",
+      "gridPos": {"x": 4, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "blue", "value": null}]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Available RAM",
+      "gridPos": {"x": 8, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "node_memory_MemAvailable_bytes{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 4294967296},
+              {"color": "green", "value": 8589934592}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "CPU Cores",
+      "gridPos": {"x": 12, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "count(count(node_cpu_seconds_total{job=\"node-exporter-80\",mode=\"idle\"}) by (cpu))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "none",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "blue", "value": null}]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Load Average (5m)",
+      "gridPos": {"x": 16, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "node_load5{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 4},
+              {"color": "orange", "value": 8},
+              {"color": "red", "value": 16}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Open File Descriptors",
+      "gridPos": {"x": 20, "y": 6, "w": 4, "h": 3},
+      "targets": [
+        {
+          "expr": "node_filefd_allocated{job=\"node-exporter-80\"}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 50000},
+              {"color": "red", "value": 100000}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "row",
+      "title": "📈 Performance Trends (24h)",
+      "gridPos": {"x": 0, "y": 9, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "CPU & Memory Usage",
+      "gridPos": {"x": 0, "y": 10, "w": 12, "h": 7},
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{job=\"node-exporter-80\",mode=\"idle\"}[5m])) * 100)",
+          "refId": "A",
+          "legendFormat": "CPU %"
+        },
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{job=\"node-exporter-80\"} / node_memory_MemTotal_bytes{job=\"node-exporter-80\"}))",
+          "refId": "B",
+          "legendFormat": "Memory %"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "scheme",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "red", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Disk I/O",
+      "gridPos": {"x": 12, "y": 10, "w": 12, "h": 7},
+      "targets": [
+        {
+          "expr": "rate(node_disk_read_bytes_total{job=\"node-exporter-80\"}[5m])",
+          "refId": "A",
+          "legendFormat": "Read {{device}}"
+        },
+        {
+          "expr": "rate(node_disk_written_bytes_total{job=\"node-exporter-80\"}[5m])",
+          "refId": "B",
+          "legendFormat": "Write {{device}}"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "🌐 Network & Disk",
+      "gridPos": {"x": 0, "y": 17, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Network Traffic",
+      "gridPos": {"x": 0, "y": 18, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "rate(node_network_receive_bytes_total{job=\"node-exporter-80\",device!~\"lo|docker.*|veth.*|br-.*\"}[5m]) * 8",
+          "refId": "A",
+          "legendFormat": "In: {{device}}"
+        },
+        {
+          "expr": "rate(node_network_transmit_bytes_total{job=\"node-exporter-80\",device!~\"lo|docker.*|veth.*|br-.*\"}[5m]) * 8",
+          "refId": "B",
+          "legendFormat": "Out: {{device}}"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "bargauge",
+      "title": "Disk Space by Mount",
+      "gridPos": {"x": 12, "y": 18, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "100 - ((node_filesystem_avail_bytes{job=\"node-exporter-80\",fstype!~\"tmpfs|overlay|squashfs\"} * 100) / node_filesystem_size_bytes{job=\"node-exporter-80\",fstype!~\"tmpfs|overlay|squashfs\"})",
+          "refId": "A",
+          "legendFormat": "{{mountpoint}}",
+          "instant": true
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 70},
+              {"color": "orange", "value": 85},
+              {"color": "red", "value": 95}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "🐳 Docker Containers",
+      "gridPos": {"x": 0, "y": 24, "w": 24, "h": 1},
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Running Containers",
+      "gridPos": {"x": 0, "y": 25, "w": 6, "h": 3},
+      "targets": [
+        {
+          "expr": "count(container_last_seen{job=\"cadvisor-80\",name!=\"\",name!~\".*POD.*\"})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Container CPU Total",
+      "gridPos": {"x": 6, "y": 25, "w": 6, "h": 3},
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"cadvisor-80\",name!=\"\",name!~\".*POD.*\"}[5m])) * 100",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 50},
+              {"color": "red", "value": 80}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Container Memory Total",
+      "gridPos": {"x": 12, "y": 25, "w": 6, "h": 3},
+      "targets": [
+        {
+          "expr": "sum(container_memory_usage_bytes{job=\"cadvisor-80\",name!=\"\",name!~\".*POD.*\"})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 8589934592},
+              {"color": "red", "value": 17179869184}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Network Errors",
+      "gridPos": {"x": 18, "y": 25, "w": 6, "h": 3},
+      "targets": [
+        {
+          "expr": "sum(rate(node_network_receive_errs_total{job=\"node-exporter-80\"}[5m]) + rate(node_network_transmit_errs_total{job=\"node-exporter-80\"}[5m]))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "background",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 10}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "Top Containers by Memory",
+      "gridPos": {"x": 0, "y": 28, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "topk(8, container_memory_usage_bytes{job=\"cadvisor-80\",name!=\"\",name!~\".*POD.*\"})",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"displayName": "Memory", "desc": true}]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {"align": "auto", "filterable": false}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [{"id": "unit", "value": "bytes"}, {"id": "displayName", "value": "Memory"}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "name"},
+            "properties": [{"id": "displayName", "value": "Container"}]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {"Time": true, "job": true, "instance": true, "id": true, "image": true, "__name__": true},
+            "renameByName": {"name": "Container", "Value": "Memory"}
+          }
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "Container CPU Usage",
+      "gridPos": {"x": 12, "y": 28, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "topk(5, rate(container_cpu_usage_seconds_total{job=\"cadvisor-80\",name!=\"\",name!~\".*POD.*\"}[5m]) * 100)",
+          "refId": "A",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "options": {
+        "legend": {"displayMode": "list", "placement": "right", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 30,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never",
+            "stacking": {"mode": "none"}
+          }
+        }
+      }
+    }
+  ]
+}

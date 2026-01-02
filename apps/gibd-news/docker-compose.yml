@@ -1,0 +1,280 @@
+version: '3.8'
+
+# GIBD-News Docker Compose Configuration
+# Run individual services with: docker-compose run --rm <service-name>
+
+services:
+  # ===========================================
+  # News URL Fetcher - TBS News
+  # ===========================================
+  fetch-tbsnews:
+    build: .
+    container_name: gibd-fetch-tbsnews
+    command: python scripts/fetch_urls_tbsnews.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'  # Required for Chrome
+
+  # ===========================================
+  # News URL Fetcher - Financial Express
+  # ===========================================
+  fetch-financialexpress:
+    build: .
+    container_name: gibd-fetch-fe
+    command: python scripts/fetch_urls_financialexpress.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+
+  # ===========================================
+  # BACKFILL - Financial Express (2 years)
+  # Usage: docker-compose run --rm backfill-financialexpress
+  # Or with custom days: docker-compose run --rm backfill-financialexpress python scripts/fetch_urls_financialexpress.py --backfill-days=365
+  # ===========================================
+  backfill-financialexpress:
+    build: .
+    container_name: gibd-backfill-fe
+    command: python scripts/fetch_urls_financialexpress.py --backfill-days=730
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    profiles:
+      - backfill
+
+  # ===========================================
+  # BACKFILL - TBS News (2 years)
+  # Usage: docker-compose run --rm backfill-tbsnews
+  # ===========================================
+  backfill-tbsnews:
+    build: .
+    container_name: gibd-backfill-tbs
+    command: python scripts/fetch_urls_tbsnews.py --backfill-days=730 --max-pages=500
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'
+    profiles:
+      - backfill
+
+  # ===========================================
+  # BACKFILL - Daily Star (2 years)
+  # Usage: docker-compose run --rm backfill-dailystar
+  # ===========================================
+  backfill-dailystar:
+    build: .
+    container_name: gibd-backfill-ds
+    command: python scripts/fetch_urls_thedailystar.py --backfill-days=730 --max-pages=500
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'
+    profiles:
+      - backfill
+
+  # ===========================================
+  # News URL Fetcher - The Daily Star
+  # ===========================================
+  fetch-dailystar:
+    build: .
+    container_name: gibd-fetch-dailystar
+    command: python scripts/fetch_urls_thedailystar.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'
+
+  # ===========================================
+  # News Details Fetcher
+  # ===========================================
+  fetch-news-details:
+    build: .
+    container_name: gibd-fetch-details
+    command: python scripts/fetch_news_details.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'
+
+  # ===========================================
+  # Stock Data Fetcher
+  # ===========================================
+  fetch-stock-data:
+    build: .
+    container_name: gibd-fetch-stock
+    command: python scripts/fetch_dse_daily_stock_data.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+
+  # ===========================================
+  # DSE Latest Share Price Scraper
+  # ===========================================
+  scrape-share-price:
+    build: .
+    container_name: gibd-scrape-price
+    command: python scripts/scrape_dse_latest_share_price.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+    shm_size: '2gb'
+
+  # ===========================================
+  # Sentiment Analyzer (uses external Ollama)
+  # ===========================================
+  sentiment-analyzer:
+    build: .
+    container_name: gibd-sentiment
+    command: python scripts/update_sentiment_scores.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+      # Ollama URL should point to external deployment
+      # - GIBD_OLLAMA_URL=http://your-ollama-server:11434
+    volumes:
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+
+  # ===========================================
+  # News Summarizer (Sequential)
+  # ===========================================
+  news-summarizer:
+    build: .
+    container_name: gibd-summarizer
+    command: python scripts/news_summarizer.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+
+  # ===========================================
+  # News Summarizer (Parallel - faster)
+  # ===========================================
+  news-summarizer-parallel:
+    build: .
+    container_name: gibd-summarizer-parallel
+    command: python scripts/news_summarizer.py --parallel --workers 3
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: "no"
+    networks:
+      - gibd-network
+
+  # ===========================================
+  # Prometheus Metrics Exporter
+  # Exposes metrics at port 9090 for Prometheus scraping
+  # ===========================================
+  metrics:
+    build: .
+    container_name: gibd-metrics
+    command: python scripts/prometheus_metrics.py
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+      - METRICS_PORT=9090
+    volumes:
+      - ./data:/app/data:ro
+      - ./logs:/app/logs:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ===========================================
+  # Test Runner
+  # ===========================================
+  test:
+    build:
+      context: .
+      target: test
+    container_name: gibd-test
+    env_file: .env
+    environment:
+      - ACTIVE_PROFILE=docker
+      - GIBD_DEEPSEEK_API_KEY=test-key  # Dummy for tests
+      - GIBD_EMAIL_SENDER=test@example.com
+      - GIBD_EMAIL_PASSWORD=test-password
+    volumes:
+      - ./scripts:/app/scripts:ro
+    profiles:
+      - test
+    networks:
+      - gibd-network
+
+networks:
+  gibd-network:
+    driver: bridge
+
+# No persistent volumes needed - data is written to mounted directories

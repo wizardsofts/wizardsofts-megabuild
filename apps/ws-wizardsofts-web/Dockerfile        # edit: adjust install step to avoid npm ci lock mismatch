@@ -1,0 +1,11 @@
+FROM node:14
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --only=production --no-audit --no-fund --ignore-scripts
+
+COPY . .
+
+CMD ["node", "server.js"]

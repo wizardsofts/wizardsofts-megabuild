@@ -1,0 +1,55 @@
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: llm-ollama
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    volumes:
+      - /home/wizardsofts/opt/apps/llm-server/data/ollama:/root/.ollama
+      - /home/wizardsofts/opt/apps/llm-server/data/models:/models
+      - /home/wizardsofts/opt/apps/llm-server/logs/ollama:/var/log/ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS}
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL}
+      - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE}
+    restart: unless-stopped
+    networks:
+      - llm-internal
+      - wizardsofts
+      - gibd
+      - ddg
+    deploy:
+      resources:
+        limits:
+          memory: ${OLLAMA_MEMORY_LIMIT}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  # Internal network for nginx <-> ollama communication
+  llm-internal:
+    name: llm-internal
+    driver: bridge
+
+  # External shared networks (must be created first)
+  wizardsofts:
+    external: true
+
+  gibd:
+    external: true
+
+  ddg:
+    external: true

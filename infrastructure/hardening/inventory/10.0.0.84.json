@@ -1,0 +1,32 @@
+{
+  "server": {
+    "name": "gmk",
+    "ip": "10.0.0.84",
+    "hostname": "gmktec",
+    "user": "wizardsofts",
+    "ssh_port": 22,
+    "description": "GMK NucBox server - Development"
+  },
+  "network": {
+    "subnet": "10.0.0.0/24",
+    "dns_servers": ["8.8.8.8", "8.8.4.4"]
+  },
+  "security": {
+    "ssh_max_auth_attempts": 3,
+    "ssh_login_grace_time": 20,
+    "sudo_require_password": true,
+    "password_max_days": 90,
+    "password_min_length": 14
+  },
+  "services": {
+    "disable": [
+      "bluetooth.service",
+      "cups.service",
+      "avahi-daemon.service"
+    ]
+  },
+  "docker": {
+    "enable_rootless": true,
+    "restrict_socket": true
+  }
+}

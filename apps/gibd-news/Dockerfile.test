@@ -1,0 +1,26 @@
+# Simplified test Dockerfile - without Chrome for faster testing
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+# Install minimal dependencies (skip Chrome for now)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt || echo "Some packages may have failed"
+
+# Copy application code
+COPY . .
+
+# Create directories
+RUN mkdir -p /app/data /app/logs
+
+ENV ACTIVE_PROFILE=docker
+
+CMD ["python", "--version"]

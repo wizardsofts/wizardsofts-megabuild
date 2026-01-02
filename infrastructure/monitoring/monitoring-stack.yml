@@ -1,0 +1,190 @@
+version: '3.8'
+
+# Monitoring Stack for Server 81
+# Deployed via Docker Swarm: docker stack deploy -c monitoring-stack.yml monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - target: 9090
+        published: 9090
+        mode: host
+    volumes:
+      - prometheus-data:/prometheus
+      - /home/wizardsofts/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    deploy:
+      placement:
+        constraints:
+          - node.labels.server==81
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 3G
+          cpus: '1.0'
+        reservations:
+          memory: 2G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - target: 3000
+        published: 3002
+        mode: host
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - /home/wizardsofts/monitoring/grafana/grafana-provisioning:/etc/grafana/provisioning:ro
+      - /home/wizardsofts/monitoring/grafana/grafana-dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      # Admin Configuration
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-W1z4rdS0fts!2025}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+
+      # Server Configuration (required for OAuth redirect)
+      - GF_SERVER_ROOT_URL=http://10.0.0.81:3002
+
+      # Keycloak OIDC Configuration (migrated from Server 84 infrastructure)
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=grafana
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=6PR1DorOq6ckb5qVTrZVc5HUHis3iWxv
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email roles
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/userinfo
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
+      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(roles[*], 'admin') && 'Admin' || 'Viewer'
+      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+    deploy:
+      placement:
+        constraints:
+          - node.labels.server==81
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 500M
+          cpus: '0.2'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - monitoring-network
+
+  loki:
+    image: grafana/loki:2.9.2
+    ports:
+      - target: 3100
+        published: 3100
+        mode: host
+    command: -config.file=/etc/loki/local-config.yaml
+    deploy:
+      placement:
+        constraints:
+          - node.labels.server==81
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 2G
+          cpus: '0.5'
+        reservations:
+          memory: 1G
+          cpus: '0.3'
+    networks:
+      - monitoring-network
+
+  promtail:
+    image: grafana/promtail:2.9.2
+    volumes:
+      - /var/log:/var/log:ro
+    environment:
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+    command:
+      - -config.expand-env=true
+      - -config.file=/etc/promtail/docker-config.yaml
+    deploy:
+      mode: global  # Run on ALL nodes to collect logs from all servers
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 200M
+          cpus: '0.2'
+        reservations:
+          memory: 100M
+          cpus: '0.1'
+    networks:
+      - monitoring-network
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - target: 9093
+        published: 9093
+        mode: host
+    volumes:
+      - /home/wizardsofts/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    deploy:
+      placement:
+        constraints:
+          - node.labels.server==81
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 500M
+          cpus: '0.2'
+        reservations:
+          memory: 200M
+          cpus: '0.1'
+    networks:
+      - monitoring-network
+
+networks:
+  monitoring-network:
+    driver: overlay
+    attachable: true
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

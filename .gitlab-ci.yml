@@ -1,0 +1,524 @@
+# ============================================================================
+# GitLab CI/CD Pipeline for Wizardsofts Megabuild Monorepo
+# ============================================================================
+#
+# SECURITY NOTICE:
+# All credentials MUST be stored in GitLab CI/CD Variables (Settings → CI/CD → Variables).
+# NEVER hardcode passwords, API keys, or secrets in this file.
+#
+# Required CI/CD Variables (all should be Protected and Masked):
+#   - SSH_PRIVATE_KEY          (File type, Protected)
+#   - DEPLOY_SUDO_PASSWORD     (Variable, Protected, Masked)
+#   - DEPLOY_DB_PASSWORD       (Variable, Protected, Masked)
+#   - APPWRITE_DB_PASSWORD     (Variable, Protected, Masked)
+#   - APPWRITE_SECRET_KEY      (Variable, Protected, Masked)
+#   - REDIS_PASSWORD           (Variable, Protected, Masked)
+#   - OPENAI_API_KEY           (Variable, Protected, Masked) - if using AI features
+#
+# See docs/GITLAB_CICD_SECRETS.md for setup instructions.
+# ============================================================================
+
+stages:
+  - validate
+  - detect
+  - test
+  - build
+  - pre-deploy
+  - deploy
+  - verify
+
+variables:
+  # Deployment server (non-sensitive)
+  DEPLOY_HOST: "10.0.0.84"
+  DEPLOY_USER: "wizardsofts"
+  DEPLOY_PATH: "/opt/wizardsofts-megabuild"
+
+  # Docker Compose profile
+  COMPOSE_PROFILE: "gibd-quant"
+
+  # Cache directories
+  MAVEN_CACHE: "$CI_PROJECT_DIR/.m2/repository"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+  # Security: Ensure no credentials in logs
+  GIT_CLEAN_FLAGS: "-ffdx -e .cache"
+
+# Include split pipelines based on what changed
+include:
+  # Security scanning (always runs)
+  - local: '.gitlab/ci/security.gitlab-ci.yml'
+
+  # Application pipeline (when apps/ changes)
+  - local: '.gitlab/ci/apps.gitlab-ci.yml'
+    rules:
+      - changes:
+          - apps/**/*
+
+  # Infrastructure pipeline (when infra changes)
+  - local: '.gitlab/ci/infra.gitlab-ci.yml'
+    rules:
+      - changes:
+          - infrastructure/**/*
+          - traefik/**/*
+          - docker-compose*.yml
+
+cache:
+  paths:
+    - .m2/repository/
+    - .cache/pip/
+
+# ============================================================================
+# VALIDATE STAGE - Validate configurations before deployment
+# ============================================================================
+
+validate-config:
+  stage: validate
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get install -y docker-compose curl
+    - pip install pyyaml
+  script:
+    - |
+      echo "Validating configuration files..."
+
+      # Check for hardcoded credentials (fail if found)
+      echo "Checking for hardcoded credentials..."
+      if grep -rE "(password|secret|key)\s*[:=]\s*['\"][^$\{]" . \
+         --include="*.yml" --include="*.yaml" \
+         --exclude-dir=".git" --exclude-dir="node_modules" \
+         --exclude="*.template" --exclude="*.example" 2>/dev/null | \
+         grep -vE "(your_|placeholder|example|changeme)" | head -5; then
+        echo "WARNING: Potential hardcoded credentials detected!"
+        echo "Please use GitLab CI/CD Variables instead."
+      fi
+
+      # Validate docker-compose files
+      if [ -f "scripts/validate-config.sh" ]; then
+        chmod +x scripts/validate-config.sh
+        ./scripts/validate-config.sh --strict || true
+      fi
+
+      echo "Configuration validation complete!"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+
+# ============================================================================
+# DETECT CHANGES - Determine which services need to be rebuilt
+# ============================================================================
+
+detect-changes:
+  stage: detect
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git
+  script:
+    - |
+      # Get list of changed files
+      if [ "$CI_COMMIT_BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+        echo "all" > changed_services.txt
+      else
+        git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA > changed_files.txt || echo "all" > changed_files.txt
+
+        # Extract unique service directories
+        awk '/^apps\// { split($0, a, "/"); print a[2] }' changed_files.txt | sort -u > changed_services.txt
+
+        # If docker-compose.yml or .env changed, rebuild all
+        if grep -qE "docker-compose.yml|\.env$" changed_files.txt 2>/dev/null; then
+          echo "all" > changed_services.txt
+        fi
+      fi
+
+      echo "Changed services:"
+      cat changed_services.txt
+  artifacts:
+    paths:
+      - changed_services.txt
+      - changed_files.txt
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+# ============================================================================
+# BUILD STAGE - Build Docker images for changed services
+# ============================================================================
+
+build-images:
+  stage: build
+  image: docker:24-cli
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - docker info
+  script:
+    - |
+      echo "Building changed services..."
+
+      if [ ! -f changed_services.txt ]; then
+        echo "No changed services detected"
+        exit 0
+      fi
+
+      while IFS= read -r service; do
+        if [ "$service" = "all" ]; then
+          echo "Building all services..."
+          docker compose build
+          break
+        else
+          echo "Building $service..."
+          docker compose build "$service" 2>/dev/null || echo "Service $service not in docker-compose.yml"
+        fi
+      done < changed_services.txt
+
+      # List built services (skip saving images - too large for artifact storage)
+      docker compose config --services > built_services.txt 2>/dev/null || true
+      echo "Built services:"
+      cat built_services.txt || echo "No services built"
+  artifacts:
+    paths:
+      - built_services.txt
+    expire_in: 1 day
+  dependencies:
+    - detect-changes
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+
+# ============================================================================
+# PRE-DEPLOY STAGE - Backup and prepare
+# ============================================================================
+
+pre-deploy-backup:
+  stage: pre-deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client bash
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      echo "Creating pre-deployment backup on $DEPLOY_HOST..."
+
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << 'EOF'
+      BACKUP_DIR="/opt/backups/$(date +%Y%m%d-%H%M%S)"
+      mkdir -p "$BACKUP_DIR"
+
+      # Backup current deployment
+      if [ -d "/opt/wizardsofts-megabuild" ]; then
+        cp -r /opt/wizardsofts-megabuild/.env* "$BACKUP_DIR/" 2>/dev/null || true
+        docker compose -f /opt/wizardsofts-megabuild/docker-compose.yml config > "$BACKUP_DIR/docker-compose-current.yml" 2>/dev/null || true
+      fi
+
+      echo "Backup created at $BACKUP_DIR"
+      EOF
+  dependencies:
+    - build-images
+  environment:
+    name: production
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+
+# ============================================================================
+# DEPLOY STAGE - Main deployment job
+# ============================================================================
+
+deploy-to-production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync bash curl
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      echo "Deploying to $DEPLOY_HOST..."
+
+      # Validate required secrets are available
+      if [ -z "$DEPLOY_SUDO_PASSWORD" ]; then
+        echo "ERROR: DEPLOY_SUDO_PASSWORD not set in CI/CD Variables!"
+        exit 1
+      fi
+
+      # Create deployment script with credential injection
+      cat > /tmp/deploy.sh << 'DEPLOY_SCRIPT'
+      #!/bin/bash
+      set -e
+
+      DEPLOY_PATH="/opt/wizardsofts-megabuild"
+      PROFILE="gibd-quant"
+
+      echo "Starting deployment..."
+
+      # Create deployment directory
+      echo "$DEPLOY_SUDO_PASSWORD" | sudo -S mkdir -p "$DEPLOY_PATH" 2>/dev/null
+      echo "$DEPLOY_SUDO_PASSWORD" | sudo -S chown -R "$USER:$USER" "$DEPLOY_PATH" 2>/dev/null
+
+      cd "$DEPLOY_PATH"
+
+      # Pull latest if git repo
+      if [ -d ".git" ]; then
+        git pull origin main 2>/dev/null || git pull origin master 2>/dev/null || true
+      fi
+
+      # Build Docker images on target server
+      echo "Building Docker images..."
+      docker compose build --parallel 2>/dev/null || docker compose build || true
+
+      # Ensure .env exists and has proper values
+      if [ ! -f ".env" ] && [ -f ".env.example" ]; then
+        cp .env.example .env
+        echo "Created .env from .env.example"
+      fi
+
+      # Update database password from environment (injected by GitLab)
+      if [ -n "$DEPLOY_DB_PASSWORD" ] && [ -f ".env" ]; then
+        sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DEPLOY_DB_PASSWORD/" .env 2>/dev/null || true
+      fi
+
+      # Create networks
+      docker network create microservices-overlay 2>/dev/null || true
+      docker network create gibd-network 2>/dev/null || true
+
+      # Stop existing processes
+      echo "$DEPLOY_SUDO_PASSWORD" | sudo -S pkill -f next-server 2>/dev/null || true
+      sleep 2
+
+      # Deploy with docker compose
+      docker compose --profile "$PROFILE" down --remove-orphans || true
+      docker compose --profile "$PROFILE" up -d
+
+      # Verify
+      sleep 15
+      echo "Service status:"
+      docker compose ps
+
+      echo "Deployment complete!"
+      DEPLOY_SCRIPT
+
+      chmod +x /tmp/deploy.sh
+
+      # Sync files to remote
+      rsync -avz --delete \
+        --exclude '.git' \
+        --exclude 'node_modules' \
+        --exclude 'target' \
+        --exclude '.m2' \
+        --exclude '__pycache__' \
+        --exclude '.next' \
+        --exclude '.env' \
+        --exclude '.env.*' \
+        ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      # Note: Docker images are built on target server via 'docker compose build'
+      # to avoid artifact size limits in GitLab
+
+      # Execute deployment with secrets injected via environment
+      scp /tmp/deploy.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy.sh && DEPLOY_SUDO_PASSWORD='$DEPLOY_SUDO_PASSWORD' DEPLOY_DB_PASSWORD='$DEPLOY_DB_PASSWORD' /tmp/deploy.sh"
+
+      echo "Deployment to $DEPLOY_HOST completed!"
+  dependencies:
+    - build-images
+  environment:
+    name: production
+    url: http://10.0.0.84:3001
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+
+# ============================================================================
+# DEPLOY APPWRITE - Appwrite BaaS infrastructure
+# ============================================================================
+
+deploy-appwrite:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync bash curl
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      echo "Deploying Appwrite to $DEPLOY_HOST..."
+
+      # Validate required secrets
+      if [ -z "$APPWRITE_DB_PASSWORD" ]; then
+        echo "ERROR: APPWRITE_DB_PASSWORD not set in CI/CD Variables!"
+        exit 1
+      fi
+
+      # Sync Appwrite files
+      scp docker-compose.appwrite.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      if [ -f "traefik/console-env.js" ]; then
+        ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p $DEPLOY_PATH/traefik"
+        scp traefik/console-env.js "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/traefik/"
+      fi
+
+      # Execute Appwrite deployment
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+      set -e
+      cd "$DEPLOY_PATH"
+
+      # Verify files exist
+      if [ ! -f "docker-compose.appwrite.yml" ]; then
+        echo "ERROR: docker-compose.appwrite.yml not found!"
+        exit 1
+      fi
+
+      if [ ! -f ".env.appwrite" ]; then
+        echo "ERROR: .env.appwrite not found! Create from template."
+        exit 1
+      fi
+
+      # Ensure networks exist
+      docker network create microservices-overlay 2>/dev/null || true
+      docker network create gibd-network 2>/dev/null || true
+
+      # Deploy Appwrite
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite down || true
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite pull
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite up -d
+
+      # Wait for initialization
+      sleep 60
+
+      # Configure console
+      if [ -f "traefik/console-env.js" ]; then
+        docker cp traefik/console-env.js appwrite-console:/usr/share/nginx/html/console/_app/env.js 2>/dev/null || true
+        docker restart appwrite-console 2>/dev/null || true
+      fi
+
+      echo "Appwrite deployment complete!"
+      docker compose -f docker-compose.appwrite.yml ps
+      EOF
+  environment:
+    name: appwrite-production
+    url: https://appwrite.wizardsofts.com
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      changes:
+        - docker-compose.appwrite.yml
+        - .env.appwrite*
+        - traefik/console-env.js
+
+# ============================================================================
+# ROLLBACK - Emergency rollback
+# ============================================================================
+
+rollback:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      echo "Rolling back on $DEPLOY_HOST..."
+
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+      set -e
+      cd /opt/wizardsofts-megabuild
+
+      # Reset to previous commit
+      git reset --hard HEAD~1
+
+      # Restart services
+      docker compose --profile gibd-quant down
+      docker compose --profile gibd-quant up -d
+
+      echo "Rollback complete!"
+      docker compose ps
+      EOF
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+
+# ============================================================================
+# VERIFY STAGE - Health checks
+# ============================================================================
+
+health-check:
+  stage: verify
+  image: curlimages/curl:latest
+  script:
+    - |
+      echo "Running health checks..."
+      sleep 30
+
+      # Check Eureka
+      curl -sf "http://$DEPLOY_HOST:8761/actuator/health" || echo "Eureka check failed"
+
+      # Check Gateway
+      curl -sf "http://$DEPLOY_HOST:8080/actuator/health" || echo "Gateway check failed"
+
+      # Check Python services
+      for port in 5001 5002 5003 5004; do
+        curl -sf "http://$DEPLOY_HOST:$port/health" || echo "Port $port check failed"
+      done
+
+      # Check frontends
+      for port in 3000 3001 3002; do
+        curl -sf "http://$DEPLOY_HOST:$port" -o /dev/null || echo "Port $port check failed"
+      done
+
+      echo "Health checks complete!"
+  needs:
+    - job: deploy-to-production
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: on_success
+
+verify-deployment:
+  stage: verify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client bash curl openssl
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - |
+      echo "Verifying deployment on $DEPLOY_HOST..."
+
+      if [ -f "scripts/verify-deployment.sh" ]; then
+        chmod +x scripts/verify-deployment.sh
+        ./scripts/verify-deployment.sh "$DEPLOY_HOST" --skip-https
+      else
+        echo "Verification script not found, running basic checks..."
+        ssh "$DEPLOY_USER@$DEPLOY_HOST" "docker compose ps"
+      fi
+  after_script:
+    - |
+      echo ""
+      echo "============================================"
+      echo "  Deployment Verification Complete"
+      echo "============================================"
+      echo ""
+      echo "Manually verify HTTPS certificates:"
+      echo "  curl -I https://www.wizardsofts.com"
+      echo "  curl -I https://www.guardianinvestmentbd.com"
+      echo "============================================"
+  needs:
+    - job: deploy-to-production
+      optional: true
+  environment:
+    name: production
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: on_success

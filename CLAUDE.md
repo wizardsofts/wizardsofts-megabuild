@@ -1,0 +1,431 @@
+# WizardSofts Megabuild - Claude Code Instructions
+
+## Project Overview
+
+This is a monorepo containing multiple WizardSofts applications and shared infrastructure:
+
+- **Backend Services:** Java Spring microservices (ws-gateway, ws-discovery, ws-company, ws-trades, ws-news)
+- **Frontend Apps:** React/Next.js applications (gibd-quant-web, gibd-news, ws-wizardsofts-web, etc.)
+- **Infrastructure:** Docker Compose configurations for Appwrite, Traefik, monitoring
+
+## Key Directories
+
+- `/apps/` - Application code (each app has its own CLAUDE.md)
+- `/docker-compose.*.yml` - Service orchestration files
+- `/traefik/` - Traefik reverse proxy configuration
+- `/docs/` - Deployment guides and documentation
+
+## Infrastructure Components
+
+### Appwrite (BaaS)
+- **Config:** `docker-compose.appwrite.yml`
+- **Env:** `.env.appwrite`
+- **Domain:** appwrite.wizardsofts.com
+- **Docs:** `docs/APPWRITE_DEPLOYMENT.md`
+- **Memory:** `appwrite-deployment-troubleshooting`
+
+### Traefik (Reverse Proxy)
+- **Config:** `traefik/traefik.yml`, `traefik/dynamic/`
+- **Memories:** `traefik-configuration-guide`, `traefik-network-requirements`, `https-dns-strategy`
+
+### GitLab (Source Control & CI/CD)
+- **Config:** `infrastructure/gitlab/docker-compose.yml`
+- **URL:** http://10.0.0.84:8090
+- **Registry:** http://10.0.0.84:5050
+- **SSH Port:** 2222
+- **Docs:** `docs/GITLAB_DEPLOYMENT.md`
+
+## Server Infrastructure
+
+| Server | IP | Purpose |
+|--------|-----|---------|
+| Server 80 | 10.0.0.80 | GIBD Services |
+| Server 81 | 10.0.0.81 | Database Server |
+| Server 82 | 10.0.0.82 | HPR Server (Monitoring) |
+| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, central monitoring) |
+| Hetzner | 178.63.44.221 | External services |
+
+## Common Tasks
+
+### Deploy Appwrite Changes
+```bash
+cd /opt/wizardsofts-megabuild
+docker-compose -f docker-compose.appwrite.yml --env-file .env.appwrite down
+docker-compose -f docker-compose.appwrite.yml --env-file .env.appwrite up -d
+```
+
+### Check Service Health
+```bash
+docker-compose -f docker-compose.appwrite.yml ps
+curl https://appwrite.wizardsofts.com/v1/health
+```
+
+### View Logs
+```bash
+docker logs appwrite -f --tail 100
+docker logs traefik -f --tail 100
+docker logs gitlab -f --tail 100
+```
+
+### Deploy GitLab Changes
+```bash
+cd /opt/wizardsofts-megabuild/infrastructure/gitlab
+docker-compose down && docker-compose up -d
+```
+
+### Check GitLab Health
+```bash
+docker ps | grep gitlab  # Look for (healthy) status
+docker exec gitlab gitlab-ctl status  # Check internal services
+curl http://10.0.0.84:8090/-/readiness  # Check readiness endpoint
+```
+
+### Server 82 Metrics Exporters
+```bash
+# SSH into server 82
+ssh wizardsofts@10.0.0.82
+
+# Check exporters status
+cd ~/server-82 && docker compose ps
+
+# Check resource usage
+docker stats --no-stream
+
+# Check metrics endpoints
+curl http://10.0.0.82:9100/metrics  # Node Exporter
+curl http://10.0.0.82:8080/metrics  # cAdvisor
+
+# View dashboards on central Grafana (server 84)
+# http://10.0.0.84:3002 - Look for "Server 82" folder
+```
+
+### fail2ban Security (Server 84)
+```bash
+# Check fail2ban status
+ssh wizardsofts@10.0.0.84 "sudo fail2ban-client status sshd"
+
+# View banned IPs
+ssh wizardsofts@10.0.0.84 "sudo fail2ban-client status sshd | grep 'Banned IP list'"
+
+# Unban specific IP
+ssh wizardsofts@10.0.0.84 "sudo fail2ban-client set sshd unbanip IP_ADDRESS"
+
+# View recent ban activity
+ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
+
+# See docs/FAIL2BAN_SETUP.md for full guide
+```
+
+## Recent Changes (2025-12-30/31 - 2026-01-01)
+
+### fail2ban Intrusion Prevention Deployed (2026-01-01)
+- **Server**: 10.0.0.84 (HP Production)
+- **Changes**:
+  - Installed fail2ban for automated intrusion prevention
+  - Configured SSH jail with 1-hour ban time for 5+ failed attempts
+  - Disabled SSH password authentication (keys only)
+  - Disabled root SSH login (must use sudo)
+  - Whitelisted local network (10.0.0.0/24)
+  - Created setup script: `scripts/setup-fail2ban-server84.sh`
+  - Created comprehensive guide: `docs/FAIL2BAN_SETUP.md`
+  - Updated security monitoring docs: `docs/SECURITY_MONITORING.md`
+- **Security Impact**:
+  - Automatic IP banning for brute force attempts
+  - Eliminated password-based SSH attacks
+  - Server 84 failed login alerts reduced to informational only
+- **Configuration**:
+  - Ban time: 1 hour (3600 seconds)
+  - Max retries: 5 attempts in 10 minutes
+  - Protected service: SSH (port 22)
+- **Next Steps**:
+  - Deploy to Server 80, 81, 82 (pending)
+  - Consider Prometheus exporter for fail2ban metrics
+- **Documentation**: `docs/FAIL2BAN_SETUP.md`
+
+### Server 82 Metrics Exporters Deployed with Full Security Hardening (2025-12-31)
+- **Server**: 10.0.0.82 (hpr, Ubuntu 24.04.3 LTS)
+- **Changes**:
+  - Installed Docker 29.1.3 and Docker Compose v5.0.0
+  - Configured UFW firewall (local network access only)
+  - Deployed metrics exporters: Node Exporter, cAdvisor
+  - Removed Grafana (using central Grafana on server 84)
+  - Integrated with central Prometheus on server 84
+  - Created comprehensive documentation: `docs/SERVER_82_DEPLOYMENT.md`
+- **Security Hardening**:
+  - All services restricted to local network (10.0.0.0/24)
+  - Memory limits: 256MB (node-exporter), 512MB (cAdvisor)
+  - CPU limits: 0.5 cores (node-exporter), 1.0 core (cAdvisor)
+  - Read-only root filesystem on node-exporter
+  - All capabilities dropped except SYS_TIME
+  - no-new-privileges enabled on all containers
+- **Laptop Configuration**:
+  - Configured lid close to be ignored (HandleLidSwitch=ignore)
+  - Server will continue running when laptop lid is closed
+- **Dashboards**: Available on central Grafana at http://10.0.0.84:3002
+- **Lessons Learned**:
+  - Use central Grafana/Prometheus instead of per-server instances
+  - Always apply resource limits to prevent resource exhaustion
+  - Laptops used as servers need lid close handling configured
+
+### GitLab Health Check Fixed (2025-12-31)
+- **Issue:** GitLab container showing "unhealthy" with 1500+ failing streak
+- **Root Cause:** Health check was using `http://localhost/-/health` (port 80) but GitLab is configured to listen on port 8090
+- **Fix:** Updated health check to `http://localhost:8090/-/health`
+- **Lesson Learned:** When using non-standard ports in `external_url`, ensure health checks match the configured port
+
+### Appwrite Deployment Fixed (2025-12-30)
+- Fixed invalid entrypoints (schedule -> schedule-functions, etc.)
+- Added missing `_APP_DOMAIN_TARGET_CNAME` environment variable
+- Removed restrictive container security settings causing permission errors
+- Enabled signup whitelist to block public registration
+
+### Critical Security Incident Remediation (2025-12-31)
+- **Incident:** Cryptocurrency mining malware injected via CVE-2025-66478 (Next.js RCE)
+- **Root Cause:** Outdated Next.js 15.5.4 with unpatched remote code execution vulnerability
+- **Full Details:** See `docs/SECURITY_IMPROVEMENTS_CHANGELOG.md`
+
+**Changes Made:**
+1. Updated Next.js to 15.5.7 (patched version)
+2. Added rate limiting to all FastAPI services (slowapi)
+3. Added input validation (regex patterns, SQL injection prevention)
+4. Added API key authentication for Spring Boot write operations
+5. Added security headers via Traefik middleware
+6. Hardened containers (no-new-privileges, memory limits, Redis auth)
+7. Added Prometheus security alerting rules
+
+**Lessons Learned:**
+- Always keep dependencies updated, especially web frameworks
+- Rate limiting is essential for all public APIs
+- Input validation must block dangerous patterns (SQL injection, path traversal)
+- Container security options should be enabled by default
+
+## Security Guidelines
+
+### Mandatory Security Practices
+
+1. **Dependency Updates:** Check for security advisories weekly
+   ```bash
+   npm audit --audit-level=high
+   pip-audit -r requirements.txt
+   mvn org.owasp:dependency-check-maven:check
+   ```
+
+2. **Rate Limiting:** All public endpoints MUST have rate limits
+   - FastAPI: Use `slowapi` with `@limiter.limit("N/minute")`
+   - Spring Boot: Configure via `spring-cloud-gateway` or custom filter
+
+3. **Input Validation:** Never trust user input
+   - Ticker symbols: `^[A-Z0-9]{1,10}$`
+   - Block dangerous patterns: `--`, `;`, `DROP`, `DELETE`, `EXEC`
+   - Validate file paths for traversal: no `..` or `/`
+
+4. **API Authentication:**
+   - All write operations require `X-API-Key` header
+   - API key stored in `${API_KEY}` environment variable
+   - Never hardcode credentials in code
+
+5. **Container Security:**
+   - Always use `security_opt: [no-new-privileges:true]`
+   - Set memory limits for all containers
+   - Run as non-root user when possible
+
+6. **Before Any Code Change:**
+   - Run `gitleaks detect --source=.` to check for secrets
+   - Verify dependencies with security scanners
+   - Test rate limiting is not bypassed
+
+### Security Documentation
+- [SECURITY_IMPROVEMENTS_CHANGELOG.md](docs/SECURITY_IMPROVEMENTS_CHANGELOG.md) - Full change history
+- [SECURITY_MONITORING.md](docs/SECURITY_MONITORING.md) - Prometheus alerts and monitoring
+- [GITLAB_CICD_SECRETS.md](docs/GITLAB_CICD_SECRETS.md) - Credential management
+
+## Git Worktree Workflow - MANDATORY (Parallel Agent Support)
+
+**CRITICAL**: Direct pushes to `master` are BLOCKED. All changes must go through merge requests.
+
+### Why Worktrees?
+Git worktrees allow multiple agents to work on different branches **simultaneously** without conflicts. Each agent gets its own isolated working directory.
+
+### Worktree Directory Structure
+```
+/Users/mashfiqurrahman/Workspace/
+├── wizardsofts-megabuild/                    # Main repo (master)
+└── wizardsofts-megabuild-worktrees/          # Worktrees directory
+    ├── feature-add-auth/                     # Agent 1 working here
+    ├── fix-security-issue/                   # Agent 2 working here
+    └── infra-update-traefik/                 # Agent 3 working here
+```
+
+### Starting Any New Task (Worktree Method - PREFERRED)
+
+```bash
+# 1. Ensure master is up to date
+cd /Users/mashfiqurrahman/Workspace/wizardsofts-megabuild
+git fetch gitlab
+git checkout master
+git pull gitlab master
+
+# 2. Create worktree directory if it doesn't exist
+mkdir -p ../wizardsofts-megabuild-worktrees
+
+# 3. Create a new worktree with feature branch
+git worktree add ../wizardsofts-megabuild-worktrees/feature-name -b feature/task-description
+
+# 4. Work in the worktree directory
+cd ../wizardsofts-megabuild-worktrees/feature-name
+
+# 5. Make your changes, then commit
+git add .
+git commit -m "feat: implement feature description
+
+Detailed explanation of changes
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+
+# 6. Push to feature branch
+git push gitlab feature/task-description
+
+# 7. When done, clean up worktree (from main repo)
+cd /Users/mashfiqurrahman/Workspace/wizardsofts-megabuild
+git worktree remove ../wizardsofts-megabuild-worktrees/feature-name
+```
+
+### Alternative: Simple Branch Method (Single Agent)
+
+```bash
+# If only one agent is working, simple branching works too
+git checkout -b feature/task-description
+# ... make changes ...
+git push gitlab feature/task-description
+```
+
+### Managing Worktrees
+
+```bash
+# List all worktrees
+git worktree list
+
+# Remove a worktree after merging
+git worktree remove ../wizardsofts-megabuild-worktrees/feature-name
+
+# Prune stale worktree references
+git worktree prune
+```
+
+### Branch Naming Conventions
+
+| Type | Format | Example |
+|------|--------|---------|
+| Feature | `feature/<description>` | `feature/add-auth` |
+| Bug Fix | `fix/<description>` | `fix/login-error` |
+| Hotfix | `hotfix/<description>` | `hotfix/security-patch` |
+| Infrastructure | `infra/<description>` | `infra/update-traefik` |
+| Documentation | `docs/<description>` | `docs/update-readme` |
+| Refactor | `refactor/<description>` | `refactor/signal-service` |
+| Security | `security/<description>` | `security/add-rate-limiting` |
+
+### NEVER DO
+- ❌ `git push origin master` - Direct push to master is BLOCKED
+- ❌ `git push -f origin master` - Force push to master
+- ❌ Work directly on master branch
+- ❌ Start coding without creating a feature branch first
+
+### ALWAYS DO
+- ✅ Create a feature branch BEFORE any code changes
+- ✅ Push to feature branch only
+- ✅ Create merge request in GitLab
+- ✅ Wait for CI/CD pipeline to pass
+- ✅ Request review if required
+
+### Reference
+- Full documentation: [docs/GITLAB_BRANCH_PROTECTION.md](docs/GITLAB_BRANCH_PROTECTION.md)
+
+## Credentials
+
+Stored in `.env.appwrite` (not in git). Key variables:
+- `_APP_OPENSSL_KEY_V1`
+- `_APP_SECRET`
+- `_APP_DB_PASS`
+- `_APP_EXECUTOR_SECRET`
+
+## Troubleshooting
+
+1. Check Serena memories: `appwrite-deployment-troubleshooting`, `traefik-*`, `gitlab-*`
+2. Review docs in `/docs/` directory
+3. Check container logs with `docker logs <container-name>`
+
+### GitLab Troubleshooting
+
+**Container shows "unhealthy":**
+1. Check health check output: `docker inspect --format='{{json .State.Health}}' gitlab`
+2. Verify the health check port matches `external_url` in GITLAB_OMNIBUS_CONFIG
+3. Check internal services: `docker exec gitlab gitlab-ctl status`
+4. Review logs: `docker logs gitlab --tail 200`
+
+**GitLab not accessible:**
+1. Verify ports are exposed: `docker ps | grep gitlab`
+2. Check nginx inside container: `docker exec gitlab gitlab-ctl status nginx`
+3. Test from server: `curl http://localhost:8090/-/readiness`
+
+**Database connection issues:**
+1. Verify PostgreSQL is running: `docker ps | grep postgres`
+2. Check GitLab can reach DB: `docker exec gitlab gitlab-rake gitlab:check`
+
+## Pending Tasks: WS Gateway OAuth2 Implementation
+
+> **IMPORTANT:** Review this section at the start of each session. Complete these tasks before deploying ws-gateway to production.
+
+**Status:** Implementation complete, pending verification and deployment
+**Handoff Document:** [docs/WS_GATEWAY_HANDOFF.md](docs/WS_GATEWAY_HANDOFF.md)
+**Serena Memory:** `ws-gateway-pending-tasks`
+
+### High Priority
+1. **Build Verification** - Maven cache was corrupted; run `./mvnw clean compile -U` in ws-gateway
+2. **Push to Remote** - ws-gateway has 10+ unpushed commits
+3. **Run Tests** - Execute `./mvnw test` to verify integration tests pass
+
+### Medium Priority
+4. **Frontend OIDC** - Integrate NextAuth with Keycloak in gibd-quant-web
+5. **Deploy Keycloak** - Start Keycloak container on HP Server (10.0.0.84)
+
+### Low Priority
+6. **Commit Untracked Docs** - 6 documentation files in docs/ directory
+
+### Quick Reference
+```bash
+# Verify build
+cd apps/ws-gateway && ./mvnw clean compile -U
+
+# Push commits
+cd apps/ws-gateway && git push origin master
+cd /path/to/megabuild && git push origin master
+
+# Run tests
+cd apps/ws-gateway && ./mvnw test
+
+# Deploy Keycloak
+cd infrastructure/keycloak && docker-compose up -d
+```
+
+For detailed instructions, see [docs/WS_GATEWAY_HANDOFF.md](docs/WS_GATEWAY_HANDOFF.md).
+
+---
+
+## Browser Automation (Playwright MCP)
+
+**Default to headless mode** for all browser automation tasks. Only use headed mode when human interaction is required.
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless"]
+    }
+  }
+}
+```
+
+For detailed configuration options and best practices, see [AGENT_GUIDELINES.md](AGENT_GUIDELINES.md#-browser-automation-playwright-mcp)

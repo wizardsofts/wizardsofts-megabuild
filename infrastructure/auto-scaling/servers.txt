@@ -1,0 +1,42 @@
+# Server Inventory for Auto-Scaling Platform
+# Generated on: October 18, 2025
+
+## Server Configuration
+
+### Control Server (Server 1)
+- Host: 10.0.0.80
+- Name: server1
+- SSH User: wizardsofts
+- SSH Port: 22
+- Role: control
+
+### Server 2
+- Host: 10.0.0.81
+- Name: server2
+- SSH User: wizardsofts
+- SSH Port: 22
+- Role: worker
+
+### Server 3 (Special Configuration)
+- Host: 10.0.0.82
+- Name: server3
+- SSH User: deploy
+- SSH Port: 2025
+- Role: worker
+
+### Server 4
+- Host: 10.0.0.84
+- Name: server4
+- SSH User: wizardsofts
+- SSH Port: 22
+- Role: worker
+
+## Network Information
+- Network: 10.0.0.x/24
+- All servers on same local network
+- SSH access already configured as known hosts
+
+## Specifications
+- Target: 4 servers for Docker autoscaling
+- Primary use case: Ollama AI model server
+- Business hours scaling: 9 AM - 5 PM

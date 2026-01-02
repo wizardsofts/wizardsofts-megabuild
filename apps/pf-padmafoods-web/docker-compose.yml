@@ -1,0 +1,32 @@
+services:
+  frontend:
+    build: .
+    container_name: pf-padmafoods-web
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pf-padmafoods-web.rule=Host(`mypadmafoods.com`) || Host(`www.mypadmafoods.com`)"
+      - "traefik.http.routers.pf-padmafoods-web.entrypoints=websecure"
+      - "traefik.http.routers.pf-padmafoods-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.pf-padmafoods-web.loadbalancer.server.port=3000"
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1G
+    networks:
+      - microservices-overlay
+
+networks:
+  microservices-overlay:
+    external: true

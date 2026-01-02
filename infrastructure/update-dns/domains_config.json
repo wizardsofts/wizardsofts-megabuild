@@ -1,0 +1,18 @@
+[
+  {
+    "domain": "dailydeenguide.com.",
+    "hosted_zone_id": "Z05973601H6LWFYYAF1V8"
+  },
+  {
+    "domain": "api.dailydeenguide.com.",
+    "hosted_zone_id": "Z05973601H6LWFYYAF1V8"
+  },
+  {
+    "domain": "vpn.wizardsofts.com.",
+    "hosted_zone_id": "Z0827735AG3KZO7P559U"
+  },
+  {
+    "domain": "wizardsofts.com.",
+    "hosted_zone_id": "Z0827735AG3KZO7P559U"
+  }
+]

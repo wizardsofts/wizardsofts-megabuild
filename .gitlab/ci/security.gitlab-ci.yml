@@ -1,0 +1,270 @@
+# ============================================================================
+# SECURITY SCANNING CI/CD PIPELINE
+# ============================================================================
+# This pipeline handles security scanning for the codebase.
+# Runs on all merge requests and main branch commits.
+# ============================================================================
+
+# ============================================================================
+# SECRET DETECTION - Prevent credential leaks
+# ============================================================================
+
+secret-detection:
+  stage: validate
+  image:
+    name: trufflesecurity/trufflehog:latest
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+  script:
+    - |
+      echo "Scanning for secrets in codebase..."
+
+      # Create exclude patterns from .trufflehogignore
+      EXCLUDE_ARGS=""
+      if [ -f ".trufflehogignore" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+          # Skip comments and empty lines
+          case "$line" in
+            \#*|"") continue ;;
+          esac
+          EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude-paths=$line"
+        done < .trufflehogignore
+      fi
+
+      # Scan for secrets (will exit with error if found)
+      trufflehog filesystem . \
+        --fail \
+        --no-update \
+        $EXCLUDE_ARGS \
+        --json > secrets-report.json 2>&1 || {
+          echo "WARNING: Potential secrets detected!"
+          cat secrets-report.json
+          exit 1
+        }
+
+      echo "No secrets detected!"
+  # Secret detection is critical - must pass for pipeline to succeed
+  allow_failure: false
+  artifacts:
+    paths:
+      - secrets-report.json
+    expire_in: 1 week
+    when: on_failure
+
+gitleaks-scan:
+  stage: validate
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+  script:
+    - |
+      echo "Running Gitleaks secret scan..."
+
+      # Use .gitleaksignore if it exists
+      IGNORE_FLAG=""
+      if [ -f ".gitleaksignore" ]; then
+        IGNORE_FLAG="--gitleaks-ignore-path=.gitleaksignore"
+      fi
+
+      gitleaks detect \
+        --source=. \
+        --verbose \
+        $IGNORE_FLAG \
+        --report-format=json \
+        --report-path=gitleaks-report.json || {
+          echo "WARNING: Gitleaks found potential secrets!"
+          cat gitleaks-report.json
+          exit 1
+        }
+
+      echo "Gitleaks scan complete - no secrets found!"
+  # Secret detection is critical - must pass for pipeline to succeed
+  allow_failure: false
+  artifacts:
+    paths:
+      - gitleaks-report.json
+    expire_in: 1 week
+    when: always
+
+# ============================================================================
+# DEPENDENCY SCANNING - Check for vulnerable dependencies
+# ============================================================================
+
+dependency-scan-python:
+  stage: test
+  image: python:3.11-slim
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "**/*.py"
+        - "**/requirements*.txt"
+        - "**/pyproject.toml"
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+  script:
+    - |
+      echo "Scanning Python dependencies for vulnerabilities..."
+      pip install pip-audit safety
+
+      # Find and scan all Python projects
+      find . -name "requirements*.txt" -o -name "pyproject.toml" | while read file; do
+        dir=$(dirname "$file")
+        echo "Scanning $dir..."
+
+        if [ -f "$dir/requirements.txt" ]; then
+          pip-audit -r "$dir/requirements.txt" --ignore-vuln GHSA-1234 2>/dev/null || echo "Issues found in $dir"
+        fi
+      done
+
+      echo "Python dependency scan complete!"
+  allow_failure: true
+
+dependency-scan-node:
+  stage: test
+  image: node:20-alpine
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "**/package.json"
+        - "**/package-lock.json"
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+  script:
+    - |
+      echo "Scanning Node.js dependencies for vulnerabilities..."
+
+      # Find and scan all Node.js projects
+      find . -name "package.json" -not -path "*/node_modules/*" | while read file; do
+        dir=$(dirname "$file")
+        echo "Scanning $dir..."
+
+        cd "$dir"
+        npm audit --audit-level=high 2>/dev/null || echo "Issues found in $dir"
+        cd - > /dev/null
+      done
+
+      echo "Node.js dependency scan complete!"
+  allow_failure: true
+
+dependency-scan-java:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - "**/pom.xml"
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+  script:
+    - |
+      echo "Scanning Java dependencies for vulnerabilities..."
+
+      # Find and scan all Maven projects
+      find . -name "pom.xml" -not -path "*/target/*" | while read file; do
+        dir=$(dirname "$file")
+        echo "Scanning $dir..."
+
+        cd "$dir"
+        mvn org.owasp:dependency-check-maven:check -DskipTests -q 2>/dev/null || echo "Issues found in $dir"
+        cd - > /dev/null
+      done
+
+      echo "Java dependency scan complete!"
+  allow_failure: true
+
+# ============================================================================
+# CONTAINER SCANNING - Scan Docker images for vulnerabilities
+# ============================================================================
+
+container-scan:
+  stage: test
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  services:
+    - docker:24-dind
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+  script:
+    - |
+      echo "Scanning Docker images for vulnerabilities..."
+
+      # Scan Dockerfiles for misconfigurations
+      trivy config . --severity HIGH,CRITICAL
+
+      # If images are built, scan them
+      if [ -f "app-images.tar" ]; then
+        trivy image --input app-images.tar --severity HIGH,CRITICAL
+      fi
+
+      echo "Container scan complete!"
+  allow_failure: true
+  # Note: If build-app-images job is added in the future, uncomment:
+  # needs:
+  #   - job: build-app-images
+  #     optional: true
+  #     artifacts: true
+
+# ============================================================================
+# SAST - Static Application Security Testing
+# ============================================================================
+
+sast-semgrep:
+  stage: test
+  image:
+    name: returntocorp/semgrep:latest
+    entrypoint: [""]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+  script:
+    - |
+      echo "Running Semgrep SAST scan..."
+
+      semgrep scan \
+        --config=auto \
+        --error \
+        --json \
+        --output=semgrep-report.json \
+        . || {
+          echo "Semgrep found security issues!"
+          cat semgrep-report.json
+        }
+
+      echo "Semgrep scan complete!"
+  artifacts:
+    paths:
+      - semgrep-report.json
+    expire_in: 1 week
+    when: always
+  allow_failure: true
+
+# ============================================================================
+# LICENSE COMPLIANCE
+# ============================================================================
+
+license-scan:
+  stage: test
+  image: node:20-alpine
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+  script:
+    - |
+      echo "Scanning for license compliance..."
+      npm install -g license-checker
+
+      # Scan each Node.js project
+      find . -name "package.json" -not -path "*/node_modules/*" | while read file; do
+        dir=$(dirname "$file")
+        echo "Checking licenses in $dir..."
+
+        cd "$dir"
+        npm install --legacy-peer-deps --silent 2>/dev/null || true
+        license-checker --summary 2>/dev/null || true
+        cd - > /dev/null
+      done
+
+      echo "License scan complete!"
+  allow_failure: true

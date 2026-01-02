@@ -1,0 +1,5 @@
+apiVersion: 1
+
+# Set the default home dashboard for all users
+preferences:
+  homeDashboardUID: executive-overview

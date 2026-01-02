@@ -1,0 +1,34 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.standalone
+    container_name: gibd-quant-web
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gibd-quant-web.rule=Host(`guardianinvestmentbd.com`) || Host(`www.guardianinvestmentbd.com`)"
+      - "traefik.http.routers.gibd-quant-web.entrypoints=websecure"
+      - "traefik.http.routers.gibd-quant-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gibd-quant-web.loadbalancer.server.port=3000"
+    environment:
+      - NODE_ENV=production
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1G
+    networks:
+      - microservices-overlay
+
+networks:
+  microservices-overlay:
+    external: true

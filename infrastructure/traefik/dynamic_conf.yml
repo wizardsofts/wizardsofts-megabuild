@@ -1,0 +1,388 @@
+http:
+  routers:
+    # ========================================================================
+    # TRAEFIK DASHBOARD
+    # ========================================================================
+    dashboard:
+      rule: Host(`traefik.wizardsofts.com`) || Host(`traefik.localhost`) || Host(`10.0.0.84`)
+      service: api@internal
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - dashboard-auth
+
+    # ========================================================================
+    # WEB APPLICATIONS - Domain-based routing
+    # ========================================================================
+
+    # Wizardsofts.com - Corporate Website
+    wizardsofts-web:
+      rule: Host(`www.wizardsofts.com`)
+      service: wizardsofts-web
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - rate-limit
+        - security-headers
+
+    # Daily Deen Guide - Independent Website
+    dailydeen-web:
+      rule: Host(`dailydeenguide.com`) || Host(`www.dailydeenguide.com`)
+      service: dailydeen-web
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - rate-limit
+        - security-headers
+
+    # Guardian Investment BD / Quant-Flow
+    quant-web:
+      rule: Host(`www.guardianinvestmentbd.com`) || Host(`guardianinvestmentbd.com`)
+      service: quant-web
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - rate-limit
+        - security-headers
+
+    # My Padma Foods - Coming Soon
+    pf-padmafoods-web:
+      rule: Host(`mypadmafoods.com`) || Host(`www.mypadmafoods.com`)
+      service: pf-padmafoods-web
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - rate-limit
+        - security-headers
+
+    # ========================================================================
+    # IP-BASED ROUTING (for testing before DNS)
+    # ========================================================================
+
+    # Wizardsofts via IP
+    wizardsofts-web-ip:
+      rule: Host(`10.0.0.84`) && PathPrefix(`/wizardsofts`)
+      service: wizardsofts-web
+      entryPoints:
+        - web
+        - websecure
+      middlewares:
+        - strip-wizardsofts-prefix
+
+    # Daily Deen via IP
+    dailydeen-web-ip:
+      rule: Host(`10.0.0.84`) && PathPrefix(`/dailydeen`)
+      service: dailydeen-web
+      entryPoints:
+        - web
+        - websecure
+      middlewares:
+        - strip-dailydeen-prefix
+
+    # Quant-Flow via IP
+    quant-web-ip:
+      rule: Host(`10.0.0.84`) && PathPrefix(`/quant`)
+      service: quant-web
+      entryPoints:
+        - web
+        - websecure
+      middlewares:
+        - strip-quant-prefix
+
+    # Padma Foods via IP
+    pf-padmafoods-web-ip:
+      rule: Host(`10.0.0.84`) && PathPrefix(`/padmafoods`)
+      service: pf-padmafoods-web
+      entryPoints:
+        - web
+        - websecure
+      middlewares:
+        - strip-padmafoods-prefix
+
+    # ========================================================================
+    # SHARED SERVICES - Appwrite BaaS Platform
+    # ========================================================================
+
+    # Appwrite - Self-hosted Backend-as-a-Service (BondWala, GIBD, etc.)
+    appwrite:
+      rule: Host(`appwrite.wizardsofts.com`) || Host(`appwrite.bondwala.com`)
+      service: appwrite
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - appwrite-rate-limit
+        - appwrite-cors
+        - appwrite-security-headers
+
+    # Appwrite Realtime (WebSocket) - Live Updates
+    appwrite-realtime:
+      rule: (Host(`appwrite.wizardsofts.com`) || Host(`appwrite.bondwala.com`)) && PathPrefix(`/v1/realtime`)
+      service: appwrite-realtime
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+
+    # ========================================================================
+    # INFRASTRUCTURE SERVICES
+    # ========================================================================
+
+    # API Gateway
+    api-gateway:
+      rule: Host(`api.wizardsofts.com`)
+      service: api-gateway
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - rate-limit
+        - security-headers
+
+    # Eureka Service Discovery
+    eureka:
+      rule: Host(`eureka.wizardsofts.com`)
+      service: eureka
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - admin-auth
+
+    # ========================================================================
+    # MAILCOW EMAIL SERVER
+    # ========================================================================
+
+    # Mailcow ACME Challenge (HTTP)
+    mailcow-acme:
+      rule: PathPrefix(`/.well-known/acme-challenge/`)
+      service: mailcow-http
+      entryPoints:
+        - web
+      priority: 1000
+
+    # HTTP Catch-all redirect to HTTPS (low priority fallback)
+    http-catchall:
+      rule: "HostRegexp(`{host:.+}`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      service: noop-service
+      priority: 1
+
+  # ==========================================================================
+  # MIDDLEWARES
+  # ==========================================================================
+
+  middlewares:
+    # Basic Authentication for Admin Interfaces
+    admin-auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$hGZ8qHVz$xMvCb3QLm3ZnFnJlpZFT5."
+
+    # Basic Authentication for Traefik Dashboard
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "admin:$apr1$2I40dvBH$UxIJnwsA1a5PAJjGzV2Fd1"
+
+    # Rate Limiting (100 req/s average, 50 burst)
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    # SECURITY: Global security headers for all web applications
+    security-headers:
+      headers:
+        # Prevent MIME-sniffing attacks
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          # Prevent clickjacking attacks
+          X-Frame-Options: "SAMEORIGIN"
+          # Enable XSS filter in browsers
+          X-XSS-Protection: "1; mode=block"
+          # Enforce HTTPS for 1 year
+          Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+          # Control referrer information
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          # Restrict browser features
+          Permissions-Policy: "geolocation=(), microphone=(), camera=(), payment=()"
+          # Content Security Policy - adjust as needed per site
+          Content-Security-Policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://api.wizardsofts.com https://appwrite.wizardsofts.com; frame-ancestors 'self'"
+        # Ensure HTTPS is used for forwarding
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+
+    # Redirect HTTP to HTTPS
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # Path prefix stripping for IP-based access
+    strip-wizardsofts-prefix:
+      stripPrefix:
+        prefixes:
+          - "/wizardsofts"
+
+    strip-dailydeen-prefix:
+      stripPrefix:
+        prefixes:
+          - "/dailydeen"
+
+    strip-quant-prefix:
+      stripPrefix:
+        prefixes:
+          - "/quant"
+
+    strip-padmafoods-prefix:
+      stripPrefix:
+        prefixes:
+          - "/padmafoods"
+
+    # Appwrite Rate Limiting (60 req/min per IP)
+    appwrite-rate-limit:
+      rateLimit:
+        average: 60
+        burst: 100
+        period: 1m
+
+    # Appwrite CORS for Mobile Apps and Web
+    appwrite-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - X-Appwrite-Project
+          - X-Appwrite-Key
+          - X-Appwrite-Response-Format
+          - X-Appwrite-Locale
+          - Authorization
+        accessControlAllowOriginList:
+          - "https://wizardsofts.com"
+          - "https://*.wizardsofts.com"
+          - "https://bondwala.com"
+          - "https://*.bondwala.com"
+          - "https://guardianinvestmentbd.com"
+          - "https://*.guardianinvestmentbd.com"
+          - "https://dailydeenguide.com"
+          - "https://*.dailydeenguide.com"
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+
+    # Security Headers for Appwrite
+    appwrite-security-headers:
+      headers:
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          X-XSS-Protection: "1; mode=block"
+          Strict-Transport-Security: "max-age=31536000; includeSubDomains; preload"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+
+  # ==========================================================================
+  # SERVICES
+  # ==========================================================================
+
+  services:
+    # Web Applications
+    wizardsofts-web:
+      loadBalancer:
+        servers:
+          - url: "http://ws-wizardsofts-web:3000"
+
+    dailydeen-web:
+      loadBalancer:
+        servers:
+          - url: "http://daily-deen-guide-frontend:3000"
+
+    quant-web:
+      loadBalancer:
+        servers:
+          - url: "http://gibd-quant-web:3000"
+
+    pf-padmafoods-web:
+      loadBalancer:
+        servers:
+          - url: "http://pf-padmafoods-web:3000"
+
+    # Infrastructure Services
+    api-gateway:
+      loadBalancer:
+        servers:
+          - url: "http://ws-gateway:8080"
+
+    eureka:
+      loadBalancer:
+        servers:
+          - url: "http://ws-discovery:8761"
+
+    # Mailcow (using internal ports when behind Traefik reverse proxy)
+    mailcow-http:
+      loadBalancer:
+        servers:
+          - url: "http://nginx-mailcow:10080"
+
+    # Noop service for HTTP catchall redirect
+    noop-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1"
+
+    # BondWala Services
+    appwrite:
+      loadBalancer:
+        servers:
+          - url: "http://appwrite:80"
+
+    appwrite-realtime:
+      loadBalancer:
+        servers:
+          - url: "http://appwrite-realtime:80"
+
+# ============================================================================
+# TCP ROUTERS (for TLS passthrough)
+# ============================================================================
+
+tcp:
+  routers:
+    # Mailcow UI (HTTPS with TLS passthrough)
+    # Added mail.mypadmafoods.com and mail.guardianinvestmentbd.com
+    mailcow-ui:
+      rule: HostSNI(`mail.wizardsofts.com`) || HostSNI(`mail.dailydeenguide.com`) || HostSNI(`mail.mypadmafoods.com`) || HostSNI(`mail.guardianinvestmentbd.com`)
+      service: mailcow-https
+      entryPoints:
+        - websecure
+      tls:
+        passthrough: true
+
+  services:
+    mailcow-https:
+      loadBalancer:
+        servers:
+          - address: "nginx-mailcow:10443"

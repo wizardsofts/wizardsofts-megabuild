@@ -1,0 +1,490 @@
+{
+  "comparison_date": "2026-01-01",
+  "orchestration_options": [
+    {
+      "name": "Docker Swarm",
+      "recommended": true,
+      "score": 95,
+      "summary": "Native Docker clustering with built-in service discovery, load balancing, and encrypted networking",
+      "pros": [
+        "Native Docker integration (no new tools)",
+        "Built-in service discovery (DNS-based)",
+        "Encrypted overlay networks (AES by default)",
+        "Load balancing (routing mesh)",
+        "Secrets management (encrypted)",
+        "Rolling updates (zero downtime)",
+        "Simple to learn and operate",
+        "Low overhead (~100 MB RAM per node)",
+        "Works with existing docker-compose.yml"
+      ],
+      "cons": [
+        "Less ecosystem than Kubernetes",
+        "No built-in monitoring dashboard",
+        "Smaller community"
+      ],
+      "resource_overhead": {
+        "ram_per_node_mb": 100,
+        "cpu_overhead_percent": 5
+      },
+      "learning_curve": "low",
+      "best_for": "Small teams, local infrastructure, existing Docker setup",
+      "setup_time_days": 7,
+      "migration_complexity": "medium",
+      "features": {
+        "service_discovery": true,
+        "load_balancing": true,
+        "auto_scaling": false,
+        "secrets_management": true,
+        "network_encryption": true,
+        "rolling_updates": true,
+        "health_checks": true,
+        "multi_host": true,
+        "compose_compatibility": true
+      },
+      "security": {
+        "network_encryption": "AES-GCM (IPSec)",
+        "node_authentication": "Mutual TLS",
+        "secrets_encryption": "Encrypted at rest and in transit",
+        "rbac": "Limited (basic roles)"
+      },
+      "performance": {
+        "network_latency_overhead_ms": 0.5,
+        "load_balancing_cpu_overhead_percent": 5,
+        "service_discovery_method": "DNS round-robin or VIP"
+      }
+    },
+    {
+      "name": "K3s (Lightweight Kubernetes)",
+      "recommended": false,
+      "score": 75,
+      "summary": "Lightweight Kubernetes distribution designed for edge and IoT",
+      "pros": [
+        "Industry standard (Kubernetes)",
+        "Rich ecosystem (Helm charts, operators)",
+        "Advanced features (HPA, network policies)",
+        "Better for future scaling",
+        "Declarative configuration (GitOps ready)"
+      ],
+      "cons": [
+        "Steep learning curve",
+        "Higher resource overhead (~1 GB RAM per node)",
+        "More complex to troubleshoot",
+        "Requires converting docker-compose to Kubernetes manifests",
+        "Overkill for 4-5 servers"
+      ],
+      "resource_overhead": {
+        "ram_per_node_mb": 1024,
+        "cpu_overhead_percent": 10
+      },
+      "learning_curve": "high",
+      "best_for": "Organizations planning to scale to 10+ servers or need advanced features",
+      "setup_time_days": 21,
+      "migration_complexity": "high",
+      "features": {
+        "service_discovery": true,
+        "load_balancing": true,
+        "auto_scaling": true,
+        "secrets_management": true,
+        "network_encryption": true,
+        "rolling_updates": true,
+        "health_checks": true,
+        "multi_host": true,
+        "compose_compatibility": false
+      },
+      "security": {
+        "network_encryption": "Network policies + service mesh (optional)",
+        "node_authentication": "Certificate-based",
+        "secrets_encryption": "Encrypted at rest (etcd)",
+        "rbac": "Advanced RBAC"
+      },
+      "performance": {
+        "network_latency_overhead_ms": 1,
+        "load_balancing_cpu_overhead_percent": 10,
+        "service_discovery_method": "CoreDNS + kube-proxy"
+      }
+    },
+    {
+      "name": "Docker Compose + Overlay Networks",
+      "recommended": false,
+      "score": 50,
+      "summary": "Manual multi-host deployment using Docker Compose with custom networking",
+      "pros": [
+        "Simplest option",
+        "Keep existing docker-compose.yml files",
+        "Manual control over placement",
+        "No additional tools"
+      ],
+      "cons": [
+        "No automatic failover",
+        "No load balancing",
+        "Manual service discovery",
+        "No rolling updates",
+        "Must manually restart on failure"
+      ],
+      "resource_overhead": {
+        "ram_per_node_mb": 0,
+        "cpu_overhead_percent": 0
+      },
+      "learning_curve": "low",
+      "best_for": "Static deployments, testing, small projects",
+      "setup_time_days": 2,
+      "migration_complexity": "low",
+      "features": {
+        "service_discovery": false,
+        "load_balancing": false,
+        "auto_scaling": false,
+        "secrets_management": false,
+        "network_encryption": false,
+        "rolling_updates": false,
+        "health_checks": true,
+        "multi_host": true,
+        "compose_compatibility": true
+      },
+      "security": {
+        "network_encryption": "Manual configuration required",
+        "node_authentication": "None",
+        "secrets_encryption": "Environment files (not encrypted)",
+        "rbac": "None"
+      },
+      "performance": {
+        "network_latency_overhead_ms": 0,
+        "load_balancing_cpu_overhead_percent": 0,
+        "service_discovery_method": "Manual (hardcoded IPs)"
+      }
+    },
+    {
+      "name": "Nomad + Consul",
+      "recommended": false,
+      "score": 65,
+      "summary": "HashiCorp orchestration stack with flexible workload support",
+      "pros": [
+        "Simple like Swarm, powerful like K8s",
+        "Multi-datacenter support",
+        "Runs Docker + VMs + binaries",
+        "Good HashiCorp ecosystem integration"
+      ],
+      "cons": [
+        "Requires learning HashiCorp stack",
+        "Smaller community than K8s/Swarm",
+        "Additional components (Consul, Vault)",
+        "Less common in industry"
+      ],
+      "resource_overhead": {
+        "ram_per_node_mb": 512,
+        "cpu_overhead_percent": 7
+      },
+      "learning_curve": "medium",
+      "best_for": "Organizations already using HashiCorp stack",
+      "setup_time_days": 14,
+      "migration_complexity": "medium-high",
+      "features": {
+        "service_discovery": true,
+        "load_balancing": true,
+        "auto_scaling": true,
+        "secrets_management": true,
+        "network_encryption": true,
+        "rolling_updates": true,
+        "health_checks": true,
+        "multi_host": true,
+        "compose_compatibility": false
+      },
+      "security": {
+        "network_encryption": "Consul Connect (service mesh)",
+        "node_authentication": "Vault + Consul ACLs",
+        "secrets_encryption": "Vault integration",
+        "rbac": "Consul ACLs + Vault policies"
+      },
+      "performance": {
+        "network_latency_overhead_ms": 0.7,
+        "load_balancing_cpu_overhead_percent": 7,
+        "service_discovery_method": "Consul DNS + service mesh"
+      }
+    }
+  ],
+  "decision_matrix": {
+    "criteria": [
+      {
+        "name": "Ease of Learning",
+        "weight": 0.2,
+        "scores": {
+          "Docker Swarm": 9,
+          "K3s": 4,
+          "Compose": 10,
+          "Nomad": 6
+        }
+      },
+      {
+        "name": "Resource Efficiency",
+        "weight": 0.15,
+        "scores": {
+          "Docker Swarm": 9,
+          "K3s": 5,
+          "Compose": 10,
+          "Nomad": 7
+        }
+      },
+      {
+        "name": "Feature Set",
+        "weight": 0.25,
+        "scores": {
+          "Docker Swarm": 8,
+          "K3s": 10,
+          "Compose": 3,
+          "Nomad": 7
+        }
+      },
+      {
+        "name": "Security",
+        "weight": 0.2,
+        "scores": {
+          "Docker Swarm": 9,
+          "K3s": 9,
+          "Compose": 4,
+          "Nomad": 8
+        }
+      },
+      {
+        "name": "Migration Ease",
+        "weight": 0.1,
+        "scores": {
+          "Docker Swarm": 8,
+          "K3s": 3,
+          "Compose": 9,
+          "Nomad": 5
+        }
+      },
+      {
+        "name": "Future Scalability",
+        "weight": 0.1,
+        "scores": {
+          "Docker Swarm": 7,
+          "K3s": 10,
+          "Compose": 2,
+          "Nomad": 8
+        }
+      }
+    ],
+    "weighted_scores": {
+      "Docker Swarm": 8.4,
+      "K3s": 7.1,
+      "Compose": 6.1,
+      "Nomad": 6.9
+    },
+    "winner": "Docker Swarm"
+  },
+  "workload_distribution": {
+    "recommended": {
+      "server_84": {
+        "ip": "10.0.0.84",
+        "hostname": "gmktec",
+        "ram_gb": 28,
+        "cpu_threads": 16,
+        "role": "production_core",
+        "workloads": [
+          "Production microservices (ws-gateway, ws-company, ws-trades, ws-news, ws-discovery)",
+          "GitLab (CI/CD)",
+          "Traefik (reverse proxy)",
+          "Keycloak + Auth",
+          "Frontend apps (5 apps)",
+          "Appwrite (BaaS platform)"
+        ],
+        "estimated_ram_usage_gb": 18,
+        "estimated_cpu_usage_percent": 40,
+        "containers": 45
+      },
+      "server_80": {
+        "ip": "10.0.0.80",
+        "hostname": "hppavilion",
+        "ram_gb": 31,
+        "cpu_threads": 8,
+        "role": "data_layer",
+        "workloads": [
+          "PostgreSQL databases (all instances)",
+          "Redis caches (all instances)",
+          "Mailcow stack (18 containers)",
+          "Backup services"
+        ],
+        "estimated_ram_usage_gb": 12,
+        "estimated_cpu_usage_percent": 20,
+        "containers": 25
+      },
+      "server_81": {
+        "ip": "10.0.0.81",
+        "hostname": "wsasus",
+        "ram_gb": 11,
+        "cpu_threads": 4,
+        "role": "monitoring_logs",
+        "workloads": [
+          "Prometheus",
+          "Grafana",
+          "Loki + Promtail",
+          "AlertManager",
+          "cAdvisor",
+          "Node exporters",
+          "Security metrics"
+        ],
+        "estimated_ram_usage_gb": 8,
+        "estimated_cpu_usage_percent": 25,
+        "containers": 8
+      },
+      "server_82": {
+        "ip": "10.0.0.82",
+        "hostname": "hpr",
+        "ram_gb": 5.7,
+        "cpu_threads": 8,
+        "role": "dev_staging",
+        "workloads": [
+          "Staging versions of microservices",
+          "Development databases",
+          "Test environments",
+          "CI/CD runners (non-production)"
+        ],
+        "estimated_ram_usage_gb": 5,
+        "estimated_cpu_usage_percent": 30,
+        "containers": 10
+      },
+      "server_gpu_future": {
+        "ip": "TBD",
+        "hostname": "TBD",
+        "ram_gb": "TBD",
+        "cpu_threads": "TBD",
+        "role": "ai_ml_quant",
+        "workloads": [
+          "Quant analysis (quant-flow-api)",
+          "ML model training",
+          "Data processing pipelines",
+          "Future AI workloads"
+        ],
+        "estimated_ram_usage_gb": "TBD",
+        "estimated_cpu_usage_percent": "TBD",
+        "containers": "TBD"
+      }
+    },
+    "user_proposed": {
+      "server_80": "Databases",
+      "server_81": "Infrastructure",
+      "server_82": "Dev/Staging",
+      "server_84": "Services",
+      "issues": [
+        "Server 81 (11 GB RAM) too small for full infrastructure (GitLab + Prometheus + Traefik = ~8+ GB)",
+        "Server 82 (5.7 GB RAM, 17-year-old CPU) is weakest but assigned staging",
+        "GitLab should stay on most powerful server (84)"
+      ]
+    }
+  },
+  "migration_timeline": {
+    "total_duration_weeks": 4,
+    "phases": [
+      {
+        "phase": 1,
+        "name": "Setup Docker Swarm",
+        "duration_days": 7,
+        "tasks": [
+          "Initialize swarm on server 84",
+          "Join servers 80, 81 as managers",
+          "Join server 82 as worker",
+          "Verify cluster health"
+        ],
+        "downtime_required": false
+      },
+      {
+        "phase": 2,
+        "name": "Setup Networks and Secrets",
+        "duration_days": 7,
+        "tasks": [
+          "Create overlay networks (backend, database, monitoring, public)",
+          "Migrate secrets from env files to Docker secrets",
+          "Test inter-service communication",
+          "Configure firewall rules on all servers"
+        ],
+        "downtime_required": false
+      },
+      {
+        "phase": 3,
+        "name": "Migrate Databases",
+        "duration_days": 7,
+        "tasks": [
+          "Backup all databases",
+          "Deploy PostgreSQL/Redis to server 80",
+          "Restore data",
+          "Update service connection strings",
+          "Verify database connectivity"
+        ],
+        "downtime_required": true,
+        "estimated_downtime_hours": 2
+      },
+      {
+        "phase": 4,
+        "name": "Migrate Monitoring and Services",
+        "duration_days": 7,
+        "tasks": [
+          "Deploy monitoring stack to server 81",
+          "Redeploy production services on server 84 (Swarm mode)",
+          "Deploy staging to server 82",
+          "Test all services",
+          "Validate monitoring and alerting"
+        ],
+        "downtime_required": false
+      }
+    ]
+  },
+  "security_checklist": [
+    {
+      "category": "Network Security",
+      "items": [
+        "Enable overlay network encryption",
+        "Configure UFW firewall on all servers",
+        "Restrict Swarm ports to internal network only",
+        "Setup network segmentation (public/backend/database)",
+        "Enable mutual TLS for swarm nodes"
+      ]
+    },
+    {
+      "category": "Secrets Management",
+      "items": [
+        "Migrate all env files to Docker secrets",
+        "Encrypt secrets at rest",
+        "Rotate secrets regularly",
+        "Limit secret access to authorized services only"
+      ]
+    },
+    {
+      "category": "Container Security",
+      "items": [
+        "Enable no-new-privileges on all containers",
+        "Drop unnecessary capabilities",
+        "Use read-only filesystems where possible",
+        "Scan images for vulnerabilities",
+        "Sign and verify images"
+      ]
+    },
+    {
+      "category": "Monitoring & Auditing",
+      "items": [
+        "Enable centralized logging with Loki",
+        "Setup security alerts in Prometheus",
+        "Monitor failed authentication attempts",
+        "Audit swarm management operations",
+        "Enable fail2ban on all servers"
+      ]
+    }
+  ],
+  "performance_expectations": {
+    "before_distribution": {
+      "server_84_cpu_load": 0.35,
+      "server_84_ram_usage_gb": 14,
+      "server_84_swap_usage_mb": 942,
+      "average_response_time_ms": 75,
+      "database_query_time_ms": 7
+    },
+    "after_distribution": {
+      "server_84_cpu_load": 0.2,
+      "server_84_ram_usage_gb": 18,
+      "server_84_swap_usage_mb": 0,
+      "average_response_time_ms": 80,
+      "database_query_time_ms": 9,
+      "network_overhead_ms": 5,
+      "improvement_notes": "50% reduction in CPU load, eliminated swap usage, slight increase in latency due to network hops"
+    }
+  }
+}

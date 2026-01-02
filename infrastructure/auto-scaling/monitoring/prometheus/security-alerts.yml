@@ -1,0 +1,265 @@
+# ============================================================================
+# SECURITY ALERTING RULES FOR PROMETHEUS
+# ============================================================================
+# These rules define alerts for security-related events.
+# ============================================================================
+
+groups:
+  - name: security_alerts
+    rules:
+      # ========================================================================
+      # AUTHENTICATION ALERTS
+      # ========================================================================
+
+      - alert: HighFailedLoginAttempts
+        expr: rate(failed_login_attempts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          category: authentication
+        annotations:
+          summary: "High failed login attempts detected"
+          description: "More than 5 failed login attempts per second on {{ $labels.instance }} for the last 2 minutes."
+
+      - alert: SSHBruteForceDetected
+        expr: rate(ssh_failed_auth_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          category: authentication
+        annotations:
+          summary: "SSH brute force attack detected"
+          description: "High rate of SSH authentication failures on {{ $labels.instance }}. Possible brute force attack."
+
+      # ========================================================================
+      # RATE LIMITING ALERTS
+      # ========================================================================
+
+      - alert: HighRateLimitViolations
+        expr: rate(traefik_entrypoint_requests_total{code=~"429"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: rate_limiting
+        annotations:
+          summary: "High rate of 429 responses"
+          description: "Many requests are being rate limited on {{ $labels.entrypoint }}. Possible DDoS or misconfigured client."
+
+      - alert: APIAbuseDetected
+        expr: rate(http_requests_total{status=~"4.."}[5m]) / rate(http_requests_total[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          category: api_abuse
+        annotations:
+          summary: "Possible API abuse detected"
+          description: "More than 50% of requests are returning 4xx errors on {{ $labels.instance }}."
+
+      # ========================================================================
+      # CONTAINER SECURITY ALERTS
+      # ========================================================================
+
+      - alert: ContainerPrivilegeEscalation
+        expr: container_privileged == 1
+        labels:
+          severity: warning
+          category: container_security
+        annotations:
+          summary: "Privileged container detected"
+          description: "Container {{ $labels.name }} is running in privileged mode. This poses a security risk."
+
+      - alert: ContainerRunningAsRoot
+        expr: container_root_user == 1
+        for: 5m
+        labels:
+          severity: info
+          category: container_security
+        annotations:
+          summary: "Container running as root"
+          description: "Container {{ $labels.name }} is running as root user. Consider using a non-root user."
+
+      - alert: UnexpectedContainerRestart
+        expr: increase(container_restart_count[1h]) > 5
+        labels:
+          severity: warning
+          category: container_security
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} has restarted more than 5 times in the last hour. Possible crash loop or attack."
+
+      # ========================================================================
+      # NETWORK SECURITY ALERTS
+      # ========================================================================
+
+      - alert: UnusualOutboundTraffic
+        expr: rate(node_network_transmit_bytes_total[5m]) > 100000000
+        for: 10m
+        labels:
+          severity: warning
+          category: network_security
+        annotations:
+          summary: "Unusual outbound network traffic"
+          description: "High outbound traffic on {{ $labels.instance }}. Possible data exfiltration or cryptomining."
+
+      - alert: SuspiciousPortScan
+        expr: rate(node_netstat_Tcp_PassiveOpens[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: network_security
+        annotations:
+          summary: "Possible port scan detected"
+          description: "High rate of TCP connection attempts on {{ $labels.instance }}. Possible port scanning activity."
+
+      # ========================================================================
+      # APPLICATION SECURITY ALERTS
+      # ========================================================================
+
+      - alert: HighErrorRate
+        expr: rate(http_server_errors_total[5m]) / rate(http_requests_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "High application error rate"
+          description: "More than 10% of requests are returning 5xx errors on {{ $labels.instance }}. Application may be under attack or failing."
+
+      - alert: DatabaseConnectionSpike
+        expr: rate(pg_connections_active[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Database connection spike"
+          description: "Sudden increase in database connections on {{ $labels.instance }}. Possible connection leak or attack."
+
+      # ========================================================================
+      # INFRASTRUCTURE SECURITY ALERTS
+      # ========================================================================
+
+      - alert: DiskSpaceExhaustion
+        expr: node_filesystem_avail_bytes / node_filesystem_size_bytes < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Disk space critically low"
+          description: "Less than 10% disk space remaining on {{ $labels.instance }}:{{ $labels.mountpoint }}. Logs may be flooding due to an attack."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage above 90% on {{ $labels.instance }} for 10 minutes. Possible cryptomining or DDoS."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage above 90% on {{ $labels.instance }}. Possible memory leak or attack."
+
+      # ========================================================================
+      # KEYCLOAK OAUTH2 SECURITY ALERTS
+      # ========================================================================
+      # Requires Keycloak Metrics SPI: https://github.com/aerogear/keycloak-metrics-spi
+
+      - alert: KeycloakHighFailedLoginRate
+        expr: rate(keycloak_login_error_total[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          category: keycloak
+        annotations:
+          summary: "High failed login rate in Keycloak"
+          description: "More than 0.5 failed logins per second in realm {{ $labels.realm }} for 2 minutes. Possible brute force attack."
+
+      - alert: KeycloakBruteForceDetected
+        expr: rate(keycloak_login_error_total{error="user_temporarily_disabled"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: keycloak
+        annotations:
+          summary: "Keycloak brute force attack - accounts locked"
+          description: "Users being temporarily disabled in realm {{ $labels.realm }} due to failed login attempts."
+
+      - alert: KeycloakAbnormalTokenRefreshRate
+        expr: rate(keycloak_refresh_token_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: keycloak
+        annotations:
+          summary: "Abnormally high token refresh rate"
+          description: "Token refresh rate exceeds 100/sec in realm {{ $labels.realm }}. Possible token theft or misconfigured client."
+
+      - alert: KeycloakSuspiciousAdminActivity
+        expr: rate(keycloak_admin_event_total{operation=~"CREATE|DELETE"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: keycloak
+        annotations:
+          summary: "Unusual Keycloak admin activity detected"
+          description: "High rate of admin CREATE/DELETE operations in realm {{ $labels.realm }}. Verify authorized activity."
+
+      - alert: KeycloakServiceAccountAbuse
+        expr: rate(keycloak_client_login_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          category: keycloak
+        annotations:
+          summary: "High service account login rate"
+          description: "Client {{ $labels.client_id }} in realm {{ $labels.realm }} is making excessive service account logins."
+
+      - alert: KeycloakHighTokenExchangeRate
+        expr: rate(keycloak_token_exchange_total[5m]) > 20
+        for: 5m
+        labels:
+          severity: info
+          category: keycloak
+        annotations:
+          summary: "High token exchange rate"
+          description: "Token exchange rate is high for client {{ $labels.client_id }}. Monitor for unusual patterns."
+
+      - alert: CrossTenantAccessAttempt
+        expr: rate(auth_cross_tenant_access_attempts_total[5m]) > 0
+        for: 0s
+        labels:
+          severity: critical
+          category: tenant_isolation
+        annotations:
+          summary: "Cross-tenant access attempt detected"
+          description: "User {{ $labels.user_id }} from tenant {{ $labels.source_tenant }} attempted to access tenant {{ $labels.target_tenant }}. IMMEDIATE INVESTIGATION REQUIRED."
+
+      - alert: KeycloakRealmDown
+        expr: up{job="keycloak"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: keycloak
+        annotations:
+          summary: "Keycloak is down"
+          description: "Keycloak identity provider is not responding. All authentication will fail."
+
+      - alert: KeycloakHighLatency
+        expr: histogram_quantile(0.99, rate(keycloak_request_duration_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          category: keycloak
+        annotations:
+          summary: "Keycloak high latency"
+          description: "99th percentile latency for Keycloak requests exceeds 5 seconds. Users may experience login delays."

@@ -1,0 +1,57 @@
+# Load Balancer Configuration
+load_balancer:
+  stats_port: 8404
+  https_enabled: false # Set true after SSL setup
+
+# Server Inventory
+servers:
+  - host: 10.0.0.84
+    name: server4
+    ssh_user: wizardsofts
+    ssh_port: 22
+    ssh_key: /app/id_rsa
+    max_containers: 12
+    role: control
+
+# Services
+services:
+  ollama:
+    image: ollama/ollama:latest
+    port: 11434
+    min_replicas: 1
+    max_replicas: 1 # Strict single replica
+    scale_up_threshold: 75
+    scale_down_threshold: 25
+    cooldown_period: 60
+    business_hours_only: true # Only scale during 9-5
+    health_check:
+      path: /api/tags
+      interval: 10
+      timeout: 5
+    volumes:
+      - /data/ollama:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
+# Monitoring
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    retention: 7d
+  grafana:
+    enabled: true
+    port: 3000
+
+# Autoscaler Settings
+autoscaler:
+  check_interval: 30 # seconds
+  business_hours:
+    start: "09:00"
+    end: "17:00"
+    timezone: "UTC"
+  log_level: INFO
+  backup:
+    enabled: true
+    path: /opt/autoscaler/backup
+    retention_days: 7

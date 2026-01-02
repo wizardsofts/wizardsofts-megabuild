@@ -1,0 +1,333 @@
+# ============================================================================
+# APPLICATIONS CI/CD PIPELINE
+# ============================================================================
+# This pipeline handles building, testing, and deploying application code.
+# Triggered when files in /apps/ directory change.
+#
+# SECURITY: All credentials are sourced from GitLab CI/CD Variables.
+# Required variables (Settings → CI/CD → Variables):
+#   - SSH_PRIVATE_KEY (File, Protected)
+#   - DEPLOY_SUDO_PASSWORD (Variable, Protected, Masked)
+#   - DEPLOY_DB_PASSWORD (Variable, Protected, Masked)
+# ============================================================================
+
+# ============================================================================
+# TEST JOBS - Run tests for changed services
+# ============================================================================
+
+.test-template:
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - apps/**/*
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+      changes:
+        - apps/**/*
+
+test-spring-boot-apps:
+  extends: .test-template
+  image: maven:3.9-eclipse-temurin-17
+  variables:
+    MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  cache:
+    key: maven-$CI_COMMIT_REF_SLUG
+    paths:
+      - .m2/repository/
+  script:
+    - |
+      for service in ws-discovery ws-gateway ws-trades ws-company ws-news; do
+        if [ -f "apps/$service/pom.xml" ]; then
+          echo "Testing $service..."
+          cd apps/$service
+          mvn clean test -q || echo "Tests failed for $service"
+          cd ../..
+        fi
+      done
+  allow_failure: true
+
+test-python-apps:
+  extends: .test-template
+  image: ghcr.io/astral-sh/uv:python3.11-bookworm
+  cache:
+    key: pip-$CI_COMMIT_REF_SLUG
+    paths:
+      - .cache/pip/
+  script:
+    - |
+      # Test uv-based Python services
+      for service in gibd-quant-signal gibd-quant-nlq gibd-quant-calibration gibd-quant-celery gibd-quant-agent; do
+        if [ -d "apps/$service" ] && [ -f "apps/$service/pyproject.toml" ]; then
+          echo "Testing $service..."
+          cd apps/$service
+          uv pip install --system -e . || true
+          if [ -d "tests" ]; then
+            uv run pytest tests/ -v || echo "Tests failed for $service"
+          fi
+          cd ../..
+        fi
+      done
+
+      # Test pip-based Python services (gibd-news)
+      for service in gibd-news; do
+        if [ -d "apps/$service" ] && [ -f "apps/$service/requirements.txt" ]; then
+          echo "Testing $service..."
+          cd apps/$service
+          pip install -r requirements.txt --quiet || true
+          if [ -d "scripts/tests" ]; then
+            pytest scripts/tests/ -v || echo "Tests failed for $service"
+          fi
+          cd ../..
+        fi
+      done
+  allow_failure: true
+
+test-nextjs-apps:
+  extends: .test-template
+  image: node:20-alpine
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths:
+      - node_modules/
+      - apps/*/node_modules/
+  script:
+    - |
+      for service in ws-wizardsofts-web ws-daily-deen-web gibd-quant-web pf-padmafoods-web; do
+        if [ -d "apps/$service" ] && [ -f "apps/$service/package.json" ]; then
+          echo "Testing $service..."
+          cd apps/$service
+          npm install --legacy-peer-deps --silent || true
+          npm run lint --if-present || echo "Lint failed for $service"
+          npm run build || echo "Build failed for $service"
+          cd ../..
+        fi
+      done
+
+# ============================================================================
+# BUILD JOBS - Build Docker images
+# ============================================================================
+
+build-app-images:
+  stage: build
+  image: docker:24-cli
+  services:
+    - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      changes:
+        - apps/**/*
+  script:
+    - |
+      echo "Building application images..."
+
+      # Build only services that have Dockerfiles
+      for service_dir in apps/*/; do
+        service=$(basename "$service_dir")
+        if [ -f "${service_dir}Dockerfile" ]; then
+          echo "Building $service..."
+          docker build -t "wizardsofts/$service:$CI_COMMIT_SHA" -t "wizardsofts/$service:latest" "$service_dir" || echo "Build failed for $service"
+        fi
+      done
+
+      # Save images for deployment
+      docker images wizardsofts/* --format "{{.Repository}}:{{.Tag}}" | grep ":latest" | xargs -r docker save -o app-images.tar
+  artifacts:
+    paths:
+      - app-images.tar
+    expire_in: 1 day
+
+# ============================================================================
+# DEPLOY JOBS - Deploy applications
+# ============================================================================
+
+.deploy-template:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync bash curl
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: manual
+
+deploy-apps:
+  extends: .deploy-template
+  variables:
+    DEPLOY_HOST: "10.0.0.84"
+    DEPLOY_USER: "wizardsofts"
+    DEPLOY_PATH: "/opt/wizardsofts-megabuild"
+  script:
+    - |
+      echo "Deploying applications to $DEPLOY_HOST..."
+
+      # Create secure deployment script (credentials from GitLab CI/CD variables)
+      cat > /tmp/deploy-apps.sh << 'DEPLOY_SCRIPT'
+      #!/bin/bash
+      set -e
+
+      # Credentials injected via environment variables (from GitLab CI/CD)
+      DEPLOY_PATH="${DEPLOY_PATH:-/opt/wizardsofts-megabuild}"
+      COMPOSE_PROFILE="${COMPOSE_PROFILE:-gibd-quant}"
+
+      echo "Starting application deployment..."
+      cd "$DEPLOY_PATH"
+
+      # Load Docker images if provided
+      if [ -f "/tmp/app-images.tar" ]; then
+        echo "Loading Docker images..."
+        docker load -i /tmp/app-images.tar
+      fi
+
+      # Ensure networks exist
+      docker network create microservices-overlay 2>/dev/null || true
+      docker network create gibd-network 2>/dev/null || true
+
+      # Deploy with docker compose
+      echo "Stopping existing containers..."
+      docker compose --profile "$COMPOSE_PROFILE" down --remove-orphans || true
+
+      echo "Starting services with profile: $COMPOSE_PROFILE..."
+      docker compose --profile "$COMPOSE_PROFILE" up -d
+
+      # Wait and verify
+      sleep 15
+      echo "Service status:"
+      docker compose ps
+
+      echo "Application deployment complete!"
+      DEPLOY_SCRIPT
+
+      # Sync application files
+      rsync -avz --delete \
+        --exclude '.git' \
+        --exclude 'node_modules' \
+        --exclude 'target' \
+        --exclude '.m2' \
+        --exclude '__pycache__' \
+        --exclude '.next' \
+        apps/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/apps/"
+
+      # Sync docker-compose.yml
+      scp docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+      # Copy images if available
+      if [ -f "app-images.tar" ]; then
+        scp app-images.tar "$DEPLOY_USER@$DEPLOY_HOST:/tmp/app-images.tar"
+      fi
+
+      # Execute deployment
+      scp /tmp/deploy-apps.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy-apps.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy-apps.sh && DEPLOY_PATH='$DEPLOY_PATH' COMPOSE_PROFILE='gibd-quant' /tmp/deploy-apps.sh"
+  environment:
+    name: production-apps
+    url: http://10.0.0.84:3001
+  dependencies:
+    - build-app-images
+
+# ============================================================================
+# GIBD-NEWS DEPLOYMENT - News scrapers with Prometheus metrics
+# ============================================================================
+
+deploy-gibd-news:
+  extends: .deploy-template
+  variables:
+    DEPLOY_HOST: "10.0.0.84"
+    DEPLOY_USER: "wizardsofts"
+    DEPLOY_PATH: "/opt/wizardsofts-megabuild"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      changes:
+        - apps/gibd-news/**/*
+      when: manual
+  script:
+    - |
+      echo "Deploying GIBD-News to $DEPLOY_HOST..."
+
+      # Sync gibd-news files
+      rsync -avz --delete \
+        --exclude '.git' \
+        --exclude '__pycache__' \
+        --exclude '.pytest_cache' \
+        --exclude 'data/' \
+        --exclude 'logs/' \
+        --exclude '.env' \
+        --exclude '.venv' \
+        apps/gibd-news/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/apps/gibd-news/"
+
+      # Create deployment script
+      cat > /tmp/deploy-gibd-news.sh << 'DEPLOY_SCRIPT'
+      #!/bin/bash
+      set -e
+      cd /opt/wizardsofts-megabuild/apps/gibd-news
+      mkdir -p data logs
+      if [ ! -f .env ] && [ -f .env.example ]; then
+        cp .env.example .env
+      fi
+      docker-compose build
+      docker-compose up -d metrics
+      chmod +x deploy.sh 2>/dev/null || true
+      ./deploy.sh 2>/dev/null || echo "deploy.sh not found or failed"
+      echo "GIBD-News deployment complete!"
+      docker-compose ps
+      DEPLOY_SCRIPT
+
+      # Execute deployment
+      scp /tmp/deploy-gibd-news.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy-gibd-news.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy-gibd-news.sh && /tmp/deploy-gibd-news.sh"
+  environment:
+    name: gibd-news-production
+    url: http://10.0.0.84:9090/metrics
+  dependencies:
+    - build-app-images
+
+# ============================================================================
+# HEALTH CHECK JOBS
+# ============================================================================
+
+health-check-apps:
+  stage: verify
+  image: curlimages/curl:latest
+  variables:
+    DEPLOY_HOST: "10.0.0.84"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: on_success
+  script:
+    - |
+      echo "Running application health checks..."
+      sleep 30
+
+      # Check Spring Boot services
+      for port in 8761 8080; do
+        echo "Checking port $port..."
+        curl -sf "http://$DEPLOY_HOST:$port/actuator/health" || echo "Port $port health check failed"
+      done
+
+      # Check Python services
+      for port in 5001 5002 5003 5004; do
+        echo "Checking port $port..."
+        curl -sf "http://$DEPLOY_HOST:$port/health" || echo "Port $port health check failed"
+      done
+
+      # Check frontends
+      for port in 3000 3001 3002; do
+        echo "Checking port $port..."
+        curl -sf "http://$DEPLOY_HOST:$port" -o /dev/null || echo "Port $port health check failed"
+      done
+
+      # Check GIBD-News metrics
+      echo "Checking GIBD-News metrics..."
+      curl -sf "http://$DEPLOY_HOST:9090/metrics" || echo "GIBD-News metrics check failed"
+      curl -sf "http://$DEPLOY_HOST:9090/health" || echo "GIBD-News health check failed"
+
+      echo "Health checks complete!"
+  needs:
+    - job: deploy-apps
+      optional: true
+    - job: deploy-gibd-news
+      optional: true

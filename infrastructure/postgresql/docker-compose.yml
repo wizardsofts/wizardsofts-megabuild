@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: gibd-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /mnt/data/docker/postgres/data:/var/lib/postgresql/data
+      - /mnt/data/docker/postgres/backups:/backups
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  gibd-network:
+    external: true  # Use the network we created manually

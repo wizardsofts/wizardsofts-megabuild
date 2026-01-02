@@ -1,0 +1,879 @@
+{
+  "report_metadata": {
+    "report_date": "2026-01-01",
+    "report_time": "01:00:00 UTC",
+    "generated_by": "Claude Code",
+    "version": "1.0",
+    "total_servers": 4
+  },
+  "summary_statistics": {
+    "total_cpu_cores": 36,
+    "total_cpu_threads": 72,
+    "total_ram_gb": 76.7,
+    "total_disk_tb": 3.18,
+    "total_docker_containers": 75,
+    "os_distribution": "Ubuntu 24.04 LTS",
+    "servers_with_ups": 0,
+    "servers_with_docker": 3,
+    "average_uptime_days": 44.98
+  },
+  "servers": [
+    {
+      "server_id": "server-80",
+      "ip_address": "10.0.0.80",
+      "hostname": "hppavilion",
+      "status": "operational",
+      "health_status": "fair",
+      "role": "monitoring_nfs",
+      "hardware": {
+        "manufacturer": "HP",
+        "model": "HP Pavilion Laptop 15-cc1xx",
+        "serial_number": "5CD8087Y7W",
+        "uuid": "38444335-3830-5937-3757-10e7c6da4903",
+        "type": "laptop",
+        "cpu": {
+          "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+          "architecture": "x86_64",
+          "cores": 4,
+          "threads": 8,
+          "sockets": 1,
+          "threads_per_core": 2,
+          "base_frequency_ghz": 1.8,
+          "current_scaling_percent": 73,
+          "estimated_age_years": 6
+        },
+        "memory": {
+          "total_gb": 31,
+          "used_gb": 4.1,
+          "free_gb": 9.1,
+          "available_gb": 27,
+          "buff_cache_gb": 18,
+          "usage_percent": 13,
+          "swap": {
+            "total_gb": 8.0,
+            "used_gb": 1.2,
+            "free_gb": 6.8,
+            "usage_percent": 15
+          }
+        },
+        "storage": {
+          "total_gb": 1133,
+          "devices": [
+            {
+              "device": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+              "mount": "/",
+              "size_gb": 217,
+              "used_gb": 34,
+              "available_gb": 173,
+              "usage_percent": 17,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sda1",
+              "mount": "/mnt/data",
+              "size_gb": 916,
+              "used_gb": 186,
+              "available_gb": 685,
+              "usage_percent": 22,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sdb2",
+              "mount": "/boot",
+              "size_gb": 2.0,
+              "used_gb": 0.2,
+              "available_gb": 1.6,
+              "usage_percent": 11,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sdb1",
+              "mount": "/boot/efi",
+              "size_gb": 1.1,
+              "used_gb": 0.006,
+              "available_gb": 1.1,
+              "usage_percent": 1,
+              "filesystem": "vfat"
+            }
+          ]
+        },
+        "battery_ups": {
+          "has_ups": false,
+          "ups_status": "not_detected",
+          "battery_charge_percent": null,
+          "estimated_runtime_minutes": null
+        }
+      },
+      "software": {
+        "operating_system": {
+          "name": "Ubuntu",
+          "version": "24.04.3 LTS",
+          "codename": "Noble Numbat",
+          "id": "ubuntu",
+          "id_like": "debian",
+          "kernel": "6.8.0-86-generic",
+          "architecture": "x86_64"
+        },
+        "uptime": {
+          "days": 61,
+          "hours": 11,
+          "minutes": 41,
+          "total_hours": 1471,
+          "load_average": {
+            "1min": 0.02,
+            "5min": 0.09,
+            "15min": 0.15
+          }
+        },
+        "docker": {
+          "installed": true,
+          "version": "28.2.2",
+          "containers_running": 3,
+          "containers": [
+            {
+              "name": "security-metrics",
+              "status": "Up 19 hours",
+              "health": "unhealthy",
+              "image": "python:3.11-slim"
+            },
+            {
+              "name": "node-exporter",
+              "status": "Up 20 hours",
+              "health": "healthy",
+              "image": "prom/node-exporter:latest"
+            },
+            {
+              "name": "cadvisor",
+              "status": "Up 20 hours",
+              "health": "healthy",
+              "image": "gcr.io/cadvisor/cadvisor:latest"
+            }
+          ]
+        },
+        "key_services": [
+          "clamav-freshclam",
+          "containerd",
+          "docker",
+          "gitlab-runner",
+          "nfs-mountd",
+          "nfs-idmapd",
+          "rpc-statd"
+        ]
+      },
+      "issues": [
+        {
+          "severity": "medium",
+          "type": "container_health",
+          "description": "security-metrics container is unhealthy",
+          "recommendation": "Check container logs and restart if necessary"
+        }
+      ],
+      "metrics": {
+        "cpu_load_status": "low",
+        "memory_status": "healthy",
+        "disk_status": "healthy",
+        "overall_health": "fair"
+      }
+    },
+    {
+      "server_id": "server-81",
+      "ip_address": "10.0.0.81",
+      "hostname": "wsasus",
+      "status": "operational",
+      "health_status": "excellent",
+      "role": "database_backup",
+      "hardware": {
+        "manufacturer": "ASUSTeK COMPUTER INC.",
+        "model": "X550LN",
+        "serial_number": "E3N0CV23825212G",
+        "uuid": "d3ce1e50-aaff-81e3-30c8-40167e162a56",
+        "type": "laptop",
+        "cpu": {
+          "model": "Intel(R) Core(TM) i3-4010U CPU @ 1.70GHz",
+          "architecture": "x86_64",
+          "cores": 2,
+          "threads": 4,
+          "sockets": 1,
+          "threads_per_core": 2,
+          "base_frequency_ghz": 1.7,
+          "current_scaling_percent": 100,
+          "estimated_age_years": 13
+        },
+        "memory": {
+          "total_gb": 11,
+          "used_gb": 0.9,
+          "free_gb": 9.7,
+          "available_gb": 10,
+          "buff_cache_gb": 1.4,
+          "usage_percent": 8,
+          "swap": {
+            "total_gb": 4.0,
+            "used_gb": 0,
+            "free_gb": 4.0,
+            "usage_percent": 0
+          }
+        },
+        "storage": {
+          "total_gb": 219,
+          "devices": [
+            {
+              "device": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+              "mount": "/",
+              "size_gb": 98,
+              "used_gb": 26,
+              "available_gb": 67,
+              "usage_percent": 28,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/mapper/ubuntu--vg-lv--0",
+              "mount": "/home",
+              "size_gb": 119,
+              "used_gb": 1,
+              "available_gb": 112,
+              "usage_percent": 1,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sda2",
+              "mount": "/boot",
+              "size_gb": 2.0,
+              "used_gb": 0.19,
+              "available_gb": 1.6,
+              "usage_percent": 11,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sda1",
+              "mount": "/boot/efi",
+              "size_gb": 1.1,
+              "used_gb": 0.006,
+              "available_gb": 1.1,
+              "usage_percent": 1,
+              "filesystem": "vfat"
+            }
+          ]
+        },
+        "battery_ups": {
+          "has_ups": false,
+          "ups_status": "not_detected",
+          "battery_charge_percent": null,
+          "estimated_runtime_minutes": null
+        }
+      },
+      "software": {
+        "operating_system": {
+          "name": "Ubuntu",
+          "version": "24.04.1 LTS",
+          "codename": "Noble Numbat",
+          "id": "ubuntu",
+          "id_like": "debian",
+          "kernel": "6.8.0-83-generic",
+          "architecture": "x86_64"
+        },
+        "uptime": {
+          "days": 96,
+          "hours": 22,
+          "minutes": 15,
+          "total_hours": 2326,
+          "load_average": {
+            "1min": 0.06,
+            "5min": 0.08,
+            "15min": 0.05
+          }
+        },
+        "docker": {
+          "installed": false,
+          "version": null,
+          "containers_running": 0,
+          "containers": []
+        },
+        "key_services": [
+          "postgresql@16-main",
+          "bacula-sd",
+          "prometheus-node-exporter",
+          "smartmontools",
+          "ssh"
+        ]
+      },
+      "issues": [],
+      "metrics": {
+        "cpu_load_status": "very_low",
+        "memory_status": "excellent",
+        "disk_status": "healthy",
+        "overall_health": "excellent"
+      }
+    },
+    {
+      "server_id": "server-82",
+      "ip_address": "10.0.0.82",
+      "hostname": "hpr",
+      "status": "operational",
+      "health_status": "good",
+      "role": "monitoring",
+      "hardware": {
+        "manufacturer": "Hewlett-Packard",
+        "model": "HP Pavilion dv6 Notebook PC",
+        "serial_number": "INA038044G",
+        "uuid": "30414e49-3833-3430-3447-c80aa9d31f45",
+        "type": "laptop",
+        "cpu": {
+          "model": "Intel(R) Core(TM) i7 CPU Q 720 @ 1.60GHz",
+          "architecture": "x86_64",
+          "cores": 4,
+          "threads": 8,
+          "sockets": 1,
+          "threads_per_core": 2,
+          "base_frequency_ghz": 1.6,
+          "current_scaling_percent": 102,
+          "estimated_age_years": 17
+        },
+        "memory": {
+          "total_gb": 5.7,
+          "used_gb": 0.8,
+          "free_gb": 2.5,
+          "available_gb": 4.9,
+          "buff_cache_gb": 2.7,
+          "usage_percent": 14,
+          "swap": {
+            "total_gb": 4.0,
+            "used_gb": 0,
+            "free_gb": 4.0,
+            "usage_percent": 0
+          }
+        },
+        "storage": {
+          "total_gb": 913,
+          "devices": [
+            {
+              "device": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+              "mount": "/",
+              "size_gb": 251,
+              "used_gb": 8.2,
+              "available_gb": 230,
+              "usage_percent": 4,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/mapper/ubuntu--vg-lv--0",
+              "mount": "/home",
+              "size_gb": 662,
+              "used_gb": 0.001,
+              "available_gb": 629,
+              "usage_percent": 1,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/sda2",
+              "mount": "/boot",
+              "size_gb": 2.0,
+              "used_gb": 0.1,
+              "available_gb": 1.7,
+              "usage_percent": 6,
+              "filesystem": "ext4"
+            }
+          ]
+        },
+        "battery_ups": {
+          "has_ups": false,
+          "ups_status": "not_detected",
+          "battery_charge_percent": null,
+          "estimated_runtime_minutes": null
+        }
+      },
+      "software": {
+        "operating_system": {
+          "name": "Ubuntu",
+          "version": "24.04.3 LTS",
+          "codename": "Noble Numbat",
+          "id": "ubuntu",
+          "id_like": "debian",
+          "kernel": "6.8.0-90-generic",
+          "architecture": "x86_64"
+        },
+        "uptime": {
+          "days": 0,
+          "hours": 14,
+          "minutes": 38,
+          "total_hours": 14.63,
+          "load_average": {
+            "1min": 0.06,
+            "5min": 0.05,
+            "15min": 0.13
+          }
+        },
+        "docker": {
+          "installed": true,
+          "version": "29.1.3",
+          "containers_running": 2,
+          "containers": [
+            {
+              "name": "cadvisor-82",
+              "status": "Up 10 hours",
+              "health": "healthy",
+              "image": "gcr.io/cadvisor/cadvisor:latest"
+            },
+            {
+              "name": "node-exporter-82",
+              "status": "Up 10 hours",
+              "health": "healthy",
+              "image": "prom/node-exporter:latest"
+            }
+          ]
+        },
+        "key_services": [
+          "containerd",
+          "docker",
+          "ssh"
+        ]
+      },
+      "issues": [
+        {
+          "severity": "low",
+          "type": "uptime",
+          "description": "Server recently rebooted (only 14 hours uptime)",
+          "recommendation": "Investigate cause of recent reboot using 'last reboot' and 'journalctl -b -1'"
+        }
+      ],
+      "metrics": {
+        "cpu_load_status": "low",
+        "memory_status": "healthy",
+        "disk_status": "excellent",
+        "overall_health": "good"
+      }
+    },
+    {
+      "server_id": "server-84",
+      "ip_address": "10.0.0.84",
+      "hostname": "gmktec",
+      "status": "operational",
+      "health_status": "fair",
+      "role": "production_primary",
+      "hardware": {
+        "manufacturer": "GMKtec",
+        "model": "NucBox_K12",
+        "serial_number": "Default string",
+        "uuid": "4d50de80-7fe1-11f0-8282-9ecc527b7c00",
+        "type": "mini_pc",
+        "cpu": {
+          "model": "AMD Ryzen 7 H 255 w/ Radeon 780M Graphics",
+          "architecture": "x86_64",
+          "cores": 8,
+          "threads": 16,
+          "sockets": 1,
+          "threads_per_core": 2,
+          "base_frequency_ghz": 2.7,
+          "current_scaling_percent": 71,
+          "estimated_age_years": 1
+        },
+        "memory": {
+          "total_gb": 28,
+          "used_gb": 14,
+          "free_gb": 4.9,
+          "available_gb": 13,
+          "buff_cache_gb": 9.2,
+          "usage_percent": 50,
+          "swap": {
+            "total_gb": 8.0,
+            "used_gb": 0.942,
+            "free_gb": 7.1,
+            "usage_percent": 12
+          }
+        },
+        "storage": {
+          "total_gb": 916,
+          "devices": [
+            {
+              "device": "/dev/mapper/ubuntu--vg-ubuntu--lv",
+              "mount": "/",
+              "size_gb": 914,
+              "used_gb": 331,
+              "available_gb": 545,
+              "usage_percent": 38,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/nvme0n1p2",
+              "mount": "/boot",
+              "size_gb": 2.0,
+              "used_gb": 0.19,
+              "available_gb": 1.6,
+              "usage_percent": 11,
+              "filesystem": "ext4"
+            },
+            {
+              "device": "/dev/nvme0n1p1",
+              "mount": "/boot/efi",
+              "size_gb": 1.1,
+              "used_gb": 0.006,
+              "available_gb": 1.1,
+              "usage_percent": 1,
+              "filesystem": "vfat"
+            }
+          ]
+        },
+        "battery_ups": {
+          "has_ups": false,
+          "ups_status": "not_detected",
+          "battery_charge_percent": null,
+          "estimated_runtime_minutes": null
+        }
+      },
+      "software": {
+        "operating_system": {
+          "name": "Ubuntu",
+          "version": "24.04.3 LTS",
+          "codename": "Noble Numbat",
+          "id": "ubuntu",
+          "id_like": "debian",
+          "kernel": "6.8.0-90-generic",
+          "architecture": "x86_64"
+        },
+        "uptime": {
+          "days": 8,
+          "hours": 0,
+          "minutes": 59,
+          "total_hours": 192.98,
+          "load_average": {
+            "1min": 0.35,
+            "5min": 0.4,
+            "15min": 0.38
+          }
+        },
+        "docker": {
+          "installed": true,
+          "version": "27.5.1",
+          "containers_running": 70,
+          "container_groups": {
+            "infrastructure": [
+              "gitlab",
+              "traefik",
+              "prometheus",
+              "grafana",
+              "loki",
+              "promtail",
+              "alertmanager"
+            ],
+            "appwrite": [
+              "appwrite",
+              "appwrite-executor",
+              "appwrite-console",
+              "appwrite-mariadb",
+              "appwrite-redis",
+              "appwrite-realtime",
+              "appwrite-worker-builds",
+              "appwrite-worker-databases",
+              "appwrite-worker-messaging",
+              "appwrite-worker-stats-resources",
+              "appwrite-worker-stats-usage",
+              "appwrite-worker-certificates",
+              "appwrite-worker-functions",
+              "appwrite-worker-deletes",
+              "appwrite-worker-migrations",
+              "appwrite-worker-audits",
+              "appwrite-worker-webhooks",
+              "appwrite-worker-mails",
+              "appwrite-task-scheduler-executions",
+              "appwrite-task-scheduler-messages",
+              "appwrite-task-scheduler-functions",
+              "appwrite-maintenance"
+            ],
+            "auth": [
+              "keycloak",
+              "keycloak-postgres",
+              "oauth2-proxy"
+            ],
+            "microservices": [
+              "ws-gateway",
+              "ws-discovery",
+              "ws-company",
+              "ws-trades",
+              "ws-news"
+            ],
+            "frontend": [
+              "gibd-quant-web",
+              "daily-deen-guide-frontend",
+              "ddg-bff",
+              "wwwwizardsoftscom-web",
+              "pf-padmafoods-web"
+            ],
+            "databases": [
+              "gibd-postgres",
+              "wizardsofts-megabuild-postgres-1",
+              "gibd-redis",
+              "wizardsofts-megabuild-redis-1"
+            ],
+            "mail": [
+              "mailcowdockerized-nginx-mailcow-1",
+              "mailcowdockerized-postfix-mailcow-1",
+              "mailcowdockerized-dovecot-mailcow-1",
+              "mailcowdockerized-rspamd-mailcow-1",
+              "mailcowdockerized-clamd-mailcow-1",
+              "mailcowdockerized-mysql-mailcow-1",
+              "mailcowdockerized-redis-mailcow-1",
+              "mailcowdockerized-sogo-mailcow-1",
+              "mailcowdockerized-watchdog-mailcow-1",
+              "mailcowdockerized-acme-mailcow-1",
+              "mailcowdockerized-php-fpm-mailcow-1",
+              "mailcowdockerized-postfix-tlspol-mailcow-1",
+              "mailcowdockerized-dockerapi-mailcow-1",
+              "mailcowdockerized-unbound-mailcow-1",
+              "mailcowdockerized-olefy-mailcow-1",
+              "mailcowdockerized-memcached-mailcow-1",
+              "mailcowdockerized-netfilter-mailcow-1",
+              "mailcowdockerized-ofelia-mailcow-1"
+            ],
+            "monitoring": [
+              "security-metrics-84",
+              "cadvisor",
+              "node-exporter",
+              "autoscaler"
+            ],
+            "other": [
+              "quant-flow-api"
+            ]
+          },
+          "unhealthy_containers": [
+            "appwrite",
+            "oauth2-proxy"
+          ]
+        },
+        "key_services": [
+          "gitlab-runner",
+          "containerd",
+          "docker",
+          "ssh"
+        ]
+      },
+      "issues": [
+        {
+          "severity": "high",
+          "type": "container_health",
+          "description": "appwrite container is unhealthy (core BaaS infrastructure)",
+          "recommendation": "Investigate appwrite logs: docker logs appwrite --tail 100"
+        },
+        {
+          "severity": "medium",
+          "type": "container_health",
+          "description": "oauth2-proxy container is unhealthy (authentication proxy)",
+          "recommendation": "Investigate oauth2-proxy logs: docker logs oauth2-proxy --tail 100"
+        },
+        {
+          "severity": "medium",
+          "type": "resource_usage",
+          "description": "High memory usage (50%) with swap being used (942 MB)",
+          "recommendation": "Consider upgrading RAM to 64 GB or redistributing workload"
+        },
+        {
+          "severity": "high",
+          "type": "infrastructure",
+          "description": "No UPS protection for production server",
+          "recommendation": "Install 1500VA+ UPS immediately to prevent data loss from power outages"
+        },
+        {
+          "severity": "low",
+          "type": "resource_usage",
+          "description": "70+ containers running on single server may cause resource contention",
+          "recommendation": "Consider distributing some workloads to server 10.0.0.80 (has 31 GB RAM, only 3 containers)"
+        }
+      ],
+      "metrics": {
+        "cpu_load_status": "moderate",
+        "memory_status": "moderate",
+        "disk_status": "healthy",
+        "overall_health": "fair"
+      }
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      {
+        "priority": 1,
+        "category": "container_health",
+        "action": "Fix unhealthy containers on servers 10.0.0.80 and 10.0.0.84",
+        "commands": [
+          "docker logs appwrite --tail 100",
+          "docker logs oauth2-proxy --tail 100",
+          "docker logs security-metrics --tail 100"
+        ],
+        "estimated_time": "30 minutes"
+      },
+      {
+        "priority": 2,
+        "category": "infrastructure",
+        "action": "Install UPS on production server 10.0.0.84",
+        "details": "Minimum 1500VA UPS with apcupsd or nut monitoring",
+        "estimated_cost": "$200-300"
+      },
+      {
+        "priority": 3,
+        "category": "investigation",
+        "action": "Investigate server 10.0.0.82 recent reboot",
+        "commands": [
+          "last reboot",
+          "journalctl -b -1"
+        ],
+        "estimated_time": "15 minutes"
+      }
+    ],
+    "short_term": [
+      {
+        "priority": 4,
+        "category": "capacity",
+        "action": "Upgrade RAM on server 10.0.0.84 to 64 GB",
+        "current": "28 GB",
+        "target": "64 GB",
+        "estimated_cost": "$150-200"
+      },
+      {
+        "priority": 5,
+        "category": "standardization",
+        "action": "Standardize Docker versions across all servers",
+        "target_version": "27.5.1",
+        "affected_servers": [
+          "10.0.0.80",
+          "10.0.0.82"
+        ]
+      },
+      {
+        "priority": 6,
+        "category": "load_balancing",
+        "action": "Redistribute workload from server 84 to server 80",
+        "reason": "Server 80 has 31 GB RAM but only 3 containers; Server 84 has 70+ containers"
+      }
+    ],
+    "long_term": [
+      {
+        "priority": 7,
+        "category": "hardware_refresh",
+        "action": "Replace aging servers",
+        "targets": [
+          {
+            "server": "10.0.0.82",
+            "reason": "17-year-old CPU (Intel Q720 from 2009)",
+            "estimated_cost": "$500-800"
+          },
+          {
+            "server": "10.0.0.81",
+            "reason": "13-year-old CPU (Intel i3-4010U from 2013)",
+            "estimated_cost": "$500-800"
+          }
+        ]
+      },
+      {
+        "priority": 8,
+        "category": "security",
+        "action": "Implement SSH key authentication and disable password auth",
+        "affected_servers": [
+          "10.0.0.80",
+          "10.0.0.81",
+          "10.0.0.82",
+          "10.0.0.84"
+        ]
+      },
+      {
+        "priority": 9,
+        "category": "backup",
+        "action": "Verify and test Bacula backup restoration procedures",
+        "server": "10.0.0.81"
+      },
+      {
+        "priority": 10,
+        "category": "capacity_planning",
+        "action": "Develop horizontal scaling or Kubernetes migration plan",
+        "reason": "Current growth trajectory shows 70+ containers on single server"
+      }
+    ]
+  },
+  "cost_analysis": {
+    "current_annual_costs": {
+      "power_consumption_estimate": {
+        "total_watts": 400,
+        "monthly_kwh": 288,
+        "monthly_cost_usd": 50,
+        "annual_cost_usd": 600
+      }
+    },
+    "recommended_investments": {
+      "ups_server_84": {
+        "cost_usd": 250,
+        "priority": "high",
+        "roi": "Prevents data loss from power outages"
+      },
+      "ram_upgrade_server_84": {
+        "cost_usd": 175,
+        "priority": "medium",
+        "roi": "Reduces swap usage, improves performance"
+      },
+      "new_minipc_replace_82": {
+        "cost_usd": 650,
+        "priority": "low",
+        "roi": "Better performance, lower power consumption"
+      },
+      "total_recommended_investment": 1075
+    }
+  },
+  "health_alerts": [
+    {
+      "severity": "high",
+      "type": "infrastructure",
+      "message": "No UPS protection on any server - risk of data loss from power outages"
+    },
+    {
+      "severity": "high",
+      "type": "container",
+      "message": "appwrite container unhealthy on production server 10.0.0.84"
+    },
+    {
+      "severity": "medium",
+      "type": "container",
+      "message": "oauth2-proxy container unhealthy on server 10.0.0.84"
+    },
+    {
+      "severity": "medium",
+      "type": "container",
+      "message": "security-metrics container unhealthy on server 10.0.0.80"
+    },
+    {
+      "severity": "medium",
+      "type": "resource",
+      "message": "Server 10.0.0.84 using swap memory (942 MB) - consider RAM upgrade"
+    },
+    {
+      "severity": "low",
+      "type": "hardware",
+      "message": "Server 10.0.0.82 has 17-year-old CPU - plan replacement"
+    },
+    {
+      "severity": "low",
+      "type": "hardware",
+      "message": "Server 10.0.0.81 has 13-year-old CPU - plan replacement"
+    }
+  ],
+  "capacity_planning": {
+    "current_utilization": {
+      "cpu_average_load": 0.12,
+      "ram_average_usage_percent": 21.25,
+      "disk_average_usage_percent": 19.5
+    },
+    "growth_projection": {
+      "containers_growth_rate": "15% per quarter",
+      "estimated_containers_in_1_year": 120,
+      "recommendation": "Plan for distributed architecture or Kubernetes within 6-12 months"
+    },
+    "bottlenecks": [
+      {
+        "server": "10.0.0.84",
+        "resource": "RAM",
+        "current_usage": "50%",
+        "recommendation": "Upgrade to 64 GB RAM"
+      },
+      {
+        "server": "10.0.0.84",
+        "resource": "container_density",
+        "current_count": 70,
+        "recommendation": "Distribute to other servers or add dedicated container host"
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="250" cy="250" r="200" fill="#D12027"/>
+  
+  <path d="M 250,50 A 200,200 0 0,1 250,450" 
+        stroke="#3D72A4" 
+        stroke-width="40" 
+        stroke-linecap="round" 
+        fill="none"/>
+
+  <path id="textCurve" d="M 150,420 A 180,180 0 0,1 150,80" fill="none"/>
+  
+  <text fill="white" font-family="Arial, sans-serif" font-weight="bold" font-size="36" letter-spacing="2">
+    <textPath href="#textCurve" startOffset="50%" text-anchor="middle">
+      QUALITY ASSURED
+    </textPath>
+  </text>
+
+  <text x="250" y="230" 
+        font-family="'Brush Script MT', cursive" 
+        font-size="90" 
+        fill="white" 
+        text-anchor="middle"
+        transform="rotate(-10, 250, 230)">
+    PADMA
+  </text>
+  
+  <text x="250" y="300" 
+        font-family="'Brush Script MT', cursive" 
+        font-size="50" 
+        fill="white" 
+        text-anchor="middle"
+        transform="rotate(-10, 250, 300)">
+    FOODS
+  </text>
+  
+  <text x="250" y="360" 
+        font-family="'Brush Script MT', cursive" 
+        font-size="30" 
+        fill="white" 
+        text-anchor="middle"
+        transform="rotate(-10, 250, 360)">
+    Since 1995
+  </text>
+  
+  <line x1="170" y1="370" x2="330" y2="370" stroke="white" stroke-width="2" transform="rotate(-10, 250, 370)"/>
+</svg>

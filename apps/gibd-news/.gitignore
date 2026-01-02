@@ -1,0 +1,43 @@
+# Environment files (secrets)
+**/.env**
+*.env.*
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Data directories - exclude all generated data
+data/
+!data/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials (never commit these)
+*.pem
+*.key
+credentials.json
+secrets.json
+service-account*.json.env

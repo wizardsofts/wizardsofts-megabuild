@@ -1,0 +1,25 @@
+services:
+  nexus:
+    image: sonatype/nexus3:latest
+    container_name: nexus
+    restart: always
+    ports:
+      - "8081:8081"
+      - "8082:8082"  # Docker registry HTTP
+      - "8083:8083"  # Docker registry HTTPS (optional)
+    volumes:
+      - /mnt/data/docker/nexus/data:/nexus-data
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: "-Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m"
+    networks:
+      - gibd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 60s
+      timeout: 10s
+      retries: 2
+      start_period: 300s
+
+networks:
+  gibd-network:
+    external: true

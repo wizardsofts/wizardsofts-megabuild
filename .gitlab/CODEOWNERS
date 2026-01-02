@@ -1,0 +1,101 @@
+# WizardSofts Megabuild - CODEOWNERS
+# ====================================
+# This file defines code ownership for merge request approvals.
+# See: https://docs.gitlab.com/ee/user/project/codeowners/
+#
+# Format: <pattern> <@user-or-group>
+#
+# Note: GitLab uses the LAST matching pattern, so more specific
+# patterns should come AFTER general ones.
+
+# ============================================================================
+# DEFAULT OWNERS - All changes require at least one review
+# ============================================================================
+* @dev-team
+
+# ============================================================================
+# INFRASTRUCTURE - Requires DevOps/Senior review
+# ============================================================================
+
+# Docker Compose configurations
+docker-compose*.yml @devops-team @tech-lead
+
+# Environment files and templates
+.env* @devops-team @tech-lead
+*.env @devops-team @tech-lead
+*.env.* @devops-team @tech-lead
+
+# Infrastructure directory
+/infrastructure/ @devops-team @tech-lead
+
+# Traefik reverse proxy configuration
+/traefik/ @devops-team @tech-lead
+
+# CI/CD pipelines
+.gitlab-ci.yml @devops-team @tech-lead
+/.gitlab/ @devops-team @tech-lead
+
+# Deployment scripts
+/scripts/ @devops-team @tech-lead
+
+# ============================================================================
+# SECURITY-SENSITIVE FILES - Requires Security/Tech Lead review
+# ============================================================================
+
+# Any file with "secret", "credential", "password", "key" in name
+*secret* @security-team @tech-lead
+*credential* @security-team @tech-lead
+*password* @security-team @tech-lead
+*.key @security-team @tech-lead
+*.pem @security-team @tech-lead
+*.crt @security-team @tech-lead
+
+# Authentication/Authorization code
+**/auth/** @security-team @tech-lead
+**/security/** @security-team @tech-lead
+
+# ============================================================================
+# APPLICATION CODE - Developer access with team lead review
+# ============================================================================
+
+# Frontend applications
+/apps/gibd-quant-web/ @frontend-team @tech-lead
+/apps/ws-wizardsofts-web/ @frontend-team @tech-lead
+/apps/ws-daily-deen-web/ @frontend-team @tech-lead
+/apps/pf-padmafoods-web/ @frontend-team @tech-lead
+/apps/gibd-news/ @frontend-team @tech-lead
+
+# Java Spring services
+/apps/ws-gateway/ @backend-team @tech-lead
+/apps/ws-discovery/ @backend-team @tech-lead
+/apps/ws-company/ @backend-team @tech-lead
+/apps/ws-trades/ @backend-team @tech-lead
+/apps/ws-news/ @backend-team @tech-lead
+
+# Python ML/AI services
+/apps/gibd-quant-agent/ @ml-team @tech-lead
+/apps/gibd-quant-signal/ @ml-team @tech-lead
+/apps/gibd-quant-nlq/ @ml-team @tech-lead
+/apps/gibd-quant-calibration/ @ml-team @tech-lead
+/apps/gibd-quant-celery/ @ml-team @tech-lead
+/apps/gibd-intelligence/ @ml-team @tech-lead
+/apps/gibd-rl-trader/ @ml-team @tech-lead
+/apps/gibd-vector-context/ @ml-team @tech-lead
+/apps/gibd-web-scraper/ @ml-team @tech-lead
+
+# Shared packages
+/packages/ @backend-team @frontend-team @tech-lead
+
+# ============================================================================
+# DOCUMENTATION - Anyone can contribute, tech writer preferred
+# ============================================================================
+/docs/ @tech-writer @dev-team
+*.md @tech-writer @dev-team
+README* @tech-writer @dev-team
+CLAUDE.md @tech-lead
+
+# ============================================================================
+# SPECIAL FILES - Require Tech Lead approval
+# ============================================================================
+CONSTITUTION.md @tech-lead
+AGENT_GUIDELINES.md @tech-lead

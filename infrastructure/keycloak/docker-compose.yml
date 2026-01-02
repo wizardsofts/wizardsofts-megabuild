@@ -1,0 +1,107 @@
+version: '3.8'
+
+# ============================================================================
+# Keycloak Identity Provider
+# OAuth 2.1 Compliant Configuration
+# ============================================================================
+# Security Best Practices Applied:
+# - PKCE required for all public clients
+# - Implicit/Password grants disabled
+# - Brute force protection enabled
+# - Refresh token rotation (one-time use)
+# - Short-lived access tokens (5 minutes)
+# ============================================================================
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: keycloak_postgres
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-changeme_use_strong_password}
+    networks:
+      - microservices-overlay
+    # security_opt:
+    #   - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.0
+    container_name: keycloak
+    command:
+      - start-dev
+    restart: unless-stopped
+    ports:
+      - "8180:8080"  # Accessible from private network (10.0.0.0/24) - protected by UFW
+    environment:
+      # Database Configuration
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-changeme_use_strong_password}
+
+      # Admin Credentials (Change in production!)
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-changeme_use_strong_password}
+
+      # Hostname Configuration (for production behind reverse proxy)
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge
+
+      # HTTP Settings (Traefik handles TLS)
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+
+      # Observability
+      KC_METRICS_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: INFO
+
+      # Security Settings
+      KC_FEATURES: "preview"
+    # volumes:
+    #   # Import realm configuration on first startup
+    #   - ./realms:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1536M
+    # security_opt:
+    #   - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080; echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; cat <&3 | grep -q '200 OK'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - microservices-overlay
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`id.wizardsofts.com`)"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - "traefik.http.routers.keycloak.tls=true"
+      - "traefik.http.routers.keycloak.tls.certresolver=letsencrypt"
+      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
+      # Security headers
+      - "traefik.http.routers.keycloak.middlewares=security-headers@file"
+
+volumes:
+  postgres_data:
+
+networks:
+  microservices-overlay:
+    external: true
+    name: microservices-overlay

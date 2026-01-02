@@ -1,0 +1,298 @@
+# ============================================================================
+# INFRASTRUCTURE CI/CD PIPELINE
+# ============================================================================
+# This pipeline handles infrastructure deployments (Appwrite, Traefik, GitLab).
+# Triggered when files in /infrastructure/, /traefik/, or docker-compose*.yml change.
+#
+# SECURITY: All credentials are sourced from GitLab CI/CD Variables.
+# Required variables (Settings → CI/CD → Variables):
+#   - SSH_PRIVATE_KEY (File, Protected)
+#   - DEPLOY_SUDO_PASSWORD (Variable, Protected, Masked)
+#   - APPWRITE_DB_PASSWORD (Variable, Protected, Masked)
+#   - APPWRITE_SECRET_KEY (Variable, Protected, Masked)
+#   - REDIS_PASSWORD (Variable, Protected, Masked)
+# ============================================================================
+
+# ============================================================================
+# VALIDATE JOBS
+# ============================================================================
+
+validate-docker-compose:
+  stage: validate
+  image: docker:24-cli
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - docker-compose*.yml
+        - infrastructure/**/*
+        - traefik/**/*
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      changes:
+        - docker-compose*.yml
+        - infrastructure/**/*
+        - traefik/**/*
+  script:
+    - |
+      echo "Validating Docker Compose files..."
+
+      for file in docker-compose*.yml; do
+        if [ -f "$file" ]; then
+          echo "Validating $file..."
+          docker compose -f "$file" config --quiet || exit 1
+        fi
+      done
+
+      echo "All Docker Compose files are valid!"
+
+validate-traefik-config:
+  stage: validate
+  image: traefik:v2.10
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - traefik/**/*
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      changes:
+        - traefik/**/*
+  script:
+    - |
+      echo "Validating Traefik configuration..."
+
+      if [ -f "traefik/traefik.yml" ]; then
+        traefik healthcheck --configFile=traefik/traefik.yml 2>&1 || echo "Config validation done"
+      fi
+
+      echo "Traefik configuration validation complete!"
+  allow_failure: true
+
+# ============================================================================
+# DEPLOY JOBS - Infrastructure deployments
+# ============================================================================
+
+.infra-deploy-template:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync bash curl
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  variables:
+    DEPLOY_HOST: "10.0.0.84"
+    DEPLOY_USER: "wizardsofts"
+    DEPLOY_PATH: "/opt/wizardsofts-megabuild"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: manual
+
+deploy-traefik:
+  extends: .infra-deploy-template
+  script:
+    - |
+      echo "Deploying Traefik to $DEPLOY_HOST..."
+
+      # Sync Traefik configuration
+      rsync -avz traefik/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/traefik/"
+
+      # Create deployment script
+      cat > /tmp/deploy-traefik.sh << 'EOF'
+      #!/bin/bash
+      set -e
+      cd /opt/wizardsofts-megabuild
+
+      # Ensure network exists
+      docker network create microservices-overlay 2>/dev/null || true
+
+      # Restart Traefik
+      if [ -f "infrastructure/traefik/docker-compose.yml" ]; then
+        cd infrastructure/traefik
+        docker compose down || true
+        docker compose up -d
+      fi
+
+      echo "Traefik deployment complete!"
+      docker ps | grep traefik || true
+      EOF
+
+      scp /tmp/deploy-traefik.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy-traefik.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy-traefik.sh && /tmp/deploy-traefik.sh"
+  environment:
+    name: infrastructure-traefik
+    url: https://traefik.wizardsofts.com
+
+deploy-appwrite:
+  extends: .infra-deploy-template
+  script:
+    - |
+      echo "Deploying Appwrite to $DEPLOY_HOST..."
+
+      # Create secure deployment script
+      # NOTE: Credentials are injected via SSH environment, not hardcoded
+      cat > /tmp/deploy-appwrite.sh << 'EOF'
+      #!/bin/bash
+      set -e
+
+      DEPLOY_PATH="/opt/wizardsofts-megabuild"
+      cd "$DEPLOY_PATH"
+
+      # Verify required files
+      if [ ! -f "docker-compose.appwrite.yml" ]; then
+        echo "ERROR: docker-compose.appwrite.yml not found!"
+        exit 1
+      fi
+
+      if [ ! -f ".env.appwrite" ]; then
+        echo "ERROR: .env.appwrite not found!"
+        echo "Please create .env.appwrite from .env.appwrite.template"
+        exit 1
+      fi
+
+      # Ensure networks exist
+      docker network create microservices-overlay 2>/dev/null || true
+      docker network create gibd-network 2>/dev/null || true
+
+      # Deploy Appwrite
+      echo "Stopping existing Appwrite containers..."
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite down || true
+
+      echo "Pulling latest Appwrite images..."
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite pull
+
+      echo "Starting Appwrite services..."
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite up -d
+
+      # Wait for initialization
+      echo "Waiting for Appwrite to initialize (60s)..."
+      sleep 60
+
+      # Configure console if env.js exists
+      if [ -f "traefik/console-env.js" ]; then
+        docker cp traefik/console-env.js appwrite-console:/usr/share/nginx/html/console/_app/env.js 2>/dev/null || true
+        docker restart appwrite-console 2>/dev/null || true
+      fi
+
+      # Verify
+      echo "Appwrite service status:"
+      docker compose -f docker-compose.appwrite.yml ps
+
+      echo "Testing health endpoint..."
+      sleep 10
+      curl -sf https://appwrite.wizardsofts.com/v1/health || echo "Health check pending (DNS/Traefik may need time)"
+
+      echo "Appwrite deployment complete!"
+      EOF
+
+      # Sync Appwrite files
+      scp docker-compose.appwrite.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+      scp .env.appwrite.template "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/" 2>/dev/null || true
+
+      if [ -f "traefik/console-env.js" ]; then
+        scp traefik/console-env.js "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/traefik/"
+      fi
+
+      # Execute deployment
+      scp /tmp/deploy-appwrite.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy-appwrite.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy-appwrite.sh && /tmp/deploy-appwrite.sh"
+  environment:
+    name: infrastructure-appwrite
+    url: https://appwrite.wizardsofts.com
+
+deploy-gitlab:
+  extends: .infra-deploy-template
+  script:
+    - |
+      echo "Deploying GitLab configuration to $DEPLOY_HOST..."
+
+      # Sync GitLab configuration
+      rsync -avz infrastructure/gitlab/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/infrastructure/gitlab/"
+
+      # Create deployment script
+      cat > /tmp/deploy-gitlab.sh << 'EOF'
+      #!/bin/bash
+      set -e
+
+      cd /opt/wizardsofts-megabuild/infrastructure/gitlab
+
+      echo "Restarting GitLab..."
+      docker compose down || true
+      docker compose up -d
+
+      echo "Waiting for GitLab to start (this may take a few minutes)..."
+      sleep 60
+
+      echo "GitLab status:"
+      docker ps | grep gitlab || true
+      docker exec gitlab gitlab-ctl status 2>/dev/null || echo "GitLab starting..."
+
+      echo "GitLab deployment complete!"
+      EOF
+
+      scp /tmp/deploy-gitlab.sh "$DEPLOY_USER@$DEPLOY_HOST:/tmp/deploy-gitlab.sh"
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" "chmod +x /tmp/deploy-gitlab.sh && /tmp/deploy-gitlab.sh"
+  environment:
+    name: infrastructure-gitlab
+    url: http://10.0.0.84:8090
+
+# ============================================================================
+# ROLLBACK JOBS
+# ============================================================================
+
+rollback-infrastructure:
+  extends: .infra-deploy-template
+  script:
+    - |
+      echo "Rolling back infrastructure on $DEPLOY_HOST..."
+
+      ssh "$DEPLOY_USER@$DEPLOY_HOST" << 'EOF'
+      set -e
+      cd /opt/wizardsofts-megabuild
+
+      # Reset to previous commit
+      git reset --hard HEAD~1
+
+      # Restart all infrastructure services
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite down || true
+      docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite up -d
+
+      echo "Infrastructure rollback complete!"
+      EOF
+  when: manual
+
+# ============================================================================
+# VERIFY JOBS
+# ============================================================================
+
+verify-infrastructure:
+  stage: verify
+  image: curlimages/curl:latest
+  variables:
+    DEPLOY_HOST: "10.0.0.84"
+  rules:
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master)$/'
+      when: on_success
+  script:
+    - |
+      echo "Verifying infrastructure deployment..."
+      sleep 30
+
+      # Check Traefik
+      echo "Checking Traefik dashboard..."
+      curl -sf "https://traefik.wizardsofts.com/api/overview" || echo "Traefik check pending"
+
+      # Check Appwrite
+      echo "Checking Appwrite health..."
+      curl -sf "https://appwrite.wizardsofts.com/v1/health" || echo "Appwrite check pending"
+
+      # Check GitLab
+      echo "Checking GitLab..."
+      curl -sf "http://$DEPLOY_HOST:8090/-/readiness" || echo "GitLab check pending"
+
+      echo "Infrastructure verification complete!"
+  needs:
+    - job: deploy-appwrite
+      optional: true
+    - job: deploy-traefik
+      optional: true
+    - job: deploy-gitlab
+      optional: true

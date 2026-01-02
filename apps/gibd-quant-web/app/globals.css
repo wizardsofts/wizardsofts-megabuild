@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for the application */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-rgb: 10, 10, 10;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Custom utility classes for trading signals */
+@layer components {
+  .signal-buy {
+    @apply bg-buy-light text-buy-dark border-buy;
+  }
+
+  .signal-sell {
+    @apply bg-sell-light text-sell-dark border-sell;
+  }
+
+  .signal-hold {
+    @apply bg-hold-light text-hold-dark border-hold;
+  }
+}

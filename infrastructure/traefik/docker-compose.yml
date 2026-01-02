@@ -1,0 +1,40 @@
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Dashboard port
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./dynamic_conf.yml:/etc/traefik/dynamic_conf.yml"
+      - "traefik-ssl:/letsencrypt"  # ACME SSL certificates
+    environment:
+      - ACME_EMAIL=admin@wizardsofts.com
+    networks:
+      - traefik-public
+      - gibd-network
+      - mailcow-network
+    labels:
+      - "traefik.enable=true"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  traefik-ssl:
+    name: traefik-ssl
+
+networks:
+  traefik-public:
+    driver: bridge
+  gibd-network:
+    external: true
+  mailcow-network:
+    external: true
+    name: mailcowdockerized_mailcow-network

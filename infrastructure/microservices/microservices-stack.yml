@@ -1,0 +1,237 @@
+version: '3.8'
+
+# ============================================================================
+# WizardSofts Spring Boot Microservices - Docker Swarm Stack
+# ============================================================================
+# Phase 4b: Microservices Modernization
+# Services: ws-discovery, ws-gateway, ws-company, ws-trades, ws-news
+# Server: 84 (gmktec) - Production server
+# Network: services-network (overlay, encrypted)
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # EUREKA SERVICE DISCOVERY
+  # ==========================================================================
+  ws-discovery:
+    image: wizardsofts-megabuild-ws-discovery:latest
+    networks:
+      - services-network
+    ports:
+      - target: 8761
+        published: 8761
+        protocol: tcp
+        mode: ingress
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ==========================================================================
+  # SPRING CLOUD GATEWAY (API Gateway)
+  # ==========================================================================
+  ws-gateway:
+    image: wizardsofts-megabuild-ws-gateway:latest
+    networks:
+      - services-network
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: ingress
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ws-discovery:8761/eureka/
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ==========================================================================
+  # DATA SERVICES (Spring Boot REST APIs)
+  # ==========================================================================
+
+  ws-trades:
+    image: wizardsofts-megabuild-ws-trades:latest
+    networks:
+      - services-network
+    ports:
+      - target: 8182
+        published: 8182
+        protocol: tcp
+        mode: ingress
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://10.0.0.80:5435/ws_gibd_dse_daily_trades
+      - SPRING_DATASOURCE_USERNAME=gibd
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ws-discovery:8761/eureka/
+      - API_KEY=${API_KEY}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8182/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ws-company:
+    image: wizardsofts-megabuild-ws-company:latest
+    networks:
+      - services-network
+    ports:
+      - target: 8183
+        published: 8183
+        protocol: tcp
+        mode: ingress
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://10.0.0.80:5435/ws_gibd_dse_company_info
+      - SPRING_DATASOURCE_USERNAME=gibd
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ws-discovery:8761/eureka/
+      - API_KEY=${API_KEY}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8183/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ws-news:
+    image: wizardsofts-megabuild-ws-news:latest
+    networks:
+      - services-network
+    ports:
+      - target: 8184
+        published: 8184
+        protocol: tcp
+        mode: ingress
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://10.0.0.80:5435/ws_gibd_news_database
+      - SPRING_DATASOURCE_USERNAME=ws_gibd
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://ws-discovery:8761/eureka/
+      - API_KEY=${API_KEY}
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8184/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+networks:
+  services-network:
+    external: true
+    name: services-network
