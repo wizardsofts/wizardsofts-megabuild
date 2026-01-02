@@ -12,7 +12,6 @@ from .entities import (
     PlaceEntity,
     EventEntity,
     TopicEntity,
-    HadithVector,
     EntityMerge,
     ExtractionJob
 )
@@ -36,7 +35,6 @@ __all__ = [
     "PlaceEntity",
     "EventEntity",
     "TopicEntity",
-    "HadithVector",
     "EntityMerge",
     "ExtractionJob",
 

@@ -13,7 +13,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import declarative_base, relationship
-from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
 
@@ -159,9 +158,6 @@ class TopicEntity(Base):
     definition_en = Column(Text)
     definition_ar = Column(Text)
 
-    # Semantic embeddings
-    embedding_vector = Column(Vector(1536))  # OpenAI text-embedding-3-large
-
     # Metadata
     attributes = Column(JSONB, default=dict)
     confidence_score = Column(Float, default=0.0)
@@ -173,36 +169,6 @@ class TopicEntity(Base):
 
     # Relationships
     parent_topic = relationship("TopicEntity", remote_side=[id], backref="sub_topics")
-
-
-class HadithVector(Base):
-    """Vector embeddings for hadith text (RAG retrieval)"""
-    __tablename__ = "hadith_vectors"
-
-    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
-    hadith_id = Column(Integer, nullable=False, index=True)  # FK to hadiths table
-
-    # Vector embedding
-    embedding = Column(Vector(1536))  # OpenAI text-embedding-3-large
-
-    # Chunk info
-    chunk_index = Column(Integer, default=0)
-    chunk_text = Column(Text, nullable=False)
-
-    # Minimal metadata (most data in hadiths table)
-    metadata = Column(JSONB, nullable=False)
-
-    # Embedding metadata
-    embedding_model = Column(String(100), default='text-embedding-3-large')
-    embedding_created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    __table_args__ = (
-        Index('idx_hadith_chunk', 'hadith_id', 'chunk_index'),
-    )
 
 
 class EntityMerge(Base):

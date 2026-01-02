@@ -21,7 +21,8 @@ class Settings(BaseSettings):
 
     # Ollama Configuration
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3:8b"
+    ollama_model: str = "llama3.2:3b-instruct-q4_K_M"
+    ollama_embedding_model: str = "nomic-embed-text"
 
     # OpenAI Configuration
     openai_api_key: str = ""
