@@ -231,6 +231,39 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 
 ## Security Guidelines
 
+### ⚠️ CRITICAL: Security Scanning is MANDATORY
+
+**BEFORE using ANY new package or module:**
+
+1. **Run Security Scan:**
+   ```bash
+   pip install pip-audit safety bandit
+   pip-audit --desc  # Check for known CVEs
+   safety check      # Alternative CVE database
+   ```
+
+2. **Check Online Vulnerability Databases:**
+   - https://nvd.nist.gov/ (National Vulnerability Database)
+   - https://security.snyk.io/ (Snyk Vulnerability DB)
+   - https://github.com/advisories (GitHub Security Advisories)
+
+3. **Review Package Security:**
+   - Check last update date (avoid unmaintained packages)
+   - Review GitHub issues for security concerns
+   - Verify package maintainer reputation
+   - Check for known CVEs: `pip-audit | grep <package-name>`
+
+4. **Document Security Check:**
+   ```markdown
+   ## Security Scan - <Package Name>
+   - **Date:** YYYY-MM-DD
+   - **Tool:** pip-audit
+   - **Result:** ✅ No vulnerabilities / ❌ N vulnerabilities found
+   - **Action:** Updated to version X.Y.Z / Applied patches
+   ```
+
+**NO EXCEPTIONS:** Every new dependency MUST pass security scanning before use.
+
 ### Mandatory Security Practices
 
 1. **Dependency Updates:** Check for security advisories weekly
@@ -259,7 +292,27 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
    - Set memory limits for all containers
    - Run as non-root user when possible
 
-6. **Before Any Code Change:**
+6. **Network Security - Port Exposure:**
+   - **ONLY Traefik** should expose ports to `0.0.0.0`
+   - **ALL other services** MUST bind to `127.0.0.1` (localhost only)
+   - Example (CORRECT):
+     ```yaml
+     ports:
+       - "127.0.0.1:7474:7474"  # ✅ Localhost only
+       - "127.0.0.1:8000:8000"  # ✅ Localhost only
+     ```
+   - Example (WRONG):
+     ```yaml
+     ports:
+       - "7474:7474"  # ❌ Exposed to 0.0.0.0 (public internet)
+       - "0.0.0.0:8000:8000"  # ❌ Explicitly public
+     ```
+   - If remote access needed, use UFW firewall:
+     ```bash
+     sudo ufw allow from 10.0.0.0/24 to any port 7474 proto tcp
+     ```
+
+7. **Before Any Code Change:**
    - Run `gitleaks detect --source=.` to check for secrets
    - Verify dependencies with security scanners
    - Test rate limiting is not bypassed
