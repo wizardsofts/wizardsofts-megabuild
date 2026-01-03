@@ -293,24 +293,35 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
    - Run as non-root user when possible
 
 6. **Network Security - Port Exposure:**
-   - **ONLY Traefik** should expose ports to `0.0.0.0`
-   - **ALL other services** MUST bind to `127.0.0.1` (localhost only)
-   - Example (CORRECT):
-     ```yaml
-     ports:
-       - "127.0.0.1:7474:7474"  # ✅ Localhost only
-       - "127.0.0.1:8000:8000"  # ✅ Localhost only
-     ```
-   - Example (WRONG):
-     ```yaml
-     ports:
-       - "7474:7474"  # ❌ Exposed to 0.0.0.0 (public internet)
-       - "0.0.0.0:8000:8000"  # ❌ Explicitly public
-     ```
-   - If remote access needed, use UFW firewall:
-     ```bash
-     sudo ufw allow from 10.0.0.0/24 to any port 7474 proto tcp
-     ```
+   - **CRITICAL:** Services accessible from **local network (10.0.0.0/24)**, NOT localhost only
+   - **Reason:** Distributed infrastructure (Ray, Celery, distributed ML) requires cross-server access
+   - **Security:** UFW firewall REQUIRED to block external internet access
+   - **ONLY Traefik** exposes to public internet (`0.0.0.0`)
+   - **ALL other services** accessible from local network WITH UFW protection
+
+   **Port Binding Strategy:**
+   ```yaml
+   # ✅ CORRECT - Local network with UFW firewall
+   ports:
+     - "7474:7474"  # Local network (MUST configure UFW)
+     - "8000:8000"  # Local network (MUST configure UFW)
+
+   # ❌ WRONG - Localhost only (breaks distributed access)
+   ports:
+     - "127.0.0.1:7474:7474"  # Ray workers can't access
+     - "127.0.0.1:8000:8000"  # Celery tasks can't access
+   ```
+
+   **MANDATORY UFW Rules:**
+   ```bash
+   # Allow local network only
+   sudo ufw allow from 10.0.0.0/24 to any port 7474 proto tcp
+
+   # Block external internet
+   sudo ufw deny 7474/tcp
+   ```
+
+   See: `mandatory-security-scanning` memory for full network security strategy
 
 7. **Before Any Code Change:**
    - Run `gitleaks detect --source=.` to check for secrets
