@@ -1,18 +1,17 @@
-import type { Metadata } from "next";
+'use client';
 
-export const metadata: Metadata = {
-  title: "Coming Soon | Guardian Investment BD",
-  description:
-    "Guardian Investment BD - AI-Powered Trading Signals for Dhaka Stock Exchange. Coming Soon.",
-};
+import { useAuth } from '@/hooks/use-auth';
 
 /**
  * Coming Soon Page
  *
- * Displayed when the app is accessed via guardianinvestmentbd.com domain
- * while the app is still under development.
+ * Displayed when the app is accessed via guardianinvestmentbd.com domain.
+ * Unauthenticated users see a login/register button.
+ * Authenticated users are redirected to protected routes via middleware.
  */
 export default function ComingSoonPage() {
+  const { login } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center px-4">
       <div className="text-center max-w-2xl mx-auto">
@@ -27,12 +26,33 @@ export default function ComingSoonPage() {
         {/* Coming Soon Message */}
         <div className="mb-12">
           <h2 className="text-2xl md:text-3xl font-semibold text-blue-200 mb-4">
-            Coming Soon
+            AI-Powered Trading Platform
           </h2>
-          <p className="text-lg text-gray-300 leading-relaxed">
-            We&apos;re building something amazing. Our AI-powered trading signal
-            platform for Dhaka Stock Exchange is under development.
+          <p className="text-lg text-gray-300 leading-relaxed mb-8">
+            Get real-time trading signals, AI-powered analysis, and comprehensive market insights for Dhaka Stock Exchange.
           </p>
+
+          {/* Login Button */}
+          <button
+            onClick={() => login()}
+            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+              />
+            </svg>
+            Sign In / Register for Early Access
+          </button>
         </div>
 
         {/* Features Preview */}

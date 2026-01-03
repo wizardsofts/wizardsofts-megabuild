@@ -16,6 +16,9 @@ dependencies = [
     "openai>=1.57.2",
     # SECURITY: Rate limiting
     "slowapi>=0.1.9",
+    # SECURITY: JWT validation (patched for CVE-2024-33663, CVE-2024-33664)
+    "python-jose[cryptography]==3.3.1",
+    "requests>=2.31.0",
 ]
 
 [build-system]

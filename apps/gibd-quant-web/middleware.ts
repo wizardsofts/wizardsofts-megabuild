@@ -1,46 +1,55 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 /**
- * Middleware to show Coming Soon page when accessed via domain name
+ * Middleware to enforce authentication on protected routes
  *
- * When the app is accessed via guardianinvestmentbd.com, it shows a Coming Soon page.
- * When accessed via local IP or localhost, it shows the full application.
+ * - Public routes: /, /coming-soon, /api/auth
+ * - Protected routes: All other routes require authentication
+ * - For production domains (guardianinvestmentbd.com), unauthenticated users
+ *   see the coming-soon page with login prompt
  */
-export function middleware(request: NextRequest) {
+
+const PUBLIC_ROUTES = ['/', '/coming-soon'];
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const host = request.headers.get('host') || '';
 
-  // Production domains that should show Coming Soon
-  const comingSoonDomains = [
-    'guardianinvestmentbd.com',
-    'www.guardianinvestmentbd.com',
-  ];
+  // Allow static assets and auth routes (always public)
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/auth') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
 
-  // Check if accessing via a production domain
-  const isProductionDomain = comingSoonDomains.some(domain =>
-    host.includes(domain)
-  );
+  // Public routes are always accessible
+  if (PUBLIC_ROUTES.some(route => pathname === route)) {
+    return NextResponse.next();
+  }
 
-  // If accessing via production domain, redirect to coming-soon page
+  // Check if production domain
+  const isProductionDomain = host.includes('guardianinvestmentbd.com');
+
   if (isProductionDomain) {
-    const url = request.nextUrl;
+    // Check if user is authenticated
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
 
-    // Don't redirect if already on coming-soon page (avoid infinite loop)
-    if (url.pathname === '/coming-soon') {
+    // If authenticated, allow access to protected routes
+    if (token) {
       return NextResponse.next();
     }
 
-    // Allow static assets and API routes
-    if (
-      url.pathname.startsWith('/_next') ||
-      url.pathname.startsWith('/api') ||
-      url.pathname.includes('.')
-    ) {
-      return NextResponse.next();
+    // Redirect unauthenticated users to coming-soon
+    if (pathname !== '/coming-soon') {
+      return NextResponse.rewrite(new URL('/coming-soon', request.url));
     }
-
-    // Redirect all other routes to coming-soon
-    return NextResponse.rewrite(new URL('/coming-soon', request.url));
   }
 
   // For local development / IP access, allow normal access
