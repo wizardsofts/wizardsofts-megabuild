@@ -6,8 +6,8 @@ services:
     image: neo4j:5.15.0
     container_name: hadith-neo4j
     ports:
-      - "7474:7474"  # HTTP
-      - "7687:7687"  # Bolt
+      - "127.0.0.1:7474:7474"  # HTTP - localhost only
+      - "127.0.0.1:7687:7687"  # Bolt - localhost only
     environment:
       - NEO4J_AUTH=neo4j/hadithknowledge2025
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
@@ -44,11 +44,11 @@ services:
     image: chromadb/chroma:0.5.20
     container_name: hadith-chromadb
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # Localhost only
     environment:
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=FALSE
-      - ALLOW_RESET=TRUE
+      - ALLOW_RESET=FALSE  # SECURITY: Prevent database wipes in production
     volumes:
       - chromadb_data:/chroma/chroma
     networks:
@@ -68,75 +68,9 @@ services:
         reservations:
           memory: 512M
 
-  # Ollama for Local LLM (optional - can use OpenAI instead)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: hadith-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - hadith-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 60s
-      timeout: 10s
-      retries: 3
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-        reservations:
-          memory: 2G
-
-  # PostgreSQL (reuse existing from megabuild)
-  # Note: This assumes you have a PostgreSQL instance running
-  # If not, uncomment the section below
-
-  # postgres:
-  #   image: postgres:15-alpine
-  #   container_name: hadith-postgres
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_USER=hadith_user
-  #     - POSTGRES_PASSWORD=hadith_password
-  #     - POSTGRES_DB=dailydeenguide
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - hadith-network
-  #   restart: unless-stopped
-
-  # Redis for Celery (if not already available)
-  redis:
-    image: redis:7-alpine
-    container_name: hadith-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --requirepass hadithredis2025
-    volumes:
-      - redis_data:/data
-    networks:
-      - hadith-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    security_opt:
-      - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 128M
+  # PostgreSQL (Server 80:5433) - Already running
+  # Redis (Server 84:6380) - Already running
+  # Ollama (Server 84:11434) - Shared infrastructure (/infrastructure/ollama)
 
 volumes:
   neo4j_data:
@@ -144,9 +78,6 @@ volumes:
   neo4j_import:
   neo4j_plugins:
   chromadb_data:
-  ollama_data:
-  redis_data:
-  # postgres_data:
 
 networks:
   hadith-network:
