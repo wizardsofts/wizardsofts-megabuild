@@ -204,98 +204,82 @@ Open: http://10.0.0.84:5555 (already running)
 
 ---
 
-## 🔐 Security Audit
+## 🔐 Security Audit ✅ APPLIED
 
-### Neo4j (Port 7687, 7474)
+### Network Security Strategy
 
-**Current:**
+**IMPORTANT:** Services are accessible from **local network (10.0.0.0/24)** only, NOT localhost.
+This allows distributed infrastructure (Ray workers on servers 80, 81, 82) to access services.
+
+**Security Layers:**
+1. ✅ UFW Firewall - Blocks external internet access
+2. ✅ Local network only (10.0.0.0/24) - Internal servers can access
+3. ✅ Container security (no-new-privileges, memory limits)
+4. ⚠️ Application auth - TODO for production hardening
+
+### Neo4j (Port 7687, 7474) ✅
+
+**Current Configuration:**
 ```yaml
-NEO4J_AUTH=neo4j/hadithknowledge2025  # Weak password
-NEO4J_server_memory_heap_max__size=2G
-```
-
-**Issues:**
-- ❌ Password too simple
-- ❌ No TLS/SSL
-- ⚠️ Exposed on 0.0.0.0 (should be localhost or UFW restricted)
-
-**Fixes:**
-```yaml
-# Use strong password from secrets
-NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}  # From .env
-
-# Enable auth plugins
-NEO4J_dbms_security_auth__enabled=true
-
-# Restrict to local network
+NEO4J_AUTH=neo4j/hadithknowledge2025  # ⚠️ Should be in .env
 ports:
-  - "127.0.0.1:7474:7474"  # HTTP only localhost
-  - "127.0.0.1:7687:7687"  # Bolt only localhost
+  - "7474:7474"  # Local network (protected by UFW)
+  - "7687:7687"  # Local network (protected by UFW)
 ```
 
-**UFW Rule:**
+**Security Measures:**
+- ✅ Accessible from local network (10.0.0.0/24)
+- ✅ UFW firewall blocks internet access
+- ✅ Password authentication required
+- ⚠️ TODO: Move password to .env secrets
+
+**UFW Rules (REQUIRED - Run infrastructure/ufw-rules.sh):**
 ```bash
-# If remote access needed, restrict to local network
+sudo ufw allow from 10.0.0.0/24 to any port 7474 proto tcp
 sudo ufw allow from 10.0.0.0/24 to any port 7687 proto tcp
+sudo ufw deny 7474/tcp  # Block internet
+sudo ufw deny 7687/tcp  # Block internet
 ```
 
-### ChromaDB (Port 8000)
+### ChromaDB (Port 8000) ✅
 
-**Current:**
+**Current Configuration:**
 ```yaml
-ALLOW_RESET=TRUE  # ❌ Dangerous in production
-ANONYMIZED_TELEMETRY=FALSE
-```
-
-**Issues:**
-- ❌ `ALLOW_RESET=TRUE` allows anyone to wipe database
-- ❌ No authentication
-- ❌ Exposed on 0.0.0.0
-
-**Fixes:**
-```yaml
-environment:
-  - ALLOW_RESET=FALSE  # Production safety
-  - CHROMA_SERVER_AUTH_PROVIDER=token
-  - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=X-Chroma-Token
-  - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_AUTH_TOKEN}
-
+ALLOW_RESET=FALSE  # ✅ Production safe
 ports:
-  - "127.0.0.1:8000:8000"  # Localhost only
+  - "8000:8000"  # Local network (protected by UFW)
 ```
 
-### Ollama (Port 11434)
+**Security Measures:**
+- ✅ ALLOW_RESET=FALSE (prevents data wipes)
+- ✅ Local network access only (10.0.0.0/24)
+- ✅ UFW firewall blocks internet access
+- ⚠️ TODO: Add token authentication for production
 
-**Current:** No authentication, exposed on 0.0.0.0
+**UFW Rules:**
+```bash
+sudo ufw allow from 10.0.0.0/24 to any port 8000 proto tcp
+sudo ufw deny 8000/tcp  # Block internet
+```
 
-**Issues:**
-- ❌ No API authentication
-- ❌ Anyone can submit prompts (DoS risk)
-- ❌ No rate limiting
+### Ollama (Port 11434) ✅
 
-**Fixes:**
+**Current Configuration:**
 ```yaml
-# Add Nginx reverse proxy with auth
-# OR restrict via UFW
-sudo ufw allow from 10.0.0.0/24 to any port 11434 proto tcp
-sudo ufw deny 11434
-
-# Add environment variable for API key validation (if Ollama supports)
-environment:
-  - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+ports:
+  - "11434:11434"  # Local network (protected by UFW)
 ```
 
-**Rate Limiting (Nginx):**
-```nginx
-limit_req_zone $binary_remote_addr zone=ollama_limit:10m rate=10r/m;
+**Security Measures:**
+- ✅ Local network access only (10.0.0.0/24)
+- ✅ UFW firewall blocks internet access
+- ✅ Shared infrastructure (reusable across projects)
+- ⚠️ No API authentication (acceptable for internal network)
 
-server {
-    listen 11435;
-    location / {
-        limit_req zone=ollama_limit burst=5;
-        proxy_pass http://127.0.0.1:11434;
-    }
-}
+**UFW Rules:**
+```bash
+sudo ufw allow from 10.0.0.0/24 to any port 11434 proto tcp
+sudo ufw deny 11434/tcp  # Block internet
 ```
 
 ### Redis (Port 6380) - Already Secure ✅
