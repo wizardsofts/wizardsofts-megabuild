@@ -1,24 +1,28 @@
+version: '3.8'
+
 services:
-  ollama-local:
-    image: docker.io/ollama/ollama:latest
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
     ports:
-      - "127.0.0.1:11435:11434"  # Localhost-only access, port 11435 to avoid HAProxy conflict
+      - "127.0.0.1:11434:11434"  # Localhost only
     volumes:
-      - ollama-data:/root/.ollama  # Named volume for better portability
-    container_name: ollama-local
-    restart: always
-    environment:
-      - OLLAMA_KEEP_ALIVE=24h
-      - OLLAMA_HOST=0.0.0.0
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ["CMD", "ollama", "list"]
       interval: 60s
       timeout: 10s
-      retries: 2
-      start_period: 30s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
 
 volumes:
-  ollama-data:
-
-networks:
-  default:
+  ollama_models:
+    driver: local
