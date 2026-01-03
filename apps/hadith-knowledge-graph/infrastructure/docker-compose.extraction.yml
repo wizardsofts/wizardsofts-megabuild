@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Python extraction worker
+  extraction-worker:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.extraction
+    container_name: hadith-extraction-worker
+    environment:
+      # PostgreSQL
+      - POSTGRES_HOST=10.0.0.80
+      - POSTGRES_PORT=5433
+      - POSTGRES_USER=gibd
+      - POSTGRES_PASSWORD=29Dec2#24
+      - POSTGRES_DB=gibd
+
+      # Neo4j
+      - NEO4J_URI=bolt://hadith-neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=hadithknowledge2025
+
+      # ChromaDB
+      - CHROMA_HOST=hadith-chromadb
+      - CHROMA_PORT=8000
+      - CHROMA_COLLECTION_NAME=hadith_embeddings
+
+      # Ollama
+      - OLLAMA_BASE_URL=http://hadith-ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b-instruct-q4_K_M
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+
+      # Redis
+      - REDIS_HOST=hadith-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=hadithredis2025
+      - REDIS_URL=redis://:hadithredis2025@hadith-redis:6379/0
+
+      # Application
+      - LOG_LEVEL=INFO
+      - CONFIDENCE_THRESHOLD=0.8
+    volumes:
+      - ..:/app
+    working_dir: /app
+    command: tail -f /dev/null  # Keep container running
+    networks:
+      - hadith-network
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+networks:
+  hadith-network:
+    external: true
+    name: infrastructure_hadith-network
