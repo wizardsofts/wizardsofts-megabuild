@@ -34,10 +34,7 @@ class PersonEntity(Base):
 
     # Biographical data
     person_type = Column(String(50), index=True)  # prophet, companion, narrator, scholar
-    birth_year = Column(Integer)
-    death_year = Column(Integer)
-    birth_year_hijri = Column(Integer)
-    death_year_hijri = Column(Integer)
+    # Note: birth/death years removed - rarely known for hadith narrators
 
     # Narrator-specific
     reliability_grade = Column(String(50))  # trustworthy, weak, fabricator
@@ -48,7 +45,7 @@ class PersonEntity(Base):
 
     # Data quality
     confidence_score = Column(Float, default=0.0)
-    data_sources = Column(JSONB, default=list)
+    # Note: data_sources removed - not populated in extraction
     last_verified_at = Column(DateTime)
 
     # Timestamps
@@ -79,9 +76,7 @@ class PlaceEntity(Base):
     modern_name = Column(String(255))
     modern_country = Column(String(100))
 
-    # Coordinates
-    latitude = Column(Float)
-    longitude = Column(Float)
+    # Note: Coordinates removed - not needed for Islamic hadith scholarship
 
     # Metadata
     attributes = Column(JSONB, default=dict)
@@ -126,7 +121,7 @@ class EventEntity(Base):
     # Metadata
     attributes = Column(JSONB, default=dict)
     confidence_score = Column(Float, default=0.0)
-    data_sources = Column(JSONB, default=list)
+    # Note: data_sources removed - not populated in extraction
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)
