@@ -159,6 +159,17 @@ http:
       middlewares:
         - admin-auth
 
+    # Keycloak Identity Provider - Guardian Investment BD
+    keycloak-guardian:
+      rule: Host(`auth.guardianinvestmentbd.com`)
+      service: keycloak
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - keycloak-security-headers
+
     # ========================================================================
     # MAILCOW EMAIL SERVER
     # ========================================================================
@@ -280,6 +291,16 @@ http:
         customRequestHeaders:
           X-Forwarded-Proto: "https"
 
+    # Security Headers for Keycloak
+    keycloak-security-headers:
+      headers:
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          X-XSS-Protection: "1; mode=block"
+          Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+
   # ==========================================================================
   # SERVICES
   # ==========================================================================
@@ -316,6 +337,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://ws-discovery:8761"
+
+    # Keycloak Identity Provider
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
 
     # Mailcow (using internal ports when behind Traefik reverse proxy)
     mailcow-http:

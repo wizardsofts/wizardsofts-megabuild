@@ -3,7 +3,7 @@
   "enabled": true,
   "displayName": "WizardSofts Platform",
   "displayNameHtml": "<div class=\"kc-logo-text\"><span>WizardSofts</span></div>",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "rememberMe": true,
   "verifyEmail": true,
@@ -44,7 +44,17 @@
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "passwordPolicy": "length(12) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1) and notUsername and passwordHistory(5)",
-  "smtpServer": {},
+  "smtpServer": {
+    "host": "mail.wizardsofts.com",
+    "port": "587",
+    "from": "noreply@guardianinvestmentbd.com",
+    "fromDisplayName": "Guardian Investment BD",
+    "replyTo": "support@guardianinvestmentbd.com",
+    "auth": "true",
+    "starttls": "true",
+    "user": "${SMTP_USER}",
+    "password": "${SMTP_PASSWORD}"
+  },
   "eventsEnabled": true,
   "eventsListeners": [
     "jboss-logging",
@@ -175,11 +185,17 @@
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
         "https://quant.wizardsofts.com/api/auth/callback/keycloak",
-        "http://localhost:3000/api/auth/callback/keycloak"
+        "https://guardianinvestmentbd.com/api/auth/callback/keycloak",
+        "https://www.guardianinvestmentbd.com/api/auth/callback/keycloak",
+        "http://localhost:3000/api/auth/callback/keycloak",
+        "http://localhost:3001/api/auth/callback/keycloak"
       ],
       "webOrigins": [
         "https://quant.wizardsofts.com",
-        "http://localhost:3000"
+        "https://guardianinvestmentbd.com",
+        "https://www.guardianinvestmentbd.com",
+        "http://localhost:3000",
+        "http://localhost:3001"
       ],
       "publicClient": true,
       "protocol": "openid-connect",
@@ -202,7 +218,7 @@
         "pkce.code.challenge.method": "S256",
         "oauth2.device.authorization.grant.enabled": "false",
         "oidc.ciba.grant.enabled": "false",
-        "post.logout.redirect.uris": "https://quant.wizardsofts.com/*##http://localhost:3000/*",
+        "post.logout.redirect.uris": "https://quant.wizardsofts.com/*##https://guardianinvestmentbd.com/*##https://www.guardianinvestmentbd.com/*##http://localhost:3000/*##http://localhost:3001/*",
         "access.token.lifespan": "300"
       }
     },
