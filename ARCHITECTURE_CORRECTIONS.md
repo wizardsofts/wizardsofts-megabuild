@@ -435,10 +435,9 @@ curl -X POST http://localhost:8001/query \
    - **Impact:** Missing critical hadith provenance
    - **Fix:** Add isnad extraction to entity_extractor.py
 
-2. **No Hadith Grading Integration**
-   - Schema has `grading` field, but extraction doesn't populate it
-   - **Impact:** Can't filter by authenticity (Sahih, Hasan, Weak)
-   - **Fix:** Add grading classifier or lookup from source
+2. ~~**No Hadith Grading Integration**~~ **NOT NEEDED**
+   - ✅ Using Sahih hadiths only (pre-authenticated source)
+   - No grading classifier required
 
 3. **No Relationship Confidence Scores**
    - Neo4j relationships use hardcoded confidence (0.8, 0.9)
@@ -450,22 +449,19 @@ curl -X POST http://localhost:8001/query \
    - **Impact:** No topic tree (Prayer → Obligatory Prayer → Fajr)
    - **Fix:** Add topic hierarchy resolution
 
-### Recommended Truncations
+### Recommended Truncations ✅ APPLIED
 
-**Remove These Fields (Not Used):**
-```sql
--- entities_people
-ALTER TABLE entities_people DROP COLUMN birth_year;  -- Rarely known
-ALTER TABLE entities_people DROP COLUMN death_year;  -- Rarely known
-ALTER TABLE entities_people DROP COLUMN data_sources;  -- Not populated
+**Removed These Fields:**
+- ✅ `entities_people.birth_year` - Rarely known for hadith narrators
+- ✅ `entities_people.death_year` - Rarely known for hadith narrators
+- ✅ `entities_people.birth_year_hijri` - Rarely known
+- ✅ `entities_people.death_year_hijri` - Rarely known
+- ✅ `entities_people.data_sources` - Not populated in extraction
+- ✅ `entities_places.latitude` - Not used for Islamic hadith scholarship
+- ✅ `entities_places.longitude` - Not used for Islamic hadith scholarship
+- ✅ `entities_events.data_sources` - Not populated in extraction
 
--- entities_places
-ALTER TABLE entities_places DROP COLUMN latitude;  -- Not used for Islamic hadith
-ALTER TABLE entities_places DROP COLUMN longitude;
-
--- entities_events
-ALTER TABLE entities_events DROP COLUMN participants;  -- Redundant (use relationships)
-```
+**Note:** Fields removed from SQLAlchemy models (entities.py). Migration script needed for existing databases.
 
 **Keep Essential Fields:**
 - ✅ canonical_name_en/ar
