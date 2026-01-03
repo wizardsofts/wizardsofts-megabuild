@@ -231,6 +231,39 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 
 ## Security Guidelines
 
+### ⚠️ CRITICAL: Security Scanning is MANDATORY
+
+**BEFORE using ANY new package or module:**
+
+1. **Run Security Scan:**
+   ```bash
+   pip install pip-audit safety bandit
+   pip-audit --desc  # Check for known CVEs
+   safety check      # Alternative CVE database
+   ```
+
+2. **Check Online Vulnerability Databases:**
+   - https://nvd.nist.gov/ (National Vulnerability Database)
+   - https://security.snyk.io/ (Snyk Vulnerability DB)
+   - https://github.com/advisories (GitHub Security Advisories)
+
+3. **Review Package Security:**
+   - Check last update date (avoid unmaintained packages)
+   - Review GitHub issues for security concerns
+   - Verify package maintainer reputation
+   - Check for known CVEs: `pip-audit | grep <package-name>`
+
+4. **Document Security Check:**
+   ```markdown
+   ## Security Scan - <Package Name>
+   - **Date:** YYYY-MM-DD
+   - **Tool:** pip-audit
+   - **Result:** ✅ No vulnerabilities / ❌ N vulnerabilities found
+   - **Action:** Updated to version X.Y.Z / Applied patches
+   ```
+
+**NO EXCEPTIONS:** Every new dependency MUST pass security scanning before use.
+
 ### Mandatory Security Practices
 
 1. **Dependency Updates:** Check for security advisories weekly
@@ -259,7 +292,38 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
    - Set memory limits for all containers
    - Run as non-root user when possible
 
-6. **Before Any Code Change:**
+6. **Network Security - Port Exposure:**
+   - **CRITICAL:** Services accessible from **local network (10.0.0.0/24)**, NOT localhost only
+   - **Reason:** Distributed infrastructure (Ray, Celery, distributed ML) requires cross-server access
+   - **Security:** UFW firewall REQUIRED to block external internet access
+   - **ONLY Traefik** exposes to public internet (`0.0.0.0`)
+   - **ALL other services** accessible from local network WITH UFW protection
+
+   **Port Binding Strategy:**
+   ```yaml
+   # ✅ CORRECT - Local network with UFW firewall
+   ports:
+     - "7474:7474"  # Local network (MUST configure UFW)
+     - "8000:8000"  # Local network (MUST configure UFW)
+
+   # ❌ WRONG - Localhost only (breaks distributed access)
+   ports:
+     - "127.0.0.1:7474:7474"  # Ray workers can't access
+     - "127.0.0.1:8000:8000"  # Celery tasks can't access
+   ```
+
+   **MANDATORY UFW Rules:**
+   ```bash
+   # Allow local network only
+   sudo ufw allow from 10.0.0.0/24 to any port 7474 proto tcp
+
+   # Block external internet
+   sudo ufw deny 7474/tcp
+   ```
+
+   See: `mandatory-security-scanning` memory for full network security strategy
+
+7. **Before Any Code Change:**
    - Run `gitleaks detect --source=.` to check for secrets
    - Verify dependencies with security scanners
    - Test rate limiting is not bypassed
