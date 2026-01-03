@@ -5,7 +5,7 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     ports:
-      - "127.0.0.1:11434:11434"  # Localhost only
+      - "11434:11434"  # Local network access (protected by UFW)
     volumes:
       - ollama_models:/root/.ollama
     restart: unless-stopped
