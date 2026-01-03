@@ -1,8 +1,25 @@
 # Hadith Knowledge Graph - Deployment Guide
 
 **Last Updated:** 2026-01-03
-**Status:** Ready for CI/CD Deployment
+**Status:** ⚠️ NOT YET DEPLOYED - Merge to master required
 **Target:** Server 84 (10.0.0.84)
+
+---
+
+## ⚠️ IMPORTANT: Pre-Deployment Status
+
+**Current State:**
+- ✅ Code complete in feature branch
+- ✅ Security hardening applied
+- ✅ CI/CD pipeline configured
+- ❌ Services NOT running (waiting for merge to master)
+- ❌ UFW firewall rules NOT applied
+
+**To Deploy:**
+1. Merge feature/hadith-knowledge-graph → master
+2. Pull changes on Server 84
+3. Run deployment (manual or CI/CD)
+4. Apply UFW firewall rules
 
 ---
 
