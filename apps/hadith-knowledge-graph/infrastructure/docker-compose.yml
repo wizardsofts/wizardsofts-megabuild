@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Neo4j Graph Database
+  neo4j:
+    image: neo4j:5.15.0
+    container_name: hadith-neo4j
+    ports:
+      - "7474:7474"  # HTTP - local network access (protected by UFW)
+      - "7687:7687"  # Bolt - local network access (protected by UFW)
+    environment:
+      - NEO4J_AUTH=neo4j/hadithknowledge2025
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=2G
+      - NEO4J_server_memory_pagecache_size=1G
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
+      - NEO4JLABS_PLUGINS=["apoc"]
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - hadith-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 1G
+
+  # ChromaDB Vector Database
+  chromadb:
+    image: chromadb/chroma:0.5.20
+    container_name: hadith-chromadb
+    ports:
+      - "8000:8000"  # Local network access (protected by UFW)
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+      - ALLOW_RESET=FALSE  # SECURITY: Prevent database wipes in production
+    volumes:
+      - chromadb_data:/chroma/chroma
+    networks:
+      - hadith-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # PostgreSQL (Server 80:5433) - Already running
+  # Redis (Server 84:6380) - Already running
+  # Ollama (Server 84:11434) - Shared infrastructure (/infrastructure/ollama)
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  chromadb_data:
+
+networks:
+  hadith-network:
+    driver: bridge
