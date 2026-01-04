@@ -39,12 +39,12 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white" style={{ height: '50px' }}>
-      <div className="flex items-center justify-between px-3 md:px-5 h-full">
+      <div className="flex items-center px-3 md:px-5 h-full gap-2 md:gap-4">
         {/* Left: Brand + Navigation */}
-        <div className="flex items-center overflow-x-auto">
+        <div className="flex items-center min-w-0 flex-1 overflow-x-auto scrollbar-hide">
           <Link
             href="/"
-            className="flex-shrink-0 mr-4 md:mr-7"
+            className="flex-shrink-0 mr-3 md:mr-5"
             onClick={() => handleNavClick('Home', '/')}
             style={{
               fontWeight: 700,
@@ -58,7 +58,7 @@ export function Header() {
           </Link>
 
           {/* Navigation Links */}
-          <nav className="flex items-center gap-2 md:gap-3 lg:gap-5 text-xs sm:text-sm md:text-base whitespace-nowrap">
+          <nav className="flex items-center gap-2 md:gap-3 lg:gap-5 text-xs sm:text-sm md:text-base whitespace-nowrap pr-4">
           <Link
             href="/dashboard"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
