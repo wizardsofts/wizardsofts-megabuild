@@ -146,7 +146,105 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 # See docs/FAIL2BAN_SETUP.md for full guide
 ```
 
-## Recent Changes (2025-12-30/31 - 2026-01-01)
+## Recent Changes (2025-12-30/31 - 2026-01-04)
+
+### Ray Cluster Stability & Disk Management Fixed (2026-01-04)
+- **Servers**: 80, 81, 82, 84 (Distributed Ray + Celery cluster)
+- **Issue**: Ray workers restarting every 30 seconds + Server 80 disk full (100% usage)
+- **Changes**:
+  - **Ray GCS Health Check Fix**:
+    - Added `--system-config={"health_check_failure_threshold": 30}` to Ray head
+    - Increased tolerance from 5 to 30 consecutive missed health checks
+    - Fixed workers being marked dead due to network latency
+  - **Ray Tune API Update**:
+    - Changed `local_dir` → `storage_path` (deprecated in Ray 2.40.0)
+    - Changed `./checkpoints` → `file:///home/ray/outputs/checkpoints` (URI + permissions fix)
+    - Fixed PermissionError: Use ray user home directory instead of /app (owned by root)
+  - **Disk Space Crisis Resolution**:
+    - Server 80 reached 100% disk usage (208GB/217GB used, 0 bytes free)
+    - PostgreSQL stuck in crash recovery loop ("No space left on device")
+    - Ray worker containers accumulated 37GB each in /tmp directories
+    - Cleaned 142GB disk space (100% → 32% usage)
+    - Created automated cleanup scripts for Ray workers
+- **Root Causes**:
+  - Ray has TWO timeout mechanisms (heartbeat + health check), both needed adjustment
+  - Ray Tune changed API in 2.40.0, requires file:// URI for storage paths
+  - Ray workers accumulate large /tmp files from code packaging and task execution
+  - PostgreSQL cannot accept connections when disk is 100% full
+- **Solutions Implemented**:
+  1. Ray head system-config fix (infrastructure/distributed-ml/ray/Dockerfile.ray-head)
+  2. Ray Tune storage_path fix (apps/gibd-quant-agent/src/portfolio/rl/train_ppo.py)
+  3. Bash cleanup script for Ray workers (scripts/cleanup_ray_workers.sh)
+  4. Python cleanup wrapper with atexit/signal handlers (utils/ray_training_wrapper.py)
+  5. Cron job for periodic disk monitoring and cleanup
+- **Key Learnings**:
+  - ⚠️ **CRITICAL**: Monitor disk space on Ray worker servers - /tmp can grow to 35GB+ per container
+  - Ray system-config parameters can ONLY be set on head node, not workers
+  - `num_heartbeats_timeout` is environment variable, NOT system-config parameter
+  - PostgreSQL needs disk space to complete crash recovery - 100% disk = infinite loop
+  - Ray Tune requires file:// URI scheme for storage paths in 2.40.0+
+  - **Use ray user home directory for outputs** - Avoid /app directory (owned by root, permission errors)
+  - Docker volume mounts should map to user directories: `/home/ray/outputs` not `/app/outputs`
+  - Always implement cleanup in try/finally or atexit handlers for distributed training
+- **Impact**:
+  - Ray cluster stable with 11 active nodes (24 CPUs, 32.98 GiB memory)
+  - TARP-DRL distributed training can now run without worker restarts
+  - Server 80 PostgreSQL accepting connections
+  - Automated cleanup prevents future disk space issues
+- **Documentation**:
+  - Full analysis: apps/gibd-quant-agent/docs/RAY_GCS_HEARTBEAT_FIX.md
+  - Cleanup scripts: scripts/cleanup_ray_workers.sh
+  - Training wrapper: apps/gibd-quant-agent/src/utils/ray_training_wrapper.py
+- **Monitoring Requirements**:
+  - ✅ Prometheus alert: disk usage > 80% on Servers 80/81/82/84 (deployed)
+  - ✅ Prometheus alert: Ray worker container /tmp > 50% (deployed)
+  - ✅ Hourly cron job: smart cleanup on all Ray worker servers (deployed)
+
+### Automated Ray Worker Cleanup Deployed (2026-01-05)
+- **Servers**: 10.0.0.80, 10.0.0.81, 10.0.0.84 (Server 82 requires SSH access)
+- **Issue**: Ray workers accumulate large /tmp files (35GB+ per container) causing disk space exhaustion
+- **Solution**: Deployed intelligent hourly cleanup system
+- **Changes**:
+  - **Smart Cleanup Script** (`scripts/cleanup_ray_workers_smart.sh`):
+    - Checks Ray worker CPU usage before cleanup (only cleans if CPU < 5%)
+    - Only triggers cleanup if /tmp > 5GB (configurable threshold)
+    - Safely skips active workers to avoid interrupting training jobs
+    - Runs `docker system prune` after worker cleanup
+    - Logs all operations to `~/logs/ray_cleanup.log`
+  - **Hourly Cron Jobs** on Servers 80, 81, 84:
+    ```bash
+    0 * * * * /home/wizardsofts/cleanup_ray_workers_smart.sh $(hostname -I | awk '{print $1}') >> /home/wizardsofts/logs/ray_cleanup.log 2>&1
+    ```
+  - **Prometheus Alerts** (`infrastructure/auto-scaling/monitoring/prometheus/infrastructure-alerts.yml`):
+    - `RayWorkerLargeTmpDirectory`: Warning when container /tmp > 50%
+    - `RayWorkerCriticalTmpDirectory`: Critical when container /tmp > 80%
+    - `RayWorkerDiskUsageHigh`: Warning when server disk < 30%
+    - `RayWorkerDiskCritical`: Critical when server disk < 15%
+- **Cleanup Results** (2026-01-05):
+  - Server 80: 141GB freed (100% → 33% disk usage)
+  - Server 84: 30.41GB freed (50% → disk healthy)
+  - Ray worker /tmp: 35GB+ → <100MB per container
+- **Key Features**:
+  - **Activity-Aware**: Only cleans idle workers (CPU < 5%)
+  - **Threshold-Based**: Only triggers if /tmp > 5GB
+  - **Safe**: Never interrupts active training jobs
+  - **Logged**: Full audit trail in `~/logs/ray_cleanup.log`
+  - **Automated**: Runs hourly without manual intervention
+- **Ray Cleanup Limitations**:
+  - ⚠️ **Ray 2.40.0 does NOT support automatic cleanup** (confirmed via [Ray Issue #41202](https://github.com/ray-project/ray/issues/41202))
+  - No `RAY_tmpdir_max_files` or similar configuration exists
+  - Cleanup only happens on machine reboot (not after tasks complete)
+  - Ray 2.53.0 documentation confirms same behavior ([Ray Docs](https://docs.ray.io/en/latest/ray-core/configure.html))
+  - **Solution**: Manual cron-based cleanup is the industry standard workaround
+- **CI/CD Integration**:
+  - Script deployed via `scp` to all servers
+  - Cron jobs installed programmatically
+  - Can be automated in Ansible/GitLab CI pipeline
+- **Monitoring**:
+  - View cleanup logs: `ssh wizardsofts@10.0.0.80 tail -f ~/logs/ray_cleanup.log`
+  - Check cron status: `ssh wizardsofts@10.0.0.80 crontab -l`
+  - Prometheus alerts in Grafana dashboard (ray_cluster_monitoring group)
+- **Documentation**: Full implementation details in this section
 
 ### fail2ban Intrusion Prevention Deployed (2026-01-01)
 - **Server**: 10.0.0.84 (HP Production)
@@ -228,6 +326,75 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 - Rate limiting is essential for all public APIs
 - Input validation must block dangerous patterns (SQL injection, path traversal)
 - Container security options should be enabled by default
+
+## Frontend Development Guidelines
+
+### ⛔ CRITICAL: UI Component Library Usage - MANDATORY
+
+**NEVER create custom UI components without explicit approval.**
+
+#### Strict Rules for Frontend Development
+
+1. **ALWAYS use wizwebui component library** (`/packages/wizwebui`)
+   - All UI components MUST come from `@wizwebui/core`
+   - Button, Input, Card, Table, Tabs, Badge, etc. - use wizwebui versions
+
+2. **BEFORE creating ANY custom component:**
+   - ❌ **DO NOT** create custom components without asking first
+   - ✅ **MUST** check if wizwebui has the component
+   - ✅ **MUST** consult user if wizwebui doesn't have it
+   - ✅ **MUST** wait for explicit approval before proceeding
+
+3. **If wizwebui is missing a component:**
+   ```
+   STEP 1: Stop and ask the user:
+   "wizwebui doesn't have a <ComponentName> component.
+    Options:
+    A) Create generic version and add to wizwebui
+    B) Use alternative wizwebui component
+    C) Wait for wizwebui team to add it
+
+    Which approach would you prefer?"
+
+   STEP 2: Wait for user response
+   STEP 3: Follow user's chosen approach
+   ```
+
+4. **Adding components to wizwebui:**
+   - Create generic, reusable version
+   - Add to `/packages/wizwebui/src/components/`
+   - Follow wizwebui patterns (variant, density, theme props)
+   - Export from `index.ts`
+   - Build and version wizwebui
+   - Update app's wizwebui dependency
+
+5. **Acceptable customizations:**
+   - ✅ Custom theme configuration (`ThemeProvider`)
+   - ✅ Utility CSS classes (if absolutely necessary)
+   - ✅ Layout compositions using wizwebui components
+   - ❌ Custom Button, Input, Card, or any UI primitive
+
+6. **Example - Correct Approach:**
+   ```tsx
+   // ❌ WRONG - Custom component
+   function CustomHeader() {
+     return <header className="custom">...</header>
+   }
+
+   // ✅ CORRECT - Ask first, then add to wizwebui
+   // "User, wizwebui doesn't have Header. Should I:
+   //  A) Create AppBar component for wizwebui
+   //  B) Use alternative approach"
+   ```
+
+### Enforcement
+
+**Violation of this rule will require:**
+1. Immediate refactor to use wizwebui components
+2. Extract custom components to wizwebui if approved
+3. Update documentation with correct approach
+
+**NO EXCEPTIONS.** This rule is absolute.
 
 ## Security Guidelines
 

@@ -270,6 +270,80 @@ groups:
           impact: "No container visibility, monitoring gap"
 
   # =============================================================================
+  # RAY CLUSTER MONITORING ALERTS
+  # =============================================================================
+  - name: ray_cluster_monitoring
+    interval: 60s
+    rules:
+      - alert: RayWorkerLargeTmpDirectory
+        expr: |
+          (
+            container_fs_usage_bytes{name=~"ray-worker.*"}
+            /
+            container_fs_limit_bytes{name=~"ray-worker.*"}
+          ) * 100 > 50
+        for: 10m
+        labels:
+          severity: warning
+          category: ray_cluster
+        annotations:
+          summary: "Ray worker {{ $labels.name }} has large /tmp directory"
+          description: "Ray worker {{ $labels.name }} on {{ $labels.instance }} has /tmp usage at {{ $value | humanize }}%. This may indicate accumulated temporary files from training jobs."
+          runbook: "https://docs.wizardsofts.com/runbooks/ray-worker-cleanup"
+          impact: "Disk space exhaustion risk, may cause training failures"
+
+      - alert: RayWorkerCriticalTmpDirectory
+        expr: |
+          (
+            container_fs_usage_bytes{name=~"ray-worker.*"}
+            /
+            container_fs_limit_bytes{name=~"ray-worker.*"}
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: critical
+          category: ray_cluster
+        annotations:
+          summary: "Ray worker {{ $labels.name }} /tmp directory critical"
+          description: "CRITICAL: Ray worker {{ $labels.name }} on {{ $labels.instance }} has /tmp usage at {{ $value | humanize }}%. Immediate cleanup required."
+          runbook: "https://docs.wizardsofts.com/runbooks/ray-worker-emergency-cleanup"
+          impact: "Imminent disk full, training jobs will fail"
+
+      - alert: RayWorkerDiskUsageHigh
+        expr: |
+          (
+            node_filesystem_avail_bytes{instance=~"10.0.0.(80|81|82|84):9100",mountpoint="/",fstype!="tmpfs"}
+            /
+            node_filesystem_size_bytes{instance=~"10.0.0.(80|81|82|84):9100",mountpoint="/",fstype!="tmpfs"}
+          ) * 100 < 30
+        for: 5m
+        labels:
+          severity: warning
+          category: ray_cluster
+        annotations:
+          summary: "Ray worker server {{ $labels.instance }} low disk space"
+          description: "Ray worker server {{ $labels.instance }} has only {{ $value | humanize }}% disk space remaining. Ray /tmp files may be accumulating."
+          runbook: "https://docs.wizardsofts.com/runbooks/ray-disk-cleanup"
+          impact: "Risk of Ray worker failures, PostgreSQL issues if disk full"
+
+      - alert: RayWorkerDiskCritical
+        expr: |
+          (
+            node_filesystem_avail_bytes{instance=~"10.0.0.(80|81|82|84):9100",mountpoint="/",fstype!="tmpfs"}
+            /
+            node_filesystem_size_bytes{instance=~"10.0.0.(80|81|82|84):9100",mountpoint="/",fstype!="tmpfs"}
+          ) * 100 < 15
+        for: 2m
+        labels:
+          severity: critical
+          category: ray_cluster
+        annotations:
+          summary: "CRITICAL: Ray worker server {{ $labels.instance }} disk nearly full"
+          description: "CRITICAL: Ray worker server {{ $labels.instance }} has only {{ $value | humanize }}% disk space remaining. Cleanup script should activate automatically."
+          runbook: "https://docs.wizardsofts.com/runbooks/ray-emergency-disk"
+          impact: "Imminent disk full, PostgreSQL and Ray services will fail"
+
+  # =============================================================================
   # SERVICE HEALTH ALERTS
   # =============================================================================
   - name: service_health
