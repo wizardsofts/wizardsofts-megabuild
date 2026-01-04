@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from profiling.calibrator import StockCalibrator
 from database.connection import get_db_context
 from database.models import StockProfile
+from auth.jwt_validator import get_current_user
 
 # Eureka registration
 try:
@@ -122,10 +123,17 @@ async def health(request: Request):
 
 @app.post("/api/v1/calibrate/{ticker}", response_model=CalibrationResponse)
 @limiter.limit("20/minute")  # SECURITY: Rate limit calibration operations
-async def calibrate_stock(request: Request, ticker: str, force: bool = False):
+async def calibrate_stock(
+    request: Request,
+    ticker: str,
+    force: bool = False,
+    current_user: dict = Security(get_current_user)
+):
     """Auto-calibrate stock parameters from historical data"""
     ticker = validate_ticker(ticker)
     try:
+        # Log authenticated request for audit trail
+        print(f"Calibration request from user: {current_user.get('email', 'unknown')}")
         calibrator = StockCalibrator()
 
         with get_db_context() as session:
@@ -174,10 +182,16 @@ async def calibrate_stock(request: Request, ticker: str, force: bool = False):
 
 @app.get("/api/v1/calibrate/{ticker}/profile", response_model=ProfileResponse)
 @limiter.limit("100/minute")
-async def get_stock_profile(request: Request, ticker: str):
+async def get_stock_profile(
+    request: Request,
+    ticker: str,
+    current_user: dict = Security(get_current_user)
+):
     """Get stock profile parameters"""
     ticker = validate_ticker(ticker)
     try:
+        # Log authenticated request for audit trail
+        print(f"Profile request from user: {current_user.get('email', 'unknown')}")
         with get_db_context() as session:
             profile = session.query(StockProfile).filter_by(ticker=ticker).first()
 
@@ -281,9 +295,16 @@ class BatchCalibrationRequest(BaseModel):
 
 @app.post("/api/v1/calibrate/batch")
 @limiter.limit("5/minute")  # SECURITY: Rate limit expensive batch operations
-async def calibrate_batch(request: Request, batch_request: BatchCalibrationRequest, force: bool = False):
+async def calibrate_batch(
+    request: Request,
+    batch_request: BatchCalibrationRequest,
+    force: bool = False,
+    current_user: dict = Security(get_current_user)
+):
     """Calibrate multiple stocks in batch"""
     try:
+        # Log authenticated request for audit trail
+        print(f"Batch calibration request from user: {current_user.get('email', 'unknown')}")
         calibrator = StockCalibrator()
         results = []
 

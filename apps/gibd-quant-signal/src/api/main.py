@@ -5,7 +5,7 @@ Provides trading signal generation using AdaptiveSignalEngine.
 Integrates with Eureka for service discovery.
 """
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from engine.signal_engine import AdaptiveSignalEngine
 from database.connection import get_db_context
+from auth.jwt_validator import get_current_user
 
 # Eureka registration
 try:
@@ -122,9 +123,15 @@ async def health(request: Request):
 
 @app.post("/api/v1/signals/generate", response_model=SignalResponse)
 @limiter.limit("30/minute")  # SECURITY: Rate limit signal generation
-async def generate_signal(request: Request, signal_request: SignalRequest):
+async def generate_signal(
+    request: Request,
+    signal_request: SignalRequest,
+    current_user: dict = Security(get_current_user)
+):
     """Generate trading signal for a ticker"""
     try:
+        # Log authenticated request for audit trail
+        print(f"Signal request from user: {current_user.get('email', 'unknown')}")
         engine = AdaptiveSignalEngine()
         signal = engine.generate_signal(signal_request.ticker, signal_request.date)
 
@@ -145,9 +152,15 @@ async def generate_signal(request: Request, signal_request: SignalRequest):
 
 @app.post("/api/v1/signals/batch")
 @limiter.limit("10/minute")  # SECURITY: Rate limit expensive batch operations
-async def generate_batch_signals(request: Request, batch_request: BatchSignalRequest):
+async def generate_batch_signals(
+    request: Request,
+    batch_request: BatchSignalRequest,
+    current_user: dict = Security(get_current_user)
+):
     """Generate signals for multiple tickers"""
     try:
+        # Log authenticated request for audit trail
+        print(f"Batch signal request from user: {current_user.get('email', 'unknown')}")
         engine = AdaptiveSignalEngine()
         results = []
 
@@ -176,10 +189,13 @@ async def scan_signals(
     request: Request,
     signal_type: str = Field(default="BUY", pattern="^(BUY|SELL|all)$"),
     threshold: float = Field(default=0.4, ge=0.0, le=1.0),
-    limit: int = Field(default=50, ge=1, le=500)
+    limit: int = Field(default=50, ge=1, le=500),
+    current_user: dict = Security(get_current_user)
 ):
     """Scan all stocks for signals"""
     try:
+        # Log authenticated request for audit trail
+        print(f"Scan signals request from user: {current_user.get('email', 'unknown')}")
         engine = AdaptiveSignalEngine(
             buy_threshold=threshold if signal_type == "BUY" else 0.4,
             sell_threshold=-threshold if signal_type == "SELL" else -0.4
