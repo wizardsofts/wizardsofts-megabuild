@@ -3,6 +3,13 @@ const nextConfig = {
   // Enable standalone output for Docker deployment
   output: 'standalone',
 
+  // Turbopack configuration (Next.js 16+ default)
+  // Empty config silences the webpack config warning
+  turbopack: {},
+
+  // Transpile @wizwebui/core (linked package via npm link)
+  transpilePackages: ['@wizwebui/core'],
+
   // API proxy: Routes /api/* requests to FastAPI backend
   // This avoids CORS issues during development
   async rewrites() {
@@ -17,6 +24,12 @@ const nextConfig = {
         destination: `http://localhost:${backendPort}/api/v1/:path*`,
       },
     ];
+  },
+
+  // Webpack config (used during production build with --webpack flag)
+  webpack: (config) => {
+    config.resolve.symlinks = true;
+    return config;
   },
 };
 
