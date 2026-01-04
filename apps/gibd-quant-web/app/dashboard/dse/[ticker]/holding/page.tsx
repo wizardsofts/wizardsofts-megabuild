@@ -111,26 +111,26 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
 
   return (
     <div className="px-4 md:px-5 mt-3 md:mt-5">
-      {/* Stock Header - Mobile-first responsive */}
-      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] items-start lg:items-center gap-3 lg:gap-5 pb-3 lg:pb-4 border-b border-gray-200 mb-4 lg:mb-5">
-        <div className="order-1">
-          <h1 className="text-xl md:text-2xl lg:text-[1.8rem] font-normal tracking-tight leading-tight m-0 text-gray-900">
+      {/* Stock Header - Dense like mockup */}
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-5 pb-4 border-b border-gray-200 mb-5">
+        <div>
+          <h1 style={{ margin: 0, fontSize: '1.8rem', letterSpacing: '-0.5px', fontWeight: 400, color: '#212529' }}>
             British American Tobacco Bangladesh
           </h1>
-          <div className="text-xs md:text-sm text-gray-500 mt-0.5">
+          <div style={{ color: '#6c757d', fontSize: '0.9rem', marginTop: '2px' }}>
             Trading Code: <strong>{ticker}</strong> | Scrip: 14259 | Sector: <strong>Food & Allied</strong>
           </div>
         </div>
 
-        <div className="order-3 lg:order-2 h-12 md:h-16 flex items-center justify-center">
+        <div>
           {/* Chart removed - not in mockup */}
         </div>
 
-        <div className="order-2 lg:order-3 text-left lg:text-right">
-          <div className="text-2xl md:text-3xl lg:text-[2rem] font-light leading-none text-gray-900">
-            248.60 <span className="text-base md:text-lg ml-1">BDT</span>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 300, color: '#212529' }}>
+            248.60 <span style={{ fontSize: '1rem', color: '#28a745', fontWeight: 600, marginLeft: '10px' }}>BDT</span>
           </div>
-          <div className="text-base md:text-lg text-green-600 font-semibold mt-1">Closed</div>
+          <div style={{ fontSize: '1rem', color: '#28a745', fontWeight: 600, marginTop: '4px' }}>Closed</div>
         </div>
       </div>
 

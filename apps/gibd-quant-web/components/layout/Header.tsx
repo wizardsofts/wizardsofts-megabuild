@@ -38,22 +38,29 @@ export function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="container mx-auto flex h-12 items-center justify-between px-4 gap-6">
-        {/* Logo / Brand */}
-        <Link
-          href="/"
-          className="flex items-center gap-2 flex-shrink-0"
-          onClick={() => handleNavClick('Home', '/')}
-        >
-          <span className="text-base font-bold text-gray-900">Guardian Investment BD</span>
-        </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white" style={{ height: '50px' }}>
+      <div className="flex items-center justify-between px-5 h-full">
+        {/* Left: Brand + Navigation */}
+        <div className="flex items-center">
+          <Link
+            href="/"
+            className="flex-shrink-0 mr-7"
+            onClick={() => handleNavClick('Home', '/')}
+            style={{
+              fontWeight: 700,
+              fontSize: '1.2rem',
+              letterSpacing: '-0.5px',
+              color: '#212529'
+            }}
+          >
+            Guardian Investment BD
+          </Link>
 
-        {/* Navigation Links */}
-        <nav className="flex items-center gap-4 md:gap-6">
+          {/* Navigation Links */}
+          <nav className="flex items-center gap-5">
           <Link
             href="/dashboard"
-            className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Dashboard', '/dashboard')}
           >
             Dashboard
@@ -63,7 +70,8 @@ export function Header() {
           <div className="relative">
             <button
               onClick={() => setMarketsDropdownOpen(!marketsDropdownOpen)}
-              className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
+              style={{ fontWeight: 500, color: '#212529', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="flex items-center gap-1"
             >
               Markets
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,18 +98,17 @@ export function Header() {
             )}
           </div>
 
-          {/* Screener Dropdown */}
-          <div className="relative">
-            <button
-              className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
-            >
-              Screener
-            </button>
-          </div>
+          <Link
+            href="/screener"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
+            onClick={() => handleNavClick('Screener', '/screener')}
+          >
+            Screener
+          </Link>
 
           <Link
             href="/chat"
-            className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Chat', '/chat')}
           >
             Chat
@@ -109,7 +116,7 @@ export function Header() {
 
           <Link
             href="/portfolio"
-            className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Portfolio', '/portfolio')}
           >
             Portfolio
@@ -117,17 +124,18 @@ export function Header() {
 
           <Link
             href="/news"
-            className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('News', '/news')}
           >
             News
           </Link>
 
           {/* Learn Dropdown */}
-          <div className="relative hidden md:block">
+          <div className="relative">
             <button
               onClick={() => setLearnDropdownOpen(!learnDropdownOpen)}
-              className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
+              style={{ fontWeight: 500, color: '#212529', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              className="flex items-center gap-1"
             >
               Learn
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,52 +164,36 @@ export function Header() {
 
           <Link
             href="/community"
-            className="hidden md:inline text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+            style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Community', '/community')}
           >
             Community
           </Link>
         </nav>
+        </div>
 
-        {/* Right Section: Profile Dropdown */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-              className="text-xs md:text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1"
-            >
-              Mashfiqur Rahman
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {profileDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[180px]">
-                <Link
-                  href="/profile"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => { handleNavClick('My Profile', '/profile'); setProfileDropdownOpen(false); }}
-                >
-                  My Profile
-                </Link>
-                <Link
-                  href="/settings"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => { handleNavClick('Settings', '/settings'); setProfileDropdownOpen(false); }}
-                >
-                  Settings
-                </Link>
-                <div className="border-t border-gray-200 my-1"></div>
-                <Link
-                  href="/logout"
-                  className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                  onClick={() => { handleNavClick('Logout', '/logout'); setProfileDropdownOpen(false); }}
-                >
-                  Logout
-                </Link>
-              </div>
-            )}
+        {/* Right Section: Search + Profile */}
+        <div className="flex items-center gap-5">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch}>
+            <input
+              type="text"
+              value={tickerSearch}
+              onChange={(e) => setTickerSearch(e.target.value)}
+              placeholder="Search (e.g., BATBC)"
+              style={{
+                padding: '5px 10px',
+                border: '1px solid #ced4da',
+                borderRadius: '4px',
+                width: '300px',
+                fontSize: '14px'
+              }}
+            />
+          </form>
+
+          {/* Profile */}
+          <div style={{ fontSize: '0.9rem', color: '#212529' }}>
+            Mashfiqur Rahman
           </div>
         </div>
       </div>
