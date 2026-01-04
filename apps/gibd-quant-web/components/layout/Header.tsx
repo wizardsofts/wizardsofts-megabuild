@@ -39,29 +39,31 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-gray-200 bg-white" style={{ height: '50px' }}>
-      <div className="flex items-center justify-between px-5 h-full">
+      <div className="flex items-center justify-between px-3 md:px-5 h-full">
         {/* Left: Brand + Navigation */}
-        <div className="flex items-center">
+        <div className="flex items-center overflow-x-auto">
           <Link
             href="/"
-            className="flex-shrink-0 mr-7"
+            className="flex-shrink-0 mr-4 md:mr-7"
             onClick={() => handleNavClick('Home', '/')}
             style={{
               fontWeight: 700,
-              fontSize: '1.2rem',
+              fontSize: '1rem',
               letterSpacing: '-0.5px',
               color: '#212529'
             }}
           >
-            Guardian Investment BD
+            <span className="hidden md:inline">Guardian Investment BD</span>
+            <span className="md:hidden">GIBD</span>
           </Link>
 
           {/* Navigation Links */}
-          <nav className="flex items-center gap-5">
+          <nav className="flex items-center gap-2 md:gap-3 lg:gap-5 text-xs sm:text-sm md:text-base whitespace-nowrap">
           <Link
             href="/dashboard"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Dashboard', '/dashboard')}
+            className="hidden sm:inline"
           >
             Dashboard
           </Link>
@@ -71,15 +73,15 @@ export function Header() {
             <button
               onClick={() => setMarketsDropdownOpen(!marketsDropdownOpen)}
               style={{ fontWeight: 500, color: '#212529', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              className="flex items-center gap-1"
+              className="flex items-center gap-0.5 md:gap-1"
             >
               Markets
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-2.5 h-2.5 md:w-3 md:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             {marketsDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[150px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[150px] z-10">
                 <Link
                   href="/markets/dse"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -110,6 +112,7 @@ export function Header() {
             href="/chat"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Chat', '/chat')}
+            className="hidden md:inline"
           >
             Chat
           </Link>
@@ -118,6 +121,7 @@ export function Header() {
             href="/portfolio"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Portfolio', '/portfolio')}
+            className="hidden lg:inline"
           >
             Portfolio
           </Link>
@@ -126,12 +130,13 @@ export function Header() {
             href="/news"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('News', '/news')}
+            className="hidden lg:inline"
           >
             News
           </Link>
 
           {/* Learn Dropdown */}
-          <div className="relative">
+          <div className="relative hidden xl:block">
             <button
               onClick={() => setLearnDropdownOpen(!learnDropdownOpen)}
               style={{ fontWeight: 500, color: '#212529', textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
@@ -143,7 +148,7 @@ export function Header() {
               </svg>
             </button>
             {learnDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[150px]">
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[150px] z-10">
                 <Link
                   href="/learn/guides"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -166,6 +171,7 @@ export function Header() {
             href="/community"
             style={{ fontWeight: 500, color: '#212529', textDecoration: 'none' }}
             onClick={() => handleNavClick('Community', '/community')}
+            className="hidden xl:inline"
           >
             Community
           </Link>
@@ -173,27 +179,31 @@ export function Header() {
         </div>
 
         {/* Right Section: Search + Profile */}
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2 md:gap-3 lg:gap-5 flex-shrink-0">
           {/* Search Bar */}
-          <form onSubmit={handleSearch}>
+          <form onSubmit={handleSearch} className="hidden md:block">
             <input
               type="text"
               value={tickerSearch}
               onChange={(e) => setTickerSearch(e.target.value)}
               placeholder="Search (e.g., BATBC)"
+              className="w-32 lg:w-48 xl:w-64"
               style={{
                 padding: '5px 10px',
                 border: '1px solid #ced4da',
                 borderRadius: '4px',
-                width: '300px',
                 fontSize: '14px'
               }}
             />
           </form>
 
           {/* Profile */}
-          <div style={{ fontSize: '0.9rem', color: '#212529' }}>
+          <div style={{ fontSize: '0.9rem', color: '#212529' }} className="hidden sm:block">
             Mashfiqur Rahman
+          </div>
+          {/* Mobile Profile Icon */}
+          <div className="sm:hidden w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center" style={{ fontSize: '0.75rem', fontWeight: 600, color: '#212529' }}>
+            MR
           </div>
         </div>
       </div>

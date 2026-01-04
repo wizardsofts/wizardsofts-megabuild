@@ -110,42 +110,44 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
   const [activeTab, setActiveTab] = useState('holdings');
 
   return (
-    <div className="px-4 md:px-5 mt-3 md:mt-5">
+    <div className="px-3 sm:px-4 md:px-5 mt-3 md:mt-5">
       {/* Stock Header - Dense like mockup */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-5 pb-4 border-b border-gray-200 mb-5">
-        <div>
-          <h1 style={{ margin: 0, fontSize: '1.8rem', letterSpacing: '-0.5px', fontWeight: 400, color: '#212529' }}>
+      <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-5 pb-3 md:pb-4 border-b border-gray-200 mb-4 md:mb-5">
+        <div className="w-full md:w-auto">
+          <h1 className="text-xl sm:text-2xl md:text-3xl" style={{ margin: 0, fontSize: 'clamp(1.25rem, 4vw, 1.8rem)', letterSpacing: '-0.5px', fontWeight: 400, color: '#212529' }}>
             British American Tobacco Bangladesh
           </h1>
-          <div style={{ color: '#6c757d', fontSize: '0.9rem', marginTop: '2px' }}>
+          <div className="text-xs sm:text-sm" style={{ color: '#6c757d', fontSize: 'clamp(0.75rem, 2vw, 0.9rem)', marginTop: '2px' }}>
             Trading Code: <strong>{ticker}</strong> | Scrip: 14259 | Sector: <strong>Food & Allied</strong>
           </div>
         </div>
 
-        <div>
+        <div className="hidden md:block">
           {/* Chart removed - not in mockup */}
         </div>
 
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 300, color: '#212529' }}>
-            248.60 <span style={{ fontSize: '1rem', color: '#28a745', fontWeight: 600, marginLeft: '10px' }}>BDT</span>
+        <div className="w-full md:w-auto flex justify-between md:justify-end items-center md:flex-col md:items-end gap-2 md:gap-0">
+          <div>
+            <div className="text-2xl sm:text-3xl md:text-4xl" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', fontWeight: 300, color: '#212529' }}>
+              248.60 <span className="text-sm sm:text-base md:text-lg" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)', color: '#28a745', fontWeight: 600, marginLeft: '10px' }}>BDT</span>
+            </div>
           </div>
-          <div style={{ fontSize: '1rem', color: '#28a745', fontWeight: 600, marginTop: '4px' }}>Closed</div>
+          <div className="text-sm sm:text-base" style={{ fontSize: 'clamp(0.875rem, 2vw, 1rem)', color: '#28a745', fontWeight: 600, marginTop: '0' }}>Closed</div>
         </div>
       </div>
 
       {/* Tabs Navigation */}
       <Tabs variant="underline" value={activeTab} onChange={(key) => setActiveTab(key as string)} className="mt-3 md:mt-4">
-        <TabList>
-          <Tab value="summary" className="pb-2.5 text-sm md:text-base">Summary</Tab>
-          <Tab value="profile" className="pb-2.5 text-sm md:text-base">Company Profile</Tab>
-          <Tab value="financials" className="pb-2.5 text-sm md:text-base">Financials</Tab>
-          <Tab value="chart" className="pb-2.5 text-sm md:text-base">Chart</Tab>
-          <Tab value="holdings" className="pb-2.5 text-sm md:text-base">Holdings</Tab>
-          <Tab value="returns" className="pb-2.5 text-sm md:text-base">Trailing Returns</Tab>
-          <Tab value="dividends" className="pb-2.5 text-sm md:text-base">Dividends</Tab>
-          <Tab value="news" className="pb-2.5 text-sm md:text-base">News</Tab>
-          <Tab value="analysis" className="pb-2.5 text-sm md:text-base">Guardian Analysis</Tab>
+        <TabList className="overflow-x-auto whitespace-nowrap">
+          <Tab value="summary" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Summary</Tab>
+          <Tab value="profile" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Company Profile</Tab>
+          <Tab value="financials" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Financials</Tab>
+          <Tab value="chart" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Chart</Tab>
+          <Tab value="holdings" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Holdings</Tab>
+          <Tab value="returns" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden sm:inline-flex">Trailing Returns</Tab>
+          <Tab value="dividends" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Dividends</Tab>
+          <Tab value="news" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">News</Tab>
+          <Tab value="analysis" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden lg:inline-flex">Guardian Analysis</Tab>
         </TabList>
 
         {/* Holdings Tab Panel */}
