@@ -1,0 +1,315 @@
+groups:
+  # =============================================================================
+  # SERVER AVAILABILITY ALERTS
+  # =============================================================================
+  - name: server_availability
+    interval: 30s
+    rules:
+      - alert: ServerDown
+        expr: up{job=~"node-exporter.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Server {{ $labels.instance }} is down"
+          description: "Node exporter on {{ $labels.instance }} has been unreachable for more than 1 minute."
+          runbook: "https://docs.wizardsofts.com/runbooks/server-down"
+          impact: "Server unavailable, all services on this instance are affected"
+      
+      - alert: ServerUnreachable
+        expr: up{job=~"node-exporter.*"} == 0
+        for: 5m
+        labels:
+          severity: emergency
+          category: infrastructure
+        annotations:
+          summary: "Server {{ $labels.instance }} unreachable for 5+ minutes"
+          description: "Critical: Server {{ $labels.instance }} has been down for more than 5 minutes. Immediate action required."
+          runbook: "https://docs.wizardsofts.com/runbooks/server-emergency"
+          impact: "Extended outage, potential data loss, SLA breach"
+
+  # =============================================================================
+  # CPU MONITORING ALERTS
+  # =============================================================================
+  - name: cpu_monitoring
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage has been above 80% for 5 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/high-cpu"
+          impact: "Performance degradation, slow response times"
+      
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage above 95% for 2 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%. Server may become unresponsive."
+          runbook: "https://docs.wizardsofts.com/runbooks/critical-cpu"
+          impact: "Server unresponsive, service disruption imminent"
+      
+      - alert: HighIOWait
+        expr: avg by (instance) (irate(node_cpu_seconds_total{mode="iowait"}[5m])) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High I/O wait on {{ $labels.instance }}"
+          description: "CPU I/O wait above 20% for 5 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/high-iowait"
+          impact: "Disk bottleneck, slow database queries, delayed processing"
+
+  # =============================================================================
+  # MEMORY MONITORING ALERTS
+  # =============================================================================
+  - name: memory_monitoring
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage above 85% for 5 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/high-memory"
+          impact: "Risk of OOM killer, process termination possible"
+      
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: resource
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage above 95% for 2 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%. OOM killer may activate."
+          runbook: "https://docs.wizardsofts.com/runbooks/critical-memory"
+          impact: "Imminent OOM, services may crash"
+      
+      - alert: HighSwapUsage
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "High swap usage on {{ $labels.instance }}"
+          description: "Swap usage above 80% for 10 minutes on {{ $labels.instance }}. Current value: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/high-swap"
+          impact: "Severe performance degradation due to swapping"
+
+  # =============================================================================
+  # DISK MONITORING ALERTS
+  # =============================================================================
+  - name: disk_monitoring
+    interval: 60s
+    rules:
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk space below 20% on {{ $labels.instance }}:{{ $labels.mountpoint }}. Remaining: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/low-disk"
+          impact: "Risk of disk full, log rotation may fail"
+      
+      - alert: CriticalDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk space below 10% on {{ $labels.instance }}:{{ $labels.mountpoint }}. Remaining: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/critical-disk"
+          impact: "Disk full imminent, services may fail to write data"
+      
+      - alert: DiskWillFillIn4Hours
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"}[1h], 4 * 3600) < 0
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "Disk will fill in 4 hours on {{ $labels.instance }}"
+          description: "Based on current growth rate, disk {{ $labels.mountpoint }} on {{ $labels.instance }} will be full in approximately 4 hours."
+          runbook: "https://docs.wizardsofts.com/runbooks/disk-prediction"
+          impact: "Proactive warning for capacity planning"
+      
+      - alert: HighInodeUsage
+        expr: (node_filesystem_files_free{mountpoint="/",fstype!="tmpfs"} / node_filesystem_files{mountpoint="/",fstype!="tmpfs"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: "Low inode availability on {{ $labels.instance }}"
+          description: "Inode usage above 80% on {{ $labels.instance }}:{{ $labels.mountpoint }}. Remaining: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/low-inodes"
+          impact: "Cannot create new files even if disk space available"
+
+  # =============================================================================
+  # NETWORK MONITORING ALERTS
+  # =============================================================================
+  - name: network_monitoring
+    interval: 30s
+    rules:
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "High network errors on {{ $labels.instance }}"
+          description: "Network error rate above 10/sec on {{ $labels.instance }} interface {{ $labels.device }}. Current rate: {{ $value | humanize }}"
+          runbook: "https://docs.wizardsofts.com/runbooks/network-errors"
+          impact: "Packet loss, connection issues"
+      
+      - alert: HighNetworkDrops
+        expr: rate(node_network_receive_drop_total[5m]) + rate(node_network_transmit_drop_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: network
+        annotations:
+          summary: "High network packet drops on {{ $labels.instance }}"
+          description: "Network drop rate above 10/sec on {{ $labels.instance }} interface {{ $labels.device }}. Current rate: {{ $value | humanize }}"
+          runbook: "https://docs.wizardsofts.com/runbooks/network-drops"
+          impact: "Network congestion, degraded connectivity"
+
+  # =============================================================================
+  # SYSTEM HEALTH ALERTS
+  # =============================================================================
+  - name: system_health
+    interval: 30s
+    rules:
+      - alert: HighLoadAverage
+        expr: node_load5 / count(node_cpu_seconds_total{mode="idle"}) without (cpu, mode) > 2
+        for: 10m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High load average on {{ $labels.instance }}"
+          description: "5-minute load average is {{ $value | humanize }}x the number of CPUs on {{ $labels.instance }}."
+          runbook: "https://docs.wizardsofts.com/runbooks/high-load"
+          impact: "System overload, queued processes"
+      
+      - alert: TooManyOpenFiles
+        expr: node_filefd_allocated / node_filefd_maximum * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+        annotations:
+          summary: "High file descriptor usage on {{ $labels.instance }}"
+          description: "File descriptor usage above 80% on {{ $labels.instance }}. Current: {{ $value | humanize }}%"
+          runbook: "https://docs.wizardsofts.com/runbooks/file-descriptors"
+          impact: "May hit 'too many open files' limit"
+      
+      - alert: ClockSkew
+        expr: abs(node_timex_offset_seconds) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "Clock skew detected on {{ $labels.instance }}"
+          description: "System clock is {{ $value | humanize }} seconds off on {{ $labels.instance }}."
+          runbook: "https://docs.wizardsofts.com/runbooks/clock-skew"
+          impact: "Time-sensitive operations may fail, TLS issues"
+
+  # =============================================================================
+  # CONTAINER MONITORING ALERTS
+  # =============================================================================
+  - name: container_monitoring
+    interval: 30s
+    rules:
+      - alert: HighContainerRestartRate
+        expr: rate(container_last_seen{name!=""}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: containers
+        annotations:
+          summary: "High container restart rate on {{ $labels.instance }}"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} is restarting frequently. Rate: {{ $value | humanize }}/sec"
+          runbook: "https://docs.wizardsofts.com/runbooks/container-restarts"
+          impact: "Service instability, potential crash loop"
+      
+      - alert: ContainerDown
+        expr: up{job=~"cadvisor.*"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Container monitoring down on {{ $labels.instance }}"
+          description: "cAdvisor is not responding on {{ $labels.instance }}. Container metrics unavailable."
+          runbook: "https://docs.wizardsofts.com/runbooks/cadvisor-down"
+          impact: "No container visibility, monitoring gap"
+
+  # =============================================================================
+  # SERVICE HEALTH ALERTS
+  # =============================================================================
+  - name: service_health
+    interval: 30s
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: monitoring
+          service: prometheus
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus metrics collection is unavailable. This is a critical monitoring failure."
+          runbook: "https://docs.wizardsofts.com/runbooks/prometheus-down"
+          impact: "No metrics collection, blind to system state"
+      
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+          service: grafana
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana dashboard service is unavailable."
+          runbook: "https://docs.wizardsofts.com/runbooks/grafana-down"
+          impact: "No dashboard access, metrics still collected"
+      
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: monitoring
+          service: alertmanager
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alertmanager is unavailable. Alert notifications will not be sent."
+          runbook: "https://docs.wizardsofts.com/runbooks/alertmanager-down"
+          impact: "No alert notifications, incidents may go unnoticed"

@@ -45,17 +45,47 @@ services:
       - "9090:9090"
     volumes:
       - ~/prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/infrastructure-alerts.yml:/etc/prometheus/infrastructure-alerts.yml:ro
+      - ./monitoring/prometheus/security-alerts.yml:/etc/prometheus/security-alerts.yml:ro
       - ~/prometheus-data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
     networks:
       - autoscaler
       - microservices-overlay
     user: "65534:65534"
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://10.0.0.84:9093"
+    environment:
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - APPWRITE_API_KEY=${APPWRITE_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    networks:
+      - autoscaler
+      - microservices-overlay
+    user: "65534:65534"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9093/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -106,6 +136,7 @@ services:
 
 volumes:
   grafana-data:
+  alertmanager-data:
 
 networks:
   autoscaler:
