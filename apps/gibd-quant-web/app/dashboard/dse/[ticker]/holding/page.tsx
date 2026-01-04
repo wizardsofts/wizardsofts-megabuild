@@ -114,7 +114,7 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
       {/* Stock Header - Mobile-first responsive */}
       <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] items-start lg:items-center gap-3 lg:gap-5 pb-3 lg:pb-4 border-b border-gray-200 mb-4 lg:mb-5">
         <div className="order-1">
-          <h1 className="text-xl md:text-2xl lg:text-[1.8rem] font-normal tracking-tight leading-tight m-0">
+          <h1 className="text-xl md:text-2xl lg:text-[1.8rem] font-normal tracking-tight leading-tight m-0 text-gray-900">
             British American Tobacco Bangladesh
           </h1>
           <div className="text-xs md:text-sm text-gray-500 mt-0.5">
@@ -123,16 +123,11 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
         </div>
 
         <div className="order-3 lg:order-2 h-12 md:h-16 flex items-center justify-center">
-          <Sparkline
-            data={[245, 247, 246, 248, 249, 248, 250, 249, 248]}
-            color="#0056b3"
-            height={48}
-            width={200}
-          />
+          {/* Chart removed - not in mockup */}
         </div>
 
         <div className="order-2 lg:order-3 text-left lg:text-right">
-          <div className="text-2xl md:text-3xl lg:text-[2rem] font-light leading-none">
+          <div className="text-2xl md:text-3xl lg:text-[2rem] font-light leading-none text-gray-900">
             248.60 <span className="text-base md:text-lg ml-1">BDT</span>
           </div>
           <div className="text-base md:text-lg text-green-600 font-semibold mt-1">Closed</div>
