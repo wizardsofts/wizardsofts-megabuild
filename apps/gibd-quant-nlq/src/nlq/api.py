@@ -4,7 +4,7 @@ This module provides the main entry point for external integrations
 like chat interfaces.
 
 Example usage:
-    from src.nlq.api import NLQueryEngine
+    from nlq.api import NLQueryEngine
 
     engine = NLQueryEngine()
 
@@ -27,13 +27,13 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.nlq.executor.base import BaseExecutor
-from src.nlq.executor.comparison_executor import ComparisonExecutor
-from src.nlq.executor.ranking_executor import RankingExecutor
-from src.nlq.executor.threshold_executor import ThresholdExecutor
-from src.nlq.executor.trend_executor import TrendExecutor
-from src.nlq.parser.pattern_parser import PatternParser
-from src.nlq.types import ParsedQuery, QueryResult, QueryType
+from nlq.executor.base import BaseExecutor
+from nlq.executor.comparison_executor import ComparisonExecutor
+from nlq.executor.ranking_executor import RankingExecutor
+from nlq.executor.threshold_executor import ThresholdExecutor
+from nlq.executor.trend_executor import TrendExecutor
+from nlq.parser.pattern_parser import PatternParser
+from nlq.types import ParsedQuery, QueryResult, QueryType
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class NLQueryEngine:
 
         if enable_llm:
             try:
-                from src.nlq.parser.llm_parser import LLMParser
+                from nlq.parser.llm_parser import LLMParser
 
                 self.llm_parser = LLMParser(api_key=llm_api_key)
             except ImportError:
@@ -156,7 +156,7 @@ class NLQueryEngine:
             )
 
         # Step 2: Execute the query
-        from src.database.connection import get_db_context
+        from database.connection import get_db_context
 
         own_session = session is None
         try:
@@ -311,7 +311,7 @@ class NLQueryEngine:
 
         from sqlalchemy import func
 
-        from src.database.models import WsDseDailyPrice
+        from database.models import WsDseDailyPrice
 
         result = session.query(func.count(func.distinct(WsDseDailyPrice.txn_scrip))).scalar()
         return result or 0

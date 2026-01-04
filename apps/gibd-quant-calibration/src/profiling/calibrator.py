@@ -23,8 +23,8 @@ from scipy.signal import argrelextrema
 from sklearn.cluster import DBSCAN
 from sqlalchemy.orm import Session
 
-from src.database.connection import get_db_context
-from src.database.models import StockProfile, WsDseDailyPrice
+from database.connection import get_db_context
+from database.models import StockProfile, WsDseDailyPrice
 
 logger = logging.getLogger(__name__)
 
