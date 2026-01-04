@@ -17,7 +17,7 @@ dependencies = [
     # SECURITY: Rate limiting
     "slowapi>=0.1.9",
     # SECURITY: JWT validation (patched for CVE-2024-33663, CVE-2024-33664)
-    "python-jose[cryptography]==3.3.1",
+    "python-jose[cryptography]>=3.3.0",
     "requests>=2.31.0",
 ]
 
