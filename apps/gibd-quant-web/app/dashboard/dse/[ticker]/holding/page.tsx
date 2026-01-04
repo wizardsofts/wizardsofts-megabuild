@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import {
   Card, CardHeader, CardBody,
   Table, Badge, Tabs, TabList, Tab, TabPanel,
-  Grid, GridItem, Statistic
+  Sparkline
 } from '@wizwebui/core';
 
 /**
@@ -79,7 +79,7 @@ const marketStats = [
 ];
 
 // Trend Bar Component (custom, not in wizwebui)
-function TrendBar({ data }: { data: number[] }) {
+function TrendBar({ data = [50, 60, 55, 70] }: { data?: number[] }) {
   const getTrendClass = () => {
     const last = data[data.length - 1];
     const first = data[0];
@@ -102,65 +102,68 @@ function TrendBar({ data }: { data: number[] }) {
 }
 
 export default function HoldingsPage({ params }: HoldingsPageProps) {
-  const { ticker } = params;
+  const { ticker } = use(params);
+  return <HoldingsPageClient ticker={ticker} />;
+}
+
+function HoldingsPageClient({ ticker }: { ticker: string }) {
   const [activeTab, setActiveTab] = useState('holdings');
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Stock Header */}
-      <Card className="mb-6">
-        <CardBody>
-          <Grid cols={3} gap={4}>
-            <GridItem>
-              <h1 className="text-2xl font-bold">British American Tobacco Bangladesh</h1>
-              <div className="text-sm text-gray-600 mt-2">
-                Trading Code: <strong>{ticker}</strong> | Scrip: 14259 | Sector: <strong>Food & Allied</strong>
-              </div>
-            </GridItem>
+    <div className="px-4 md:px-5 mt-3 md:mt-5">
+      {/* Stock Header - Mobile-first responsive */}
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] items-start lg:items-center gap-3 lg:gap-5 pb-3 lg:pb-4 border-b border-gray-200 mb-4 lg:mb-5">
+        <div className="order-1">
+          <h1 className="text-xl md:text-2xl lg:text-[1.8rem] font-normal tracking-tight leading-tight m-0">
+            British American Tobacco Bangladesh
+          </h1>
+          <div className="text-xs md:text-sm text-gray-500 mt-0.5">
+            Trading Code: <strong>{ticker}</strong> | Scrip: 14259 | Sector: <strong>Food & Allied</strong>
+          </div>
+        </div>
 
-            <GridItem>
-              {/* Sparkline placeholder - can add chart later */}
-              <div className="h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-sm">
-                Price Chart
-              </div>
-            </GridItem>
+        <div className="order-3 lg:order-2 h-12 md:h-16 flex items-center justify-center">
+          <Sparkline
+            data={[245, 247, 246, 248, 249, 248, 250, 249, 248]}
+            color="#0056b3"
+            height={48}
+            width={200}
+          />
+        </div>
 
-            <GridItem className="text-right">
-              <Statistic
-                value={248.60}
-                suffix=" BDT"
-                precision={2}
-                className="text-3xl font-light"
-              />
-              <Badge variant="secondary" className="mt-2">Closed</Badge>
-            </GridItem>
-          </Grid>
-        </CardBody>
-      </Card>
+        <div className="order-2 lg:order-3 text-left lg:text-right">
+          <div className="text-2xl md:text-3xl lg:text-[2rem] font-light leading-none">
+            248.60 <span className="text-base md:text-lg ml-1">BDT</span>
+          </div>
+          <div className="text-base md:text-lg text-green-600 font-semibold mt-1">Closed</div>
+        </div>
+      </div>
 
       {/* Tabs Navigation */}
-      <Tabs value={activeTab} onChange={(key) => setActiveTab(key as string)}>
+      <Tabs variant="underline" value={activeTab} onChange={(key) => setActiveTab(key as string)} className="mt-3 md:mt-4">
         <TabList>
-          <Tab value="summary">Summary</Tab>
-          <Tab value="profile">Company Profile</Tab>
-          <Tab value="financials">Financials</Tab>
-          <Tab value="chart">Chart</Tab>
-          <Tab value="holdings">Holdings</Tab>
-          <Tab value="returns">Trailing Returns</Tab>
-          <Tab value="dividends">Dividends</Tab>
-          <Tab value="news">News</Tab>
-          <Tab value="analysis">Guardian Analysis</Tab>
+          <Tab value="summary" className="pb-2.5 text-sm md:text-base">Summary</Tab>
+          <Tab value="profile" className="pb-2.5 text-sm md:text-base">Company Profile</Tab>
+          <Tab value="financials" className="pb-2.5 text-sm md:text-base">Financials</Tab>
+          <Tab value="chart" className="pb-2.5 text-sm md:text-base">Chart</Tab>
+          <Tab value="holdings" className="pb-2.5 text-sm md:text-base">Holdings</Tab>
+          <Tab value="returns" className="pb-2.5 text-sm md:text-base">Trailing Returns</Tab>
+          <Tab value="dividends" className="pb-2.5 text-sm md:text-base">Dividends</Tab>
+          <Tab value="news" className="pb-2.5 text-sm md:text-base">News</Tab>
+          <Tab value="analysis" className="pb-2.5 text-sm md:text-base">Guardian Analysis</Tab>
         </TabList>
 
         {/* Holdings Tab Panel */}
         <TabPanel value="holdings">
-          {/* Dashboard Grid (3-column layout: 240px-1fr-300px) */}
-          <Grid cols={[1, 2, 3]} gap={6} className="mt-6">
+          {/* Dashboard Grid - Mobile: Stack, Desktop: 3-column */}
+          <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-4 md:gap-6 mt-4 md:mt-6">
             {/* Left Column: Holdings Summary */}
-            <GridItem>
-              <Card>
-                <CardHeader>Holdings Summary</CardHeader>
-                <CardBody>
+            <div>
+              <Card variant="panel">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  Holdings Summary
+                </CardHeader>
+                <CardBody className="p-4">
                   {/* Pie Chart - CSS Conic Gradient (keep from mockup) */}
                   <div className="flex justify-center mb-5">
                     <div
@@ -215,56 +218,61 @@ export default function HoldingsPage({ params }: HoldingsPageProps) {
                 </CardBody>
               </Card>
 
-              <Card className="mt-4">
-                <CardHeader>Basic Info</CardHeader>
-                <CardBody>
+              <Card variant="panel" className="mt-4 md:mt-5">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  Basic Info
+                </CardHeader>
+                <CardBody className="p-4">
                   <Table
-                    dataSource={basicInfo}
+                    dataSource={basicInfo.map((item, idx) => ({ id: idx, ...item }))}
+                    density="compact"
+                    borderStyle="minimal"
                     columns={[
                       {
+                        key: 'label',
                         title: 'Metric',
-                        dataIndex: 'label',
-                        render: (text) => <span className="text-gray-600">{text}</span>
+                        render: (value, record) => <span className="text-gray-600 text-sm">{record.label}</span>
                       },
                       {
+                        key: 'value',
                         title: 'Value',
-                        dataIndex: 'value',
-                        align: 'right',
-                        render: (text, record) => (
-                          <span className={record.status === 'success' ? 'text-green-600 font-semibold' : ''}>
-                            {text}
+                        render: (value, record) => (
+                          <span className={`text-sm ${record.status === 'success' ? 'text-green-600 font-semibold' : ''}`}>
+                            {record.value}
                           </span>
                         )
                       },
                     ]}
-                    showHeader={false}
-                    pagination={false}
                   />
                 </CardBody>
               </Card>
-            </GridItem>
+            </div>
 
             {/* Middle Column: Detailed Shareholding */}
-            <GridItem colSpan={1}>
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
+            <div>
+              <Card variant="panel">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
                     <span>Detailed Shareholding Composition</span>
-                    <span className="text-xs font-normal text-gray-500">As of Sep 30, 2024</span>
+                    <span className="text-xs font-normal normal-case text-gray-500">As of Sep 30, 2024</span>
                   </div>
                 </CardHeader>
-                <CardBody>
-                  <Table
-                    dataSource={shareholdingData}
+                <CardBody className="p-4">
+                  <div className="overflow-x-auto -mx-4 md:mx-0">
+                    <Table
+                      dataSource={shareholdingData.map((item, idx) => ({ id: idx, ...item }))}
+                      rowKey={(record) => record.category}
+                      density="compact"
+                      borderStyle="minimal"
                     columns={[
                       {
+                        key: 'category',
                         title: 'Category',
-                        dataIndex: 'category',
-                        render: (text, record) => (
+                        render: (value, record) => (
                           <div>
-                            <div className="font-medium">{text}</div>
+                            <div className="font-medium text-sm">{record.category}</div>
                             {record.chip && (
-                              <Badge variant="secondary" className="mt-1 text-xs">
+                              <Badge variant="secondary" size="xs" shape="pill" className="mt-1">
                                 {record.chip}
                               </Badge>
                             )}
@@ -272,80 +280,84 @@ export default function HoldingsPage({ params }: HoldingsPageProps) {
                         ),
                       },
                       {
+                        key: 'holders',
                         title: 'Holders',
-                        dataIndex: 'holders',
+                        render: (value, record) => <span className="text-sm">{record.holders}</span>
                       },
                       {
+                        key: 'percentage',
                         title: '% Holding',
-                        dataIndex: 'percentage',
-                        align: 'right',
-                        render: (text) => <span className="font-semibold">{text}</span>
+                        render: (value, record) => <span className="font-semibold text-sm">{record.percentage}</span>
                       },
                       {
+                        key: 'shares',
                         title: 'Shares (Est.)',
-                        dataIndex: 'shares',
-                        align: 'right',
+                        render: (value, record) => <span className="text-sm">{record.shares}</span>
                       },
                       {
+                        key: 'trend',
                         title: 'Trend (6M)',
-                        dataIndex: 'trend',
-                        align: 'center',
-                        render: (trend) => (
+                        render: (value, record) => (
                           <div className="flex justify-center">
-                            <TrendBar data={trend} />
+                            <TrendBar data={record.trend} />
                           </div>
                         ),
                       },
                     ]}
-                    pagination={false}
                   />
+                  </div>
                 </CardBody>
               </Card>
 
-              <Card className="mt-4">
-                <CardHeader>Major Institutional Holders (Top 5)</CardHeader>
-                <CardBody>
+              <Card variant="panel" className="mt-4 md:mt-5">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  Major Institutional Holders (Top 5)
+                </CardHeader>
+                <CardBody className="p-4">
                   <div className="py-8 text-center text-gray-400 italic text-sm">
                     Detailed holder data requires Premium Access.
                   </div>
                 </CardBody>
               </Card>
-            </GridItem>
+            </div>
 
             {/* Right Column: Market Statistics */}
-            <GridItem>
-              <Card>
-                <CardHeader>Market Statistics</CardHeader>
-                <CardBody>
+            <div>
+              <Card variant="panel">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  Market Statistics
+                </CardHeader>
+                <CardBody className="p-4">
                   <Table
-                    dataSource={marketStats}
+                    dataSource={marketStats.map((item, idx) => ({ id: idx, ...item }))}
+                    density="compact"
+                    borderStyle="minimal"
                     columns={[
                       {
+                        key: 'label',
                         title: 'Metric',
-                        dataIndex: 'label',
-                        render: (text) => <span className="text-gray-600">{text}</span>
+                        render: (value, record) => <span className="text-gray-600 text-sm">{record.label}</span>
                       },
                       {
+                        key: 'value',
                         title: 'Value',
-                        dataIndex: 'value',
-                        align: 'right',
-                        render: (text, record) => (
-                          <span className={record.color || ''}>{text}</span>
+                        render: (value, record) => (
+                          <span className={`text-sm ${record.color || ''}`}>{record.value}</span>
                         )
                       },
                     ]}
-                    showHeader={false}
-                    pagination={false}
                   />
                 </CardBody>
               </Card>
 
-              <Card className="mt-4">
-                <CardHeader>Insider Actions</CardHeader>
-                <CardBody>
-                  <div className="text-xs text-gray-600 mb-4">Last 6 months</div>
-                  <div className="flex gap-3 items-center mb-3">
-                    <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">
+              <Card variant="panel" className="mt-4 md:mt-5">
+                <CardHeader variant="compact" uppercase className="text-xs text-gray-600">
+                  Insider Actions
+                </CardHeader>
+                <CardBody className="p-4">
+                  <div className="text-[0.85rem] text-gray-600 mb-4">Last 6 months</div>
+                  <div className="flex gap-2.5 items-center mb-2.5">
+                    <div className="w-7 h-7 md:w-8 md:h-8 bg-green-50 text-green-600 rounded-full flex items-center justify-center font-bold text-sm">
                       B
                     </div>
                     <div>
@@ -353,8 +365,8 @@ export default function HoldingsPage({ params }: HoldingsPageProps) {
                       <div className="text-xs text-gray-600">0 Transactions</div>
                     </div>
                   </div>
-                  <div className="flex gap-3 items-center">
-                    <div className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center font-bold">
+                  <div className="flex gap-2.5 items-center">
+                    <div className="w-7 h-7 md:w-8 md:h-8 bg-red-50 text-red-600 rounded-full flex items-center justify-center font-bold text-sm">
                       S
                     </div>
                     <div>
@@ -364,8 +376,8 @@ export default function HoldingsPage({ params }: HoldingsPageProps) {
                   </div>
                 </CardBody>
               </Card>
-            </GridItem>
-          </Grid>
+            </div>
+          </div>
         </TabPanel>
 
         {/* Other Tab Panels (placeholders) */}
