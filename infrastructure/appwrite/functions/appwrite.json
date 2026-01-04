@@ -1,0 +1,30 @@
+{
+  "projectId": "wizardsofts-prod",
+  "projectName": "WizardSofts Production",
+  "functions": [
+    {
+      "functionId": "alert-processor",
+      "name": "Alert Processor",
+      "runtime": "node-18.0",
+      "execute": ["any"],
+      "events": [],
+      "schedule": "",
+      "timeout": 15,
+      "enabled": true,
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "path": "functions/alert-processor",
+      "envVars": {
+        "APPWRITE_ENDPOINT": "https://appwrite.wizardsofts.com/v1",
+        "APPWRITE_PROJECT_ID": "wizardsofts-prod",
+        "DATABASE_ID": "monitoring",
+        "ALERTS_COLLECTION_ID": "alerts",
+        "SMS_PROVIDER": "twilio",
+        "TWILIO_ACCOUNT_SID": "",
+        "TWILIO_AUTH_TOKEN": "",
+        "TWILIO_PHONE_NUMBER": "",
+        "ONCALL_PHONE_NUMBERS": "+1234567890,+0987654321"
+      }
+    }
+  ]
+}
