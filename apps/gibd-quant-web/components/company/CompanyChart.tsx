@@ -37,6 +37,8 @@ import type { ChartPeriod, PriceHistory } from '@/lib/types';
 interface CompanyChartProps {
   ticker: string;
   initialPeriod?: ChartPeriod;
+  indicators?: IndicatorConfig[];
+  onIndicatorsChange?: (indicators: IndicatorConfig[]) => void;
 }
 
 const PERIODS: Array<{ value: ChartPeriod; label: string }> = [
@@ -160,16 +162,28 @@ const INDICATOR_TEMPLATES: Record<IndicatorType, {
 export default function CompanyChart({
   ticker,
   initialPeriod = '1M',
+  indicators: propsIndicators,
+  onIndicatorsChange,
 }: CompanyChartProps) {
   const [period, setPeriod] = useState<ChartPeriod>(initialPeriod);
   const [data, setData] = useState<PriceHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
-  const [indicators, setIndicators] = useState<IndicatorConfig[]>([]);
+  // Use indicators from props if provided, otherwise use local state
+  const [localIndicators, setLocalIndicators] = useState<IndicatorConfig[]>([]);
+  const indicators = propsIndicators !== undefined ? propsIndicators : localIndicators;
+  const setIndicators = (newIndicators: IndicatorConfig[]) => {
+    if (onIndicatorsChange) {
+      onIndicatorsChange(newIndicators);
+    } else {
+      setLocalIndicators(newIndicators);
+    }
+  };
   const [showAddIndicator, setShowAddIndicator] = useState(false);
   const [newIndicatorType, setNewIndicatorType] = useState<IndicatorType>('SMA');
   const [newIndicatorParams, setNewIndicatorParams] = useState<Record<string, number>>({ period: 20 });
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -325,8 +339,27 @@ export default function CompanyChart({
     });
   }, [data, indicators]);
 
-  // Add new indicator
+  // Add new indicator (prevent duplicates)
   const handleAddIndicator = () => {
+    // Check if indicator with same type and parameters already exists
+    const isDuplicate = indicators.some((indicator) => {
+      if (indicator.type !== newIndicatorType) return false;
+      // Compare all parameters
+      return JSON.stringify(indicator.params) === JSON.stringify(newIndicatorParams);
+    });
+
+    if (isDuplicate) {
+      // Show error message instead of silently closing
+      const indicatorLabel = getIndicatorLabel({
+        id: 'temp',
+        type: newIndicatorType,
+        params: newIndicatorParams,
+        color: '#000',
+      });
+      setDuplicateError(`${indicatorLabel} is already added. Please modify the parameters or select a different indicator.`);
+      return;
+    }
+
     const template = INDICATOR_TEMPLATES[newIndicatorType];
     const colorIndex = indicators.filter(i => i.type === newIndicatorType).length;
     const color = template.colors[colorIndex % template.colors.length];
@@ -341,6 +374,7 @@ export default function CompanyChart({
     setIndicators([...indicators, newIndicator]);
     setShowAddIndicator(false);
     setNewIndicatorParams(template.defaultParams);
+    setDuplicateError(null); // Clear error on successful add
   };
 
   // Remove indicator
@@ -352,6 +386,7 @@ export default function CompanyChart({
   const handleIndicatorTypeChange = (type: IndicatorType) => {
     setNewIndicatorType(type);
     setNewIndicatorParams(INDICATOR_TEMPLATES[type].defaultParams);
+    setDuplicateError(null); // Clear error when changing indicator type
   };
 
   // Custom tooltip for price chart
@@ -526,6 +561,13 @@ export default function CompanyChart({
         {showAddIndicator && (
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
             <div className="flex flex-col gap-3">
+              {/* Duplicate Error Message */}
+              {duplicateError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{duplicateError}</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Indicator Type
@@ -552,10 +594,13 @@ export default function CompanyChart({
                   <input
                     type="number"
                     value={newIndicatorParams[key] || ''}
-                    onChange={(e) => setNewIndicatorParams({
-                      ...newIndicatorParams,
-                      [key]: parseInt(e.target.value) || 0
-                    })}
+                    onChange={(e) => {
+                      setNewIndicatorParams({
+                        ...newIndicatorParams,
+                        [key]: parseInt(e.target.value) || 0
+                      });
+                      setDuplicateError(null); // Clear error when parameters change
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -566,7 +611,10 @@ export default function CompanyChart({
                   Add
                 </Button>
                 <Button
-                  onClick={() => setShowAddIndicator(false)}
+                  onClick={() => {
+                    setShowAddIndicator(false);
+                    setDuplicateError(null);
+                  }}
                   variant="outline"
                   size="sm"
                 >

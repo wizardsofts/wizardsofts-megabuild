@@ -1,5 +1,20 @@
 # WizardSofts Megabuild - Claude Code Instructions
 
+## Critical Instructions
+
+### No Shortcuts Policy
+
+**IMPORTANT: Do NOT take shortcuts when implementing infrastructure changes.**
+
+When you encounter difficulties or blockers during implementation:
+1. **Do NOT skip steps** or implement workarounds that compromise the goal
+2. **Do NOT abandon the proper solution** in favor of a quick fix
+3. **Report blockers immediately** and work through them collaboratively
+4. **Follow through to completion** - partial implementations create tech debt
+5. **Document challenges** so we can address root causes together
+
+If you hit a snag, let me know - we will fix them together.
+
 ## Project Overview
 
 This is a monorepo containing multiple WizardSofts applications and shared infrastructure:
@@ -136,58 +151,59 @@ curl --request POST \
 | Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | 914GB (36% used) |
 | Hetzner | 178.63.44.221 | External services | N/A |
 
-### Docker Snap Limitation (Server 84)
+### Docker Swarm Cluster (2026-01-06)
 
-**CRITICAL:** Server 84 runs Docker via **snap package** which has confinement restrictions:
-- ❌ Cannot access NFS mounts for bind volumes (AppArmor blocks)
-- ❌ Docker Swarm services cannot use NFS directories
-- ✅ Regular `docker run` with local volumes works
-- ✅ Docker volumes (local driver) work
+**Manager Node:** Server 84 (gmktec) - Docker CE 27.5.1
+**Worker Nodes:** Servers 80, 81, 82
 
-**Workaround for NFS access:**
-1. Mount NFS under `/mnt/` (e.g., `/mnt/ollama-models`)
-2. Connect removable-media snap interface: `sudo snap connect docker:removable-media`
-3. Use `docker run` (not Swarm) for NFS-dependent containers
+| Node | Hostname | Docker Version | Status |
+|------|----------|----------------|--------|
+| Server 84 | gmktec | 27.5.1 (Docker CE) | Manager/Leader |
+| Server 80 | hppavilion | 28.2.2 | Worker |
+| Server 81 | wsasus | 29.1.3 | Worker |
+| Server 82 | hpr | 29.1.3 | Worker |
 
-**Permanent Fix:** Migrate from Docker snap to Docker CE (apt package)
-- Requires maintenance window (71+ containers running)
-- See: `docs/SERVER_84_DOCKER_MIGRATION.md` (pending)
+**NFS Shared Storage:**
+- **Server:** 10.0.0.80 (hppavilion)
+- **Export:** `/opt/ollama-models` (217GB available)
+- **Mount:** `/mnt/ollama-models` on all nodes
 
-### Ollama Deployment (2026-01-05)
+### Ollama Deployment (2026-01-06)
 
-**Architecture:**
-- **Server 80:** Swarm service (1 replica) with NFS shared models
-- **Server 84:** Standalone container with local volume
+**Architecture:** Docker Swarm service with NFS shared models
 
 **Current Status:**
-- Swarm service ID: `p7ddluf17lf36x77icjhp212s`
-- Model: mistral:7b (4.4GB)
-- API: http://10.0.0.84:11434 (routing mesh from Server 80 Swarm replica)
-- Standalone: http://10.0.0.84:11434 (local container on Server 84)
-
-**To achieve full Swarm scaling (max 2 on Server 84, max 1 on Server 80):**
-- Requires Docker snap → Docker CE migration on Server 84
+- **Service:** Running on Server 84 (gmktec) via Swarm
+- **Model:** mistral:7b (4.4GB) on NFS
+- **API:** http://10.0.0.84:11434 (Swarm routing mesh)
+- **Max Replicas:** 2 per node
 
 **Scaling Commands:**
 ```bash
-# Scale Swarm service (Server 80 only currently)
-docker service scale ollama=2
+# Scale Ollama replicas
+ssh agent@10.0.0.84 "docker service scale ollama=2"
 
 # Check replica distribution
-docker service ps ollama
+ssh agent@10.0.0.84 "docker service ps ollama"
+
+# Check models
+ssh agent@10.0.0.84 "docker exec \$(docker ps -q -f name=ollama) ollama list"
+```
+
+**Node Labels for Placement:**
+```bash
+# Only nodes with ollama.enabled=true can run Ollama
+docker node update --label-add ollama.enabled=true gmktec
+docker node update --label-add ollama.enabled=true hppavilion
 ```
 
 **Max Replicas Per Node:**
 ```bash
 # Set max 2 replicas per node (global setting)
 docker service update --replicas-max-per-node 2 ollama
-
-# Verify setting
-docker service inspect ollama --format '{{.Spec.TaskTemplate.Placement.MaxReplicas}}'
 ```
 
 **Note:** `--max-replicas-per-node` is a global setting (same limit for all nodes).
-For different limits per node (e.g., 2 on Server 84, 1 on Server 80), create separate services with node constraints.
 
 ### Server Access & User Configuration
 

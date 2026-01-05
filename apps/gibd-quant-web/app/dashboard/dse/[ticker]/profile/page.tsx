@@ -1,19 +1,17 @@
-import { redirect } from 'next/navigation';
+'use client';
 
 /**
- * Profile Page - Redirects to parent ticker page
+ * Profile Tab Page - Placeholder for profile route
  *
- * The Company Profile content is now rendered as a tab in the parent page.
- * This route redirects to the main ticker page.
+ * URL: /dashboard/dse/{ticker}/profile
+ * Example: /dashboard/dse/BATBC/profile
+ *
+ * This page is a placeholder. The layout.tsx handles all rendering
+ * based on the URL pathname and activeTab state. This file needs to exist
+ * for the route to be valid, but returns null to let the layout handle content.
  */
 
-interface ProfilePageProps {
-  params: {
-    ticker: string;
-  };
-}
-
-export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { ticker } = await params;
-  redirect(`/dashboard/dse/${ticker}`);
+export default function ProfilePage() {
+  // Layout handles all content rendering
+  return null;
 }
