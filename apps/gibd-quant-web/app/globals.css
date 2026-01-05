@@ -8,6 +8,15 @@
   --background-rgb: 255, 255, 255;
 }
 
+/* Prevent layout shift when scrollbar appears/disappears */
+html {
+  /* Modern approach - reserves space for scrollbar without always showing it */
+  scrollbar-gutter: stable;
+
+  /* Fallback for older browsers - always shows scrollbar track */
+  overflow-y: scroll;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
