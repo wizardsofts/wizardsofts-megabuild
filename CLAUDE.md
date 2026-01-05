@@ -35,6 +35,53 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 - **SSH Port:** 2222
 - **Docs:** `docs/GITLAB_DEPLOYMENT.md`
 
+#### GitLab Access for Automation
+
+**Agent User (Automation Account):**
+- **Username:** `agent`
+- **Password:** `wLlrcN0l_elcHwfggKlvMUJVPK-ofuTs`
+- **Role:** User (Owner of wizardsofts, gibd, dailydeenguide groups)
+- **Purpose:** CI/CD automation, merge request creation, variable management
+- **Docs:** `docs/GITLAB_AGENT_USER.md`
+
+**Permissions:**
+- ✅ Create/Review/Merge Pull Requests
+- ✅ Update GitLab Variables
+- ✅ Modify CI/CD Pipelines
+- ✅ Manage GitLab Runners
+- ✅ Full Repository Access
+
+**Usage Examples:**
+```bash
+# Create MR via API (use personal access token, not password)
+curl --request POST \
+  --header "PRIVATE-TOKEN: <agent-token>" \
+  --header "Content-Type: application/json" \
+  --data '{"source_branch": "feature/automation", "target_branch": "master", "title": "Automated update"}' \
+  "http://10.0.0.84:8090/api/v4/projects/:id/merge_requests"
+
+# Update CI/CD variable
+curl --request POST \
+  --header "PRIVATE-TOKEN: <agent-token>" \
+  --form "key=DEPLOY_ENV" \
+  --form "value=production" \
+  "http://10.0.0.84:8090/api/v4/projects/:id/variables"
+
+# Trigger pipeline
+curl --request POST \
+  --header "PRIVATE-TOKEN: <agent-token>" \
+  --form "ref=master" \
+  "http://10.0.0.84:8090/api/v4/projects/:id/pipeline"
+```
+
+**Admin User (Human Access):**
+- **Username:** `mashfiqur.rahman`
+- **Role:** Administrator
+- **Purpose:** System administration, user management
+- **Docs:** `docs/GITLAB_ADMIN_USER.md`
+
+**Note:** Always use `agent` user for automation scripts. Use `mashfiqur.rahman` for manual/administrative tasks only.
+
 ## Server Infrastructure
 
 | Server | IP | Purpose | Disk Status |
@@ -44,6 +91,55 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 | Server 82 | 10.0.0.82 | HPR Server (Monitoring) | TBD |
 | Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | TBD |
 | Hetzner | 178.63.44.221 | External services | N/A |
+
+### Server Access & User Configuration
+
+**IMPORTANT: Use `agent` user for all automated operations, NOT `wizardsofts` user.**
+
+#### Agent User Configuration (2026-01-05)
+
+**Status:** ✅ Configured on Servers 80, 81, 84 | ❌ Server 82 (no SSH access)
+
+**Passwordless Sudo Permissions:**
+- ✅ Docker commands (`docker`, `docker-compose`)
+- ✅ UFW firewall (`ufw`)
+- ✅ Swap management (`swapoff`, `swapon`, `sysctl`)
+- ✅ System monitoring (`systemctl status`, `journalctl`)
+
+**Configuration Files:**
+- Sudoers: `/etc/sudoers.d/91-agent-swap-management`
+- Scripts: `/home/agent/scripts/`
+- Logs: `/home/agent/logs/`
+
+**Swappiness:** All servers set to `vm.swappiness=10` (prevents aggressive swapping)
+
+#### SSH Access - Agent User
+
+✅ **Status:** SSH keys configured successfully (2026-01-05)
+
+**Direct SSH access available:**
+```bash
+ssh agent@10.0.0.80  # Server 80 ✅
+ssh agent@10.0.0.81  # Server 81 ✅
+ssh agent@10.0.0.84  # Server 84 ✅
+```
+
+**Example usage:**
+```bash
+# Docker operations
+ssh agent@10.0.0.84 'sudo docker ps'
+
+# UFW firewall
+ssh agent@10.0.0.84 'sudo ufw status'
+
+# Swap management
+ssh agent@10.0.0.84 'sudo swapoff -a && sudo swapon -a'
+
+# System monitoring
+ssh agent@10.0.0.84 'sudo systemctl status traefik'
+```
+
+**Note:** All commands in this file use `agent@` for server operations. Use `wizardsofts@` only for personal/administrative tasks.
 
 ### Distributed ML Infrastructure (Server 84)
 
@@ -78,14 +174,14 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 **Quick Access:**
 ```bash
 # Ray cluster status
-ssh wizardsofts@10.0.0.84 "docker exec ray-head ray status"
+ssh agent@10.0.0.84 "sudo docker exec ray-head ray status"
 
 # Ray dashboard (http://10.0.0.84:8265)
 # Username: admin
 # Password: (see infrastructure/distributed-ml/ray/.env.ray)
 
 # Flower dashboard
-ssh wizardsofts@10.0.0.84 'grep FLOWER_PASSWORD ~/celery/.env.celery'
+ssh agent@10.0.0.84 'grep FLOWER_PASSWORD ~/celery/.env.celery'
 
 # Ray training with cleanup wrapper
 from utils.ray_training_wrapper import RayTrainingCleanup
@@ -130,8 +226,8 @@ curl http://10.0.0.84:8090/-/readiness  # Check readiness endpoint
 
 ### Server 82 Metrics Exporters
 ```bash
-# SSH into server 82
-ssh wizardsofts@10.0.0.82
+# Note: Server 82 SSH access not yet configured for agent user
+# Configure SSH keys first, then use: ssh agent@10.0.0.82
 
 # Check exporters status
 cd ~/server-82 && docker compose ps
@@ -150,16 +246,16 @@ curl http://10.0.0.82:8080/metrics  # cAdvisor
 ### fail2ban Security (Server 84)
 ```bash
 # Check fail2ban status
-ssh wizardsofts@10.0.0.84 "sudo fail2ban-client status sshd"
+ssh agent@10.0.0.84 "sudo fail2ban-client status sshd"
 
 # View banned IPs
-ssh wizardsofts@10.0.0.84 "sudo fail2ban-client status sshd | grep 'Banned IP list'"
+ssh agent@10.0.0.84 "sudo fail2ban-client status sshd | grep 'Banned IP list'"
 
 # Unban specific IP
-ssh wizardsofts@10.0.0.84 "sudo fail2ban-client set sshd unbanip IP_ADDRESS"
+ssh agent@10.0.0.84 "sudo fail2ban-client set sshd unbanip IP_ADDRESS"
 
 # View recent ban activity
-ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
+ssh agent@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 
 # See docs/FAIL2BAN_SETUP.md for full guide
 ```
@@ -238,12 +334,12 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
   - Always use ray user home directory (`/home/ray/`) for outputs, not `/app/` (permission errors)
 - **Usage**:
   ```bash
-  # 1. Rebuild Ray head with disk limits
-  ssh wizardsofts@10.0.0.84
+  # Export data to cache (run once)
+  ssh agent@10.0.0.84
   cd /opt/wizardsofts-megabuild/infrastructure/distributed-ml/ray
-  docker build -t ray-head:latest -f Dockerfile.ray-head .
-  docker stop ray-head && docker rm ray-head
-  docker run -d --name ray-head --network=host --shm-size=2gb ray-head:latest
+  sudo docker build -t ray-head:latest -f Dockerfile.ray-head .
+  sudo docker stop ray-head && sudo docker rm ray-head
+  sudo docker run -d --name ray-head --network=host --shm-size=2gb ray-head:latest
 
   # 2. Build training image
   cd /opt/wizardsofts-megabuild/apps/gibd-quant-agent
@@ -359,13 +455,13 @@ Server 81 improvement from 100% full (0GB free) to 34% (62GB free) was achieved 
 - **Restart Instructions**:
   ```bash
   # Server 84 (head node)
-  ssh wizardsofts@10.0.0.84 "cd ~/distributed-ml && docker-compose up -d"
+  ssh agent@10.0.0.84 "cd ~/distributed-ml && sudo docker-compose up -d"
 
   # Server 80 (2 workers)
-  ssh wizardsofts@10.0.0.80 "cd ~/ray-workers && docker-compose up -d"
+  ssh agent@10.0.0.80 "cd ~/ray-workers && sudo docker-compose up -d"
 
   # Server 81 (2 workers)
-  ssh wizardsofts@10.0.0.81 "cd ~/ray-workers && docker-compose up -d"
+  ssh agent@10.0.0.81 "cd ~/ray-workers && sudo docker-compose up -d"
   ```
 
 ### Ray Cluster Stability & Disk Management Fixed (2026-01-04)
@@ -461,8 +557,8 @@ Server 81 improvement from 100% full (0GB free) to 34% (62GB free) was achieved 
   - Cron jobs installed programmatically
   - Can be automated in Ansible/GitLab CI pipeline
 - **Monitoring**:
-  - View cleanup logs: `ssh wizardsofts@10.0.0.80 tail -f ~/logs/ray_cleanup.log`
-  - Check cron status: `ssh wizardsofts@10.0.0.80 crontab -l`
+  - View cleanup logs: `ssh agent@10.0.0.80 tail -f ~/logs/ray_cleanup.log`
+  - Check cron status: `ssh agent@10.0.0.80 crontab -l`
   - Prometheus alerts in Grafana dashboard (ray_cluster_monitoring group)
 - **Documentation**: Full implementation details in this section
 
