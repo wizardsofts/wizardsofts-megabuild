@@ -15,12 +15,13 @@
 
 ## 🔐 Security & Preparation
 
-- [ ] Run `pip-audit` on Ray 2.53.0
-- [ ] Review CVE list - no critical issues
+- [x] Run `pip-audit` on Ray 2.53.0 (✅ 2026-01-05)
+- [x] Review CVE list - no critical issues (✅ CVE-2023-48022 mitigated, see [RAY_2.53_SECURITY_AUDIT.md](RAY_2.53_SECURITY_AUDIT.md))
 - [ ] Backup current cluster configuration
 - [ ] Backup training checkpoints
 - [ ] Document baseline performance metrics
-- [ ] Generate secure dashboard password
+- [x] Generate secure dashboard password (`openssl rand -base64 32`)
+- [ ] Update Dockerfiles to upgrade pip to 25.3+ and setuptools to 78.1.1+
 
 ---
 

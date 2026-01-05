@@ -1,4 +1,9 @@
-FROM rayproject/ray:2.40.0-py310
+FROM rayproject/ray:2.53.0-py310
+
+# Upgrade pip and setuptools for security (CVE fixes)
+RUN pip install --upgrade --no-cache-dir \
+    pip==25.3 \
+    setuptools==78.1.1
 
 # Install additional ML libraries
 RUN pip install --no-cache-dir \
@@ -7,12 +12,12 @@ RUN pip install --no-cache-dir \
     scikit-learn==1.4.0 \
     xgboost==2.0.3 \
     torch==2.1.2 \
-    ray[tune,serve,data]==2.40.0 \
+    'ray[tune,serve,data]==2.53.0' \
     prometheus-client==0.19.0
 
 # Install monitoring tools
 RUN pip install --no-cache-dir \
-    ray[default,observability]==2.40.0
+    'ray[default,observability]==2.53.0'
 
 # Create app directory
 WORKDIR /app
