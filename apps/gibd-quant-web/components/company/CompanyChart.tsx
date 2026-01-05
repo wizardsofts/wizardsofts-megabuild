@@ -49,6 +49,64 @@ const PERIODS: Array<{ value: ChartPeriod; label: string }> = [
   { value: 'MAX', label: 'MAX' },
 ];
 
+// Mock data for demonstration when backend API is unavailable
+const generateMockData = (ticker: string, period: ChartPeriod, dataPoints: number) => {
+  const basePrice = 100 + Math.random() * 150;
+  const data = [];
+  const now = new Date();
+
+  for (let i = dataPoints - 1; i >= 0; i--) {
+    const date = new Date(now);
+
+    // Adjust date based on period
+    if (period === '1D') {
+      date.setMinutes(date.getMinutes() - i * 5);
+    } else if (period === '5D') {
+      date.setHours(date.getHours() - i * 2);
+    } else if (period === '1M') {
+      date.setDate(date.getDate() - i);
+    } else if (period === '3M') {
+      date.setDate(date.getDate() - i * 3);
+    } else if (period === '6M') {
+      date.setDate(date.getDate() - i * 6);
+    } else if (period === 'YTD') {
+      date.setDate(date.getDate() - i * 3);
+    } else if (period === '1Y') {
+      date.setDate(date.getDate() - i * 12);
+    } else if (period === '5Y') {
+      date.setMonth(date.getMonth() - i * 2);
+    } else {
+      date.setMonth(date.getMonth() - i * 6);
+    }
+
+    const trend = (dataPoints - i) * 0.5;
+    const volatility = Math.random() * 10 - 5;
+    const price = basePrice + trend + volatility;
+
+    const open = price + (Math.random() * 4 - 2);
+    const close = price + (Math.random() * 4 - 2);
+    const high = Math.max(open, close) + Math.random() * 3;
+    const low = Math.min(open, close) - Math.random() * 3;
+    const volume = Math.floor(50000 + Math.random() * 100000);
+
+    data.push({
+      date: date.toISOString(),
+      open: Math.max(0, open),
+      high: Math.max(0, high),
+      low: Math.max(0, low),
+      close: Math.max(0, close),
+      volume,
+    });
+  }
+
+  return {
+    ticker,
+    period,
+    data,
+    data_points: dataPoints,
+  };
+};
+
 export default function CompanyChart({
   ticker,
   initialPeriod = '1M',
@@ -57,6 +115,7 @@ export default function CompanyChart({
   const [data, setData] = useState<PriceHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingMockData, setUsingMockData] = useState(false);
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -68,14 +127,23 @@ export default function CompanyChart({
         const priceHistory = await getPriceHistory(ticker, period);
 
         if (!priceHistory) {
-          setError(`No price data available for period ${period}`);
-          setData(null);
+          // Fallback to mock data
+          console.log('API returned no data, using mock data for', ticker, period);
+          const dataPoints = period === '1D' ? 78 : period === '5D' ? 60 : period === '1M' ? 30 : 90;
+          const mockData = generateMockData(ticker, period, dataPoints);
+          setData(mockData as PriceHistory);
+          setUsingMockData(true);
         } else {
           setData(priceHistory);
+          setUsingMockData(false);
         }
       } catch (err) {
-        setError('Failed to load chart data');
-        console.error('Error fetching price history:', err);
+        // Fallback to mock data on error
+        console.log('API error, using mock data for', ticker, period, err);
+        const dataPoints = period === '1D' ? 78 : period === '5D' ? 60 : period === '1M' ? 30 : 90;
+        const mockData = generateMockData(ticker, period, dataPoints);
+        setData(mockData as PriceHistory);
+        setUsingMockData(true);
       } finally {
         setLoading(false);
       }
@@ -220,9 +288,16 @@ export default function CompanyChart({
             <CardHeader>
               <CardTitle className="text-lg flex items-center justify-between">
                 <span>📈 Price Chart ({period})</span>
-                <span className="text-sm font-normal text-gray-500">
-                  {data.data_points} data points
-                </span>
+                <div className="flex items-center gap-2">
+                  {usingMockData && (
+                    <span className="text-xs font-normal px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                      Demo Data
+                    </span>
+                  )}
+                  <span className="text-sm font-normal text-gray-500">
+                    {data.data_points} data points
+                  </span>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
