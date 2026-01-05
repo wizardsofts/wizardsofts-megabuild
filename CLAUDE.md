@@ -817,6 +817,60 @@ Server 81 improvement from 100% full (0GB free) to 34% (62GB free) was achieved 
    //  B) Use alternative approach"
    ```
 
+### Indicator Components - WizChart Integration (2026-01-06)
+
+**Status:** ⚠️ AddIndicatorPanel component should be added to wizchart
+
+The add indicator functionality is currently implemented inline in CompanyChart.tsx. This should be extracted to wizchart/packages/interactive as a reusable component:
+
+**Location:** `wizchart/packages/interactive/src/AddIndicatorPanel.tsx`
+
+**Component Features:**
+- Multiple indicator type support (SMA, EMA, Bollinger Bands, RSI, MACD)
+- Customizable parameters per indicator type
+- Duplicate detection (prevents adding same indicator with same params)
+- Color coding for visual distinction
+- Auto-clearing error messages when parameters change
+
+**Exported Types:**
+```typescript
+export type IndicatorType = 'SMA' | 'EMA' | 'BB' | 'RSI' | 'MACD';
+
+export interface IndicatorConfig {
+  id: string;
+  type: IndicatorType;
+  params: Record<string, number>;
+  color: string;
+}
+
+export interface AddIndicatorPanelProps {
+  indicators: IndicatorConfig[];
+  onAddIndicator: (indicator: IndicatorConfig) => void;
+  onRemoveIndicator: (id: string) => void;
+  templateColors?: Record<IndicatorType, string[]>;
+}
+```
+
+**Usage in CompanyChart:**
+```tsx
+import { AddIndicatorPanel, IndicatorConfig } from '@wizchart/interactive';
+
+<AddIndicatorPanel
+  indicators={indicators}
+  onAddIndicator={(indicator) => setIndicators([...indicators, indicator])}
+  onRemoveIndicator={(id) => setIndicators(indicators.filter(i => i.id !== id))}
+/>
+```
+
+**TODO:**
+1. Create AddIndicatorPanel.tsx in wizchart/packages/interactive/src/
+2. Update wizchart/packages/interactive/src/index.ts to export component
+3. Build and version wizchart
+4. Update CompanyChart to import from wizchart instead of inline implementation
+5. Update gibd-quant-web package.json to use new @wizchart/interactive version
+
+**Code Reference:** See current implementation in [apps/gibd-quant-web/components/company/CompanyChart.tsx](apps/gibd-quant-web/components/company/CompanyChart.tsx#L160-L520)
+
 ### Enforcement
 
 **Violation of this rule will require:**
