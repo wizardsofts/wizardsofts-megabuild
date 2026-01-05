@@ -271,6 +271,18 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 5, 2026: Added technical indicator selection to CompanyChart
+  - Indicator dropdown with 6 options: None, SMA(20), SMA(50), EMA(20), Bollinger Bands, All
+  - Implemented indicator calculations: SMA, EMA, Bollinger Bands (20-period, 2 std dev)
+  - Color-coded overlays: SMA(20) green, SMA(50) amber, EMA(20) purple, BB red/gray
+  - Responsive layout: Period buttons + indicator dropdown stack on mobile
+  - Commit: `1b6ef53` feat: Add technical indicator selection to CompanyChart
+- January 5, 2026: Added mock data fallback for CompanyChart
+  - Generate realistic price/volume data when backend API unavailable
+  - Mock data adapts to selected period (1D = 78 points, 1M = 30 points, etc.)
+  - "Demo Data" badge shows when using mock data
+  - Graceful degradation: chart always displays functional UI
+  - Commit: `9515b5b` feat: Add mock data fallback for CompanyChart when API unavailable
 - January 5, 2026: Integrated CompanyChart into dashboard ticker page Chart tab
   - Replaced "Chart - Coming Soon" placeholder with functional CompanyChart component
   - Chart displays period selector (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 5Y, MAX)
