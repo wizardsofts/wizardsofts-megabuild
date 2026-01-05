@@ -107,6 +107,17 @@ const generateMockData = (ticker: string, period: ChartPeriod, dataPoints: numbe
   };
 };
 
+type Indicator = 'none' | 'sma20' | 'sma50' | 'ema20' | 'bb' | 'all';
+
+const INDICATORS = [
+  { value: 'none' as Indicator, label: 'No Indicators' },
+  { value: 'sma20' as Indicator, label: 'SMA (20)' },
+  { value: 'sma50' as Indicator, label: 'SMA (50)' },
+  { value: 'ema20' as Indicator, label: 'EMA (20)' },
+  { value: 'bb' as Indicator, label: 'Bollinger Bands' },
+  { value: 'all' as Indicator, label: 'All Indicators' },
+];
+
 export default function CompanyChart({
   ticker,
   initialPeriod = '1M',
@@ -116,6 +127,7 @@ export default function CompanyChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
+  const [selectedIndicator, setSelectedIndicator] = useState<Indicator>('none');
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -169,11 +181,74 @@ export default function CompanyChart({
     };
   }, [data]);
 
-  // Format chart data
+  // Calculate Simple Moving Average
+  const calculateSMA = (prices: number[], period: number): (number | null)[] => {
+    const result: (number | null)[] = [];
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else {
+        const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+        result.push(sum / period);
+      }
+    }
+    return result;
+  };
+
+  // Calculate Exponential Moving Average
+  const calculateEMA = (prices: number[], period: number): (number | null)[] => {
+    const result: (number | null)[] = [];
+    const multiplier = 2 / (period + 1);
+
+    // Start with SMA for first value
+    let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else if (i === period - 1) {
+        result.push(ema);
+      } else {
+        ema = (prices[i] - ema) * multiplier + ema;
+        result.push(ema);
+      }
+    }
+    return result;
+  };
+
+  // Calculate Bollinger Bands
+  const calculateBB = (prices: number[], period: number, stdDev: number = 2) => {
+    const sma = calculateSMA(prices, period);
+    const upper: (number | null)[] = [];
+    const lower: (number | null)[] = [];
+
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        upper.push(null);
+        lower.push(null);
+      } else {
+        const slice = prices.slice(i - period + 1, i + 1);
+        const mean = sma[i]!;
+        const variance = slice.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / period;
+        const std = Math.sqrt(variance);
+        upper.push(mean + stdDev * std);
+        lower.push(mean - stdDev * std);
+      }
+    }
+    return { upper, middle: sma, lower };
+  };
+
+  // Format chart data with indicators
   const chartData = useMemo(() => {
     if (!data) return [];
 
-    return data.data.map((item) => ({
+    const prices = data.data.map(d => d.close);
+    const sma20 = calculateSMA(prices, 20);
+    const sma50 = calculateSMA(prices, 50);
+    const ema20 = calculateEMA(prices, 20);
+    const bb = calculateBB(prices, 20);
+
+    return data.data.map((item, i) => ({
       date: new Date(item.date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -183,6 +258,12 @@ export default function CompanyChart({
       high: item.high,
       low: item.low,
       open: item.open,
+      sma20: sma20[i],
+      sma50: sma50[i],
+      ema20: ema20[i],
+      bbUpper: bb.upper[i],
+      bbMiddle: bb.middle[i],
+      bbLower: bb.lower[i],
     }));
   }, [data]);
 
@@ -236,19 +317,41 @@ export default function CompanyChart({
 
   return (
     <div className="space-y-4">
-      {/* Period Selector */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {PERIODS.map((p) => (
-          <Button
-            key={p.value}
-            onClick={() => setPeriod(p.value)}
-            variant={period === p.value ? 'default' : 'outline'}
-            size="sm"
-            className="shrink-0 min-w-[44px] min-h-[44px]"
+      {/* Period and Indicator Selectors */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {/* Period Selector */}
+        <div className="flex gap-2 overflow-x-auto pb-2 flex-1">
+          {PERIODS.map((p) => (
+            <Button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              variant={period === p.value ? 'default' : 'outline'}
+              size="sm"
+              className="shrink-0 min-w-[44px] min-h-[44px]"
+            >
+              {p.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Indicator Selector */}
+        <div className="flex items-center gap-2 shrink-0">
+          <label htmlFor="indicator-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            Indicators:
+          </label>
+          <select
+            id="indicator-select"
+            value={selectedIndicator}
+            onChange={(e) => setSelectedIndicator(e.target.value as Indicator)}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            {p.label}
-          </Button>
-        ))}
+            {INDICATORS.map((ind) => (
+              <option key={ind.value} value={ind.value}>
+                {ind.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Loading State */}
@@ -325,6 +428,74 @@ export default function CompanyChart({
                     dot={false}
                     name="Close Price"
                   />
+                  {/* SMA 20 */}
+                  {(selectedIndicator === 'sma20' || selectedIndicator === 'all') && (
+                    <Line
+                      type="monotone"
+                      dataKey="sma20"
+                      stroke="#10b981"
+                      strokeWidth={1.5}
+                      dot={false}
+                      name="SMA (20)"
+                      strokeDasharray="5 5"
+                    />
+                  )}
+                  {/* SMA 50 */}
+                  {(selectedIndicator === 'sma50' || selectedIndicator === 'all') && (
+                    <Line
+                      type="monotone"
+                      dataKey="sma50"
+                      stroke="#f59e0b"
+                      strokeWidth={1.5}
+                      dot={false}
+                      name="SMA (50)"
+                      strokeDasharray="5 5"
+                    />
+                  )}
+                  {/* EMA 20 */}
+                  {(selectedIndicator === 'ema20' || selectedIndicator === 'all') && (
+                    <Line
+                      type="monotone"
+                      dataKey="ema20"
+                      stroke="#8b5cf6"
+                      strokeWidth={1.5}
+                      dot={false}
+                      name="EMA (20)"
+                      strokeDasharray="3 3"
+                    />
+                  )}
+                  {/* Bollinger Bands */}
+                  {(selectedIndicator === 'bb' || selectedIndicator === 'all') && (
+                    <>
+                      <Line
+                        type="monotone"
+                        dataKey="bbUpper"
+                        stroke="#ef4444"
+                        strokeWidth={1}
+                        dot={false}
+                        name="BB Upper"
+                        strokeDasharray="2 2"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="bbMiddle"
+                        stroke="#6b7280"
+                        strokeWidth={1}
+                        dot={false}
+                        name="BB Middle"
+                        strokeDasharray="2 2"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="bbLower"
+                        stroke="#ef4444"
+                        strokeWidth={1}
+                        dot={false}
+                        name="BB Lower"
+                        strokeDasharray="2 2"
+                      />
+                    </>
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
