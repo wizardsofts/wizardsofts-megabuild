@@ -362,6 +362,7 @@ export default function CompanyChart({
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-900">{data.date}</p>
           <div className="mt-1 space-y-1 text-sm">
+            {/* OHLC Data */}
             <p>
               <span className="text-gray-600">Close: </span>
               <span className="font-medium">৳{data.close.toFixed(2)}</span>
@@ -378,6 +379,60 @@ export default function CompanyChart({
               <span className="text-gray-600">Open: </span>
               <span className="font-medium">৳{data.open.toFixed(2)}</span>
             </p>
+
+            {/* Indicator Values */}
+            {indicators.length > 0 && (
+              <>
+                <div className="border-t border-gray-200 my-2 pt-2" />
+                {indicators.map((indicator) => {
+                  if (indicator.type === 'BB') {
+                    const upperKey = `${indicator.id}_upper`;
+                    const middleKey = `${indicator.id}_middle`;
+                    const lowerKey = `${indicator.id}_lower`;
+                    const upperValue = data[upperKey];
+                    const middleValue = data[middleKey];
+                    const lowerValue = data[lowerKey];
+
+                    if (upperValue === null || middleValue === null || lowerValue === null) {
+                      return null;
+                    }
+
+                    return (
+                      <div key={indicator.id}>
+                        <p style={{ color: indicator.color }} className="font-medium">
+                          {getIndicatorLabel(indicator)}
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Upper: </span>
+                          <span className="font-medium">৳{upperValue.toFixed(2)}</span>
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Mid: </span>
+                          <span className="font-medium">৳{middleValue.toFixed(2)}</span>
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Lower: </span>
+                          <span className="font-medium">৳{lowerValue.toFixed(2)}</span>
+                        </p>
+                      </div>
+                    );
+                  } else {
+                    const indicatorValue = data[indicator.id];
+                    if (indicatorValue === null) {
+                      return null;
+                    }
+
+                    return (
+                      <p key={indicator.id}>
+                        <span style={{ color: indicator.color }} className="font-medium">
+                          {getIndicatorLabel(indicator)}: </span>
+                        <span className="font-medium">৳{indicatorValue.toFixed(2)}</span>
+                      </p>
+                    );
+                  }
+                })}
+              </>
+            )}
           </div>
         </div>
       );
