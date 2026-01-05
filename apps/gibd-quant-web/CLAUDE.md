@@ -159,6 +159,9 @@ app/
         holding/
           page.tsx              # Redirects to parent
           HoldingContent.tsx    # Holdings tab content
+        news/
+          page.tsx              # Redirects to parent
+          NewsContent.tsx       # News tab content with filters
 components/                     # React components
 public/                         # Static assets
 ```
@@ -169,6 +172,7 @@ public/                         # Static assets
 - `/dashboard/dse/BATBC` - Parent page with stock header and all tabs
 - `/dashboard/dse/BATBC/profile` - Redirects to parent (profile tab)
 - `/dashboard/dse/BATBC/holding` - Redirects to parent (holdings tab)
+- `/dashboard/dse/BATBC/news` - Redirects to parent (news tab)
 
 **Component Pattern**:
 1. **Parent Page** (`/dashboard/dse/[ticker]/page.tsx`):
@@ -267,6 +271,14 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 5, 2026: Implemented News tab with comprehensive filtering
+  - Created NewsContent component with three-column layout (filters, articles, quick access)
+  - Left filter sidebar: Source, Category, Year filters with multi-select checkboxes
+  - Real-time filtering with article count display
+  - Mock data includes 7 news articles, 4 corporate actions, 3 upcoming events
+  - Quick access panel with AGM/EGM notices, annual reports, dividend history
+  - Converted news/page.tsx to redirect pattern (Next.js 15 async params)
+  - 100% wizwebui components + Tailwind classes, no inline styles
 - January 5, 2026: Restructured ticker pages to eliminate duplication (~800 lines removed)
   - Created parent page at `/dashboard/dse/[ticker]` with shared stock header and tabs
   - Extracted ProfileContent and HoldingContent as tab-only components
