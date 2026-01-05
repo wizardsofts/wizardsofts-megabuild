@@ -14,8 +14,8 @@ from typing import Any
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.nlq.executor.base import BaseExecutor
-from src.nlq.types import ParsedQuery, QueryType, RankingOrder
+from nlq.executor.base import BaseExecutor
+from nlq.types import ParsedQuery, QueryType, RankingOrder
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class RankingExecutor(BaseExecutor):
         Returns:
             List of tickers in the specified sector.
         """
-        from src.sectors.manager import SectorManager
+        from sectors.manager import SectorManager
 
         manager = SectorManager()
 
@@ -133,7 +133,7 @@ class RankingExecutor(BaseExecutor):
         Returns:
             The latest trading date, or None if no data.
         """
-        from src.database.models import WsDseDailyPrice
+        from database.models import WsDseDailyPrice
 
         result = session.query(func.max(WsDseDailyPrice.txn_date)).scalar()
         return result
@@ -160,7 +160,7 @@ class RankingExecutor(BaseExecutor):
         Returns:
             List of stocks sorted by the indicator value.
         """
-        from src.database.models import WsDseDailyPrice
+        from database.models import WsDseDailyPrice
 
         # Get the latest trading date to ensure consistent, recent data
         latest_date = self._get_latest_trading_date(session)
@@ -222,7 +222,7 @@ class RankingExecutor(BaseExecutor):
         Returns:
             List of stocks sorted by the indicator value.
         """
-        from src.database.batch_queries import fetch_latest_indicators
+        from database.batch_queries import fetch_latest_indicators
 
         latest_indicators = fetch_latest_indicators(tickers, session)
 

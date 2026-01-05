@@ -12,8 +12,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.nlq.executor.base import BaseExecutor
-from src.nlq.types import ComparisonOperator, ParsedQuery, QueryType
+from nlq.executor.base import BaseExecutor
+from nlq.types import ComparisonOperator, ParsedQuery, QueryType
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class ThresholdExecutor(BaseExecutor):
         Returns:
             List of matching stocks.
         """
-        from src.database.batch_queries import fetch_latest_indicators
+        from database.batch_queries import fetch_latest_indicators
 
         # Fetch latest indicators for all tickers
         indicators = fetch_latest_indicators(tickers, session)
@@ -156,7 +156,7 @@ class ThresholdExecutor(BaseExecutor):
         Returns:
             List of matching stocks.
         """
-        from src.database.batch_queries import (
+        from database.batch_queries import (
             fetch_latest_prices,
             fetch_prices_batch,
             fetch_profiles_batch,

@@ -11,8 +11,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.nlq.executor.base import BaseExecutor
-from src.nlq.types import ParsedQuery, QueryType
+from nlq.executor.base import BaseExecutor
+from nlq.types import ParsedQuery, QueryType
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,8 @@ class ComparisonExecutor(BaseExecutor):
         Returns:
             List of matching stocks with sector performance.
         """
-        from src.database.batch_queries import fetch_prices_batch
-        from src.sectors.manager import SectorManager
+        from database.batch_queries import fetch_prices_batch
+        from sectors.manager import SectorManager
 
         # Get all tickers if not specified
         if not tickers:

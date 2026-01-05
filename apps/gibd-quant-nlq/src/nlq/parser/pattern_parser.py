@@ -6,7 +6,7 @@ Uses regex patterns to parse common query structures into ParsedQuery objects.
 import re
 from typing import Any
 
-from src.nlq.types import (
+from nlq.types import (
     ComparisonOperator,
     ParsedQuery,
     QueryType,

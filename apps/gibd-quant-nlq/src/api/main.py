@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from nlq.api import NLQueryEngine
 from database.connection import get_db_context
+from auth.jwt_validator import get_current_user
 
 # Eureka registration
 try:
@@ -165,9 +166,15 @@ async def health(request: Request):
 
 @app.post("/api/v1/nlq/query", response_model=QueryResponse)
 @limiter.limit("20/minute")  # SECURITY: Rate limit expensive NLQ operations
-async def execute_query(request: Request, query_request: QueryRequest):
+async def execute_query(
+    request: Request,
+    query_request: QueryRequest,
+    current_user: dict = Security(get_current_user)
+):
     """Execute natural language query"""
     try:
+        # Log authenticated request for audit trail
+        print(f"NLQ query from user: {current_user.get('email', 'unknown')}")
         engine = NLQueryEngine()
         result = engine.query(
             query=query_request.query,
@@ -193,9 +200,15 @@ async def execute_query(request: Request, query_request: QueryRequest):
 
 @app.post("/api/v1/nlq/parse", response_model=ParseResponse)
 @limiter.limit("50/minute")  # SECURITY: Rate limit parsing operations
-async def parse_query(request: Request, parse_request: ParseRequest):
+async def parse_query(
+    request: Request,
+    parse_request: ParseRequest,
+    current_user: dict = Security(get_current_user)
+):
     """Parse query without executing (for testing/debugging)"""
     try:
+        # Log authenticated request for audit trail
+        print(f"NLQ parse from user: {current_user.get('email', 'unknown')}")
         engine = NLQueryEngine()
         parsed = engine.parse(parse_request.query)
 

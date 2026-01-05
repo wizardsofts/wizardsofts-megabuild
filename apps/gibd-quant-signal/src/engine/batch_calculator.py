@@ -12,7 +12,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.fast_track.indicator_pipeline import IndicatorPipeline
+from fast_track.indicator_pipeline import IndicatorPipeline
 
 logger = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, event, pool
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from src.database.retry import retry_connection
+from database.retry import retry_connection
 
 # Load environment variables from .env file
 load_dotenv()

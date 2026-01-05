@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  ray-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-worker
+    container_name: ray-worker-${WORKER_ID:-1}
+    hostname: ray-worker-${WORKER_ID:-1}
+    volumes:
+      - /opt/ml-datasets:/datasets:ro
+      - /opt/ml-models:/models
+      - ray-worker-storage:/tmp/ray
+    environment:
+      - RAY_HEAD_ADDRESS=${RAY_HEAD_ADDRESS:-10.0.0.84:6379}
+      - RAY_NUM_CPUS=${RAY_NUM_CPUS:-4}
+      - RAY_NUM_GPUS=${RAY_NUM_GPUS:-0}
+      - RAY_OBJECT_STORE_MEMORY=${RAY_OBJECT_STORE_MEMORY:-2000000000}
+    deploy:
+      resources:
+        limits:
+          cpus: '${RAY_NUM_CPUS:-4}'
+          memory: ${RAY_MEMORY_LIMIT:-8G}
+        reservations:
+          cpus: '2'
+          memory: 2G
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    network_mode: host  # Use host network for better Ray performance
+    labels:
+      - "com.wizardsofts.service=ray-worker"
+      - "com.wizardsofts.worker-id=${WORKER_ID:-1}"
+
+volumes:
+  ray-worker-storage:
+    driver: local

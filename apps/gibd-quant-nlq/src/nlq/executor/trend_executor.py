@@ -11,8 +11,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.nlq.executor.base import BaseExecutor
-from src.nlq.types import ParsedQuery, QueryType, TrendDirection
+from nlq.executor.base import BaseExecutor
+from nlq.types import ParsedQuery, QueryType, TrendDirection
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class TrendExecutor(BaseExecutor):
         Returns:
             List of matching stocks with trend data.
         """
-        from src.database.batch_queries import fetch_indicators_batch
+        from database.batch_queries import fetch_indicators_batch
 
         indicator_name = query.indicator
         days = query.lookback_days
@@ -140,7 +140,7 @@ class TrendExecutor(BaseExecutor):
         Returns:
             List of matching stocks with trend data.
         """
-        from src.database.batch_queries import fetch_prices_batch
+        from database.batch_queries import fetch_prices_batch
 
         indicator_name = query.indicator
         prices_data = fetch_prices_batch(tickers, start_date, end_date, session)

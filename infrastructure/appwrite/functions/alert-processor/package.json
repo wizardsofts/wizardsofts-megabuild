@@ -1,0 +1,20 @@
+{
+  "name": "alert-processor",
+  "version": "1.0.0",
+  "description": "Appwrite Function to process Prometheus alerts and route notifications",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "node-appwrite": "^11.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

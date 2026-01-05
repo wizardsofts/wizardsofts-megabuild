@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from src.nlq.types import ParsedQuery
+from nlq.types import ParsedQuery
 
 
 class BaseExecutor(ABC):
@@ -55,7 +55,7 @@ class BaseExecutor(ABC):
         """
         from sqlalchemy import distinct
 
-        from src.database.models import WsDseDailyPrice
+        from database.models import WsDseDailyPrice
 
         result = session.query(distinct(WsDseDailyPrice.txn_scrip)).all()
         return sorted([row[0] for row in result])

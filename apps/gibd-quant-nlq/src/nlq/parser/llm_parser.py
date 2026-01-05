@@ -10,7 +10,7 @@ import logging
 import os
 from typing import Any
 
-from src.nlq.types import (
+from nlq.types import (
     ComparisonOperator,
     ParsedQuery,
     QueryType,

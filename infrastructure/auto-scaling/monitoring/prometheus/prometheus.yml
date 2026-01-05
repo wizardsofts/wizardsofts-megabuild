@@ -5,13 +5,14 @@ global:
 # SECURITY: Alerting rules for security monitoring
 rule_files:
   - security-alerts.yml
+  - infrastructure-alerts.yml
 
-# Alertmanager configuration (uncomment when Alertmanager is deployed)
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets:
-#           - alertmanager:9093
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
 
 scrape_configs:
   - job_name: 'prometheus'

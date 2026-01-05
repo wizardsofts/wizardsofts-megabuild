@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  ray-head:
+    build:
+      context: .
+      dockerfile: Dockerfile.ray-head
+    container_name: ray-head
+    hostname: ray-head
+    network_mode: host
+    volumes:
+      # Shared storage for datasets and models
+      - /home/wizardsofts/ray-storage/tmp:/tmp/ray
+      - /home/wizardsofts/ray-storage/datasets:/datasets:ro  # Mount shared datasets
+      - /home/wizardsofts/ray-storage/models:/models         # Mount model output directory
+    environment:
+      - RAY_GRAFANA_HOST=http://10.0.0.84:3002
+      - RAY_PROMETHEUS_HOST=http://10.0.0.84:9090
+      - RAY_GRAFANA_IFRAME_HOST=http://10.0.0.84:3002
+      - RAY_memory_monitor_refresh_ms=1000
+      - RAY_object_spilling_config={"type":"filesystem","params":{"directory_path":"/tmp/ray/spill"}}
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    restart: unless-stopped
+    labels:
+      - "com.wizardsofts.service=ray-head"
+      - "com.wizardsofts.environment=production"

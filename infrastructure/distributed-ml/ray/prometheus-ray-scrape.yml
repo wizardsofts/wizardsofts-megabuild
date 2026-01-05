@@ -1,0 +1,139 @@
+# Prometheus Scrape Configuration for Ray 2.53.0 Cluster
+# Add this to your Prometheus configuration (prometheus.yml)
+
+scrape_configs:
+  # Ray Cluster Metrics
+  - job_name: 'ray-cluster'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      # Ray Head Node (Server 84)
+      - targets: ['10.0.0.84:8080']
+        labels:
+          cluster: 'ray-2.53.0'
+          role: 'head'
+          server: 'server-84'
+          environment: 'production'
+
+      # Ray Worker Nodes
+      - targets: ['10.0.0.80:8080']
+        labels:
+          cluster: 'ray-2.53.0'
+          role: 'worker'
+          server: 'server-80'
+          environment: 'production'
+
+      - targets: ['10.0.0.81:8080']
+        labels:
+          cluster: 'ray-2.53.0'
+          role: 'worker'
+          server: 'server-81'
+          environment: 'production'
+
+      # Server 82 (when available)
+      # - targets: ['10.0.0.82:8080']
+      #   labels:
+      #     cluster: 'ray-2.53.0'
+      #     role: 'worker'
+      #     server: 'server-82'
+      #     environment: 'production'
+
+  # Ray Dashboard Metrics (optional - same as head but via dashboard port)
+  - job_name: 'ray-dashboard'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['10.0.0.84:8265']
+        labels:
+          cluster: 'ray-2.53.0'
+          component: 'dashboard'
+          server: 'server-84'
+
+# Alert Rules for Ray Cluster
+# Add to your Prometheus alerting rules
+
+groups:
+  - name: ray_cluster_alerts
+    interval: 30s
+    rules:
+      # Node Health Alerts
+      - alert: RayNodeDown
+        expr: up{job="ray-cluster"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ray
+        annotations:
+          summary: "Ray node {{ $labels.instance }} is down"
+          description: "Ray node {{ $labels.instance }} ({{ $labels.role }}) has been down for more than 2 minutes."
+
+      - alert: RayClusterCPUHigh
+        expr: (ray_cluster_cpus_used / ray_cluster_cpus) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: ray
+        annotations:
+          summary: "Ray cluster CPU usage high"
+          description: "Ray cluster CPU usage is {{ $value | humanize }}% (threshold: 90%)"
+
+      - alert: RayClusterMemoryHigh
+        expr: (ray_cluster_memory_used / ray_cluster_memory) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: ray
+        annotations:
+          summary: "Ray cluster memory usage high"
+          description: "Ray cluster memory usage is {{ $value | humanize }}% (threshold: 85%)"
+
+      - alert: RayObjectStoreMemoryHigh
+        expr: (ray_object_store_used_memory / ray_object_store_memory) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: ray
+        annotations:
+          summary: "Ray object store memory high"
+          description: "Ray object store memory usage is {{ $value | humanize }}% (threshold: 90%)"
+
+      - alert: RayTaskFailureRateHigh
+        expr: rate(ray_tasks_failed[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: ray
+        annotations:
+          summary: "Ray task failure rate high"
+          description: "Ray cluster is experiencing {{ $value | humanize }} task failures per second"
+
+      - alert: RayWorkersDown
+        expr: ray_node_workers < 1
+        for: 3m
+        labels:
+          severity: warning
+          component: ray
+        annotations:
+          summary: "Ray node {{ $labels.instance }} has no workers"
+          description: "Ray node {{ $labels.instance }} has {{ $value }} workers running (expected > 0)"
+
+      # Performance Alerts
+      - alert: RayClusterUnderutilized
+        expr: (ray_cluster_cpus_used / ray_cluster_cpus) * 100 < 10
+        for: 30m
+        labels:
+          severity: info
+          component: ray
+        annotations:
+          summary: "Ray cluster underutilized"
+          description: "Ray cluster CPU usage is only {{ $value | humanize }}% for 30 minutes"
+
+      - alert: RayNoActiveNodes
+        expr: ray_cluster_active_nodes < 2
+        for: 5m
+        labels:
+          severity: critical
+          component: ray
+        annotations:
+          summary: "Ray cluster has insufficient nodes"
+          description: "Ray cluster has only {{ $value }} active nodes (expected >= 2)"

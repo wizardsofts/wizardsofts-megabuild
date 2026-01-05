@@ -12,8 +12,8 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from src.database.connection import get_company_info_db_context, get_db_context
-from src.database.models import Company, WsDseDailyPrice
+from database.connection import get_company_info_db_context, get_db_context
+from database.models import Company, WsDseDailyPrice
 
 logger = logging.getLogger(__name__)
 

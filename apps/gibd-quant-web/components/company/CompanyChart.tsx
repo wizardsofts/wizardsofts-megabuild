@@ -1,12 +1,14 @@
 /**
  * Company Chart Component
  *
- * Interactive price and volume charts with period selection.
+ * Interactive price and volume charts with period selection and technical indicators.
  * Uses Recharts for visualization with responsive design.
  *
  * Features:
  * - Period selector (1D, 5D, 1M, 3M, YTD, 1Y, 5Y, MAX)
- * - Price chart (candlestick/line chart with OHLC data)
+ * - Multi-indicator support with customizable parameters
+ * - Add/remove indicators dynamically
+ * - Price chart (line chart with OHLC data)
  * - Volume bar chart
  * - Auto-fetch data on period change
  * - Mobile-first responsive design
@@ -14,7 +16,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -35,6 +37,8 @@ import type { ChartPeriod, PriceHistory } from '@/lib/types';
 interface CompanyChartProps {
   ticker: string;
   initialPeriod?: ChartPeriod;
+  indicators?: IndicatorConfig[];
+  onIndicatorsChange?: (indicators: IndicatorConfig[]) => void;
 }
 
 const PERIODS: Array<{ value: ChartPeriod; label: string }> = [
@@ -49,14 +53,137 @@ const PERIODS: Array<{ value: ChartPeriod; label: string }> = [
   { value: 'MAX', label: 'MAX' },
 ];
 
+// Mock data for demonstration when backend API is unavailable
+const generateMockData = (ticker: string, period: ChartPeriod, dataPoints: number) => {
+  const basePrice = 100 + Math.random() * 150;
+  const data = [];
+  const now = new Date();
+
+  for (let i = dataPoints - 1; i >= 0; i--) {
+    const date = new Date(now);
+
+    // Adjust date based on period
+    if (period === '1D') {
+      date.setMinutes(date.getMinutes() - i * 5);
+    } else if (period === '5D') {
+      date.setHours(date.getHours() - i * 2);
+    } else if (period === '1M') {
+      date.setDate(date.getDate() - i);
+    } else if (period === '3M') {
+      date.setDate(date.getDate() - i * 3);
+    } else if (period === '6M') {
+      date.setDate(date.getDate() - i * 6);
+    } else if (period === 'YTD') {
+      date.setDate(date.getDate() - i * 3);
+    } else if (period === '1Y') {
+      date.setDate(date.getDate() - i * 12);
+    } else if (period === '5Y') {
+      date.setMonth(date.getMonth() - i * 2);
+    } else {
+      date.setMonth(date.getMonth() - i * 6);
+    }
+
+    const trend = (dataPoints - i) * 0.5;
+    const volatility = Math.random() * 10 - 5;
+    const price = basePrice + trend + volatility;
+
+    const open = price + (Math.random() * 4 - 2);
+    const close = price + (Math.random() * 4 - 2);
+    const high = Math.max(open, close) + Math.random() * 3;
+    const low = Math.min(open, close) - Math.random() * 3;
+    const volume = Math.floor(50000 + Math.random() * 100000);
+
+    data.push({
+      date: date.toISOString(),
+      open: Math.max(0, open),
+      high: Math.max(0, high),
+      low: Math.max(0, low),
+      close: Math.max(0, close),
+      volume,
+    });
+  }
+
+  return {
+    ticker,
+    period,
+    data,
+    data_points: dataPoints,
+  };
+};
+
+// Indicator types and their configurations
+type IndicatorType = 'SMA' | 'EMA' | 'BB' | 'RSI' | 'MACD';
+
+interface IndicatorConfig {
+  id: string;
+  type: IndicatorType;
+  params: Record<string, number>;
+  color: string;
+}
+
+const INDICATOR_TEMPLATES: Record<IndicatorType, {
+  name: string;
+  defaultParams: Record<string, number>;
+  paramLabels: Record<string, string>;
+  colors: string[];
+}> = {
+  SMA: {
+    name: 'Simple Moving Average',
+    defaultParams: { period: 20 },
+    paramLabels: { period: 'Period' },
+    colors: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+  },
+  EMA: {
+    name: 'Exponential Moving Average',
+    defaultParams: { period: 20 },
+    paramLabels: { period: 'Period' },
+    colors: ['#3b82f6', '#f97316', '#06b6d4', '#a855f7'],
+  },
+  BB: {
+    name: 'Bollinger Bands',
+    defaultParams: { period: 20, stdDev: 2 },
+    paramLabels: { period: 'Period', stdDev: 'Std Dev' },
+    colors: ['#ef4444', '#6b7280', '#ef4444'],
+  },
+  RSI: {
+    name: 'Relative Strength Index',
+    defaultParams: { period: 14 },
+    paramLabels: { period: 'Period' },
+    colors: ['#8b5cf6'],
+  },
+  MACD: {
+    name: 'MACD',
+    defaultParams: { fast: 12, slow: 26, signal: 9 },
+    paramLabels: { fast: 'Fast', slow: 'Slow', signal: 'Signal' },
+    colors: ['#2563eb', '#dc2626', '#10b981'],
+  },
+};
+
 export default function CompanyChart({
   ticker,
   initialPeriod = '1M',
+  indicators: propsIndicators,
+  onIndicatorsChange,
 }: CompanyChartProps) {
   const [period, setPeriod] = useState<ChartPeriod>(initialPeriod);
   const [data, setData] = useState<PriceHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [usingMockData, setUsingMockData] = useState(false);
+  // Use indicators from props if provided, otherwise use local state
+  const [localIndicators, setLocalIndicators] = useState<IndicatorConfig[]>([]);
+  const indicators = propsIndicators !== undefined ? propsIndicators : localIndicators;
+  const setIndicators = (newIndicators: IndicatorConfig[]) => {
+    if (onIndicatorsChange) {
+      onIndicatorsChange(newIndicators);
+    } else {
+      setLocalIndicators(newIndicators);
+    }
+  };
+  const [showAddIndicator, setShowAddIndicator] = useState(false);
+  const [newIndicatorType, setNewIndicatorType] = useState<IndicatorType>('SMA');
+  const [newIndicatorParams, setNewIndicatorParams] = useState<Record<string, number>>({ period: 20 });
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -68,14 +195,23 @@ export default function CompanyChart({
         const priceHistory = await getPriceHistory(ticker, period);
 
         if (!priceHistory) {
-          setError(`No price data available for period ${period}`);
-          setData(null);
+          // Fallback to mock data
+          console.log('API returned no data, using mock data for', ticker, period);
+          const dataPoints = period === '1D' ? 78 : period === '5D' ? 60 : period === '1M' ? 30 : 90;
+          const mockData = generateMockData(ticker, period, dataPoints);
+          setData(mockData as PriceHistory);
+          setUsingMockData(true);
         } else {
           setData(priceHistory);
+          setUsingMockData(false);
         }
       } catch (err) {
-        setError('Failed to load chart data');
-        console.error('Error fetching price history:', err);
+        // Fallback to mock data on error
+        console.log('API error, using mock data for', ticker, period, err);
+        const dataPoints = period === '1D' ? 78 : period === '5D' ? 60 : period === '1M' ? 30 : 90;
+        const mockData = generateMockData(ticker, period, dataPoints);
+        setData(mockData as PriceHistory);
+        setUsingMockData(true);
       } finally {
         setLoading(false);
       }
@@ -101,22 +237,157 @@ export default function CompanyChart({
     };
   }, [data]);
 
-  // Format chart data
+  // Calculate Simple Moving Average
+  const calculateSMA = (prices: number[], period: number): (number | null)[] => {
+    const result: (number | null)[] = [];
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else {
+        const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+        result.push(sum / period);
+      }
+    }
+    return result;
+  };
+
+  // Calculate Exponential Moving Average
+  const calculateEMA = (prices: number[], period: number): (number | null)[] => {
+    const result: (number | null)[] = [];
+    const multiplier = 2 / (period + 1);
+
+    // Start with SMA for first value
+    let ema = prices.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        result.push(null);
+      } else if (i === period - 1) {
+        result.push(ema);
+      } else {
+        ema = (prices[i] - ema) * multiplier + ema;
+        result.push(ema);
+      }
+    }
+    return result;
+  };
+
+  // Calculate Bollinger Bands
+  const calculateBB = (prices: number[], period: number, stdDev: number = 2) => {
+    const sma = calculateSMA(prices, period);
+    const upper: (number | null)[] = [];
+    const lower: (number | null)[] = [];
+
+    for (let i = 0; i < prices.length; i++) {
+      if (i < period - 1) {
+        upper.push(null);
+        lower.push(null);
+      } else {
+        const slice = prices.slice(i - period + 1, i + 1);
+        const mean = sma[i]!;
+        const variance = slice.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / period;
+        const std = Math.sqrt(variance);
+        upper.push(mean + stdDev * std);
+        lower.push(mean - stdDev * std);
+      }
+    }
+    return { upper, middle: sma, lower };
+  };
+
+  // Format chart data with all active indicators
   const chartData = useMemo(() => {
     if (!data) return [];
 
-    return data.data.map((item) => ({
-      date: new Date(item.date).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      }),
-      close: item.close,
-      volume: item.volume,
-      high: item.high,
-      low: item.low,
-      open: item.open,
-    }));
-  }, [data]);
+    const prices = data.data.map(d => d.close);
+    const indicatorData: Record<string, any> = {};
+
+    // Calculate all active indicators
+    indicators.forEach((indicator) => {
+      const key = indicator.id;
+
+      if (indicator.type === 'SMA') {
+        indicatorData[key] = calculateSMA(prices, indicator.params.period);
+      } else if (indicator.type === 'EMA') {
+        indicatorData[key] = calculateEMA(prices, indicator.params.period);
+      } else if (indicator.type === 'BB') {
+        const bb = calculateBB(prices, indicator.params.period, indicator.params.stdDev);
+        indicatorData[`${key}_upper`] = bb.upper;
+        indicatorData[`${key}_middle`] = bb.middle;
+        indicatorData[`${key}_lower`] = bb.lower;
+      }
+    });
+
+    return data.data.map((item, i) => {
+      const point: any = {
+        date: new Date(item.date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        close: item.close,
+        volume: item.volume,
+        high: item.high,
+        low: item.low,
+        open: item.open,
+      };
+
+      // Add indicator values
+      Object.keys(indicatorData).forEach(key => {
+        point[key] = indicatorData[key][i];
+      });
+
+      return point;
+    });
+  }, [data, indicators]);
+
+  // Add new indicator (prevent duplicates)
+  const handleAddIndicator = () => {
+    // Check if indicator with same type and parameters already exists
+    const isDuplicate = indicators.some((indicator) => {
+      if (indicator.type !== newIndicatorType) return false;
+      // Compare all parameters
+      return JSON.stringify(indicator.params) === JSON.stringify(newIndicatorParams);
+    });
+
+    if (isDuplicate) {
+      // Show error message instead of silently closing
+      const indicatorLabel = getIndicatorLabel({
+        id: 'temp',
+        type: newIndicatorType,
+        params: newIndicatorParams,
+        color: '#000',
+      });
+      setDuplicateError(`${indicatorLabel} is already added. Please modify the parameters or select a different indicator.`);
+      return;
+    }
+
+    const template = INDICATOR_TEMPLATES[newIndicatorType];
+    const colorIndex = indicators.filter(i => i.type === newIndicatorType).length;
+    const color = template.colors[colorIndex % template.colors.length];
+
+    const newIndicator: IndicatorConfig = {
+      id: `${newIndicatorType}_${Date.now()}`,
+      type: newIndicatorType,
+      params: { ...newIndicatorParams },
+      color,
+    };
+
+    setIndicators([...indicators, newIndicator]);
+    setShowAddIndicator(false);
+    setNewIndicatorParams(template.defaultParams);
+    setDuplicateError(null); // Clear error on successful add
+  };
+
+  // Remove indicator
+  const handleRemoveIndicator = (id: string) => {
+    setIndicators(indicators.filter(i => i.id !== id));
+  };
+
+  // Update new indicator type
+  const handleIndicatorTypeChange = (type: IndicatorType) => {
+    setNewIndicatorType(type);
+    setNewIndicatorParams(INDICATOR_TEMPLATES[type].defaultParams);
+    setDuplicateError(null); // Clear error when changing indicator type
+  };
 
   // Custom tooltip for price chart
   const PriceTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
@@ -126,6 +397,7 @@ export default function CompanyChart({
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-900">{data.date}</p>
           <div className="mt-1 space-y-1 text-sm">
+            {/* OHLC Data */}
             <p>
               <span className="text-gray-600">Close: </span>
               <span className="font-medium">৳{data.close.toFixed(2)}</span>
@@ -142,6 +414,60 @@ export default function CompanyChart({
               <span className="text-gray-600">Open: </span>
               <span className="font-medium">৳{data.open.toFixed(2)}</span>
             </p>
+
+            {/* Indicator Values */}
+            {indicators.length > 0 && (
+              <>
+                <div className="border-t border-gray-200 my-2 pt-2" />
+                {indicators.map((indicator) => {
+                  if (indicator.type === 'BB') {
+                    const upperKey = `${indicator.id}_upper`;
+                    const middleKey = `${indicator.id}_middle`;
+                    const lowerKey = `${indicator.id}_lower`;
+                    const upperValue = data[upperKey];
+                    const middleValue = data[middleKey];
+                    const lowerValue = data[lowerKey];
+
+                    if (upperValue === null || middleValue === null || lowerValue === null) {
+                      return null;
+                    }
+
+                    return (
+                      <div key={indicator.id}>
+                        <p style={{ color: indicator.color }} className="font-medium">
+                          {getIndicatorLabel(indicator)}
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Upper: </span>
+                          <span className="font-medium">৳{upperValue.toFixed(2)}</span>
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Mid: </span>
+                          <span className="font-medium">৳{middleValue.toFixed(2)}</span>
+                        </p>
+                        <p className="ml-2 text-xs text-gray-600">
+                          <span>Lower: </span>
+                          <span className="font-medium">৳{lowerValue.toFixed(2)}</span>
+                        </p>
+                      </div>
+                    );
+                  } else {
+                    const indicatorValue = data[indicator.id];
+                    if (indicatorValue === null) {
+                      return null;
+                    }
+
+                    return (
+                      <p key={indicator.id}>
+                        <span style={{ color: indicator.color }} className="font-medium">
+                          {getIndicatorLabel(indicator)}: </span>
+                        <span className="font-medium">৳{indicatorValue.toFixed(2)}</span>
+                      </p>
+                    );
+                  }
+                })}
+              </>
+            )}
           </div>
         </div>
       );
@@ -166,21 +492,138 @@ export default function CompanyChart({
     return null;
   };
 
+  // Get indicator label
+  const getIndicatorLabel = (indicator: IndicatorConfig): string => {
+    const template = INDICATOR_TEMPLATES[indicator.type];
+    const paramStr = Object.entries(indicator.params)
+      .map(([key, value]) => value)
+      .join(', ');
+    return `${indicator.type} (${paramStr})`;
+  };
+
   return (
     <div className="space-y-4">
-      {/* Period Selector */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {PERIODS.map((p) => (
+      {/* Period Selector and Indicator Management */}
+      <div className="flex flex-col gap-4">
+        {/* Period Selector */}
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {PERIODS.map((p) => (
+            <Button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              variant={period === p.value ? 'default' : 'outline'}
+              size="sm"
+              className="shrink-0 min-w-[44px] min-h-[44px]"
+            >
+              {p.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Active Indicators */}
+        {indicators.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm font-medium text-gray-700 self-center">Indicators:</span>
+            {indicators.map((indicator) => (
+              <div
+                key={indicator.id}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-md text-sm"
+              >
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: indicator.color }}
+                />
+                <span>{getIndicatorLabel(indicator)}</span>
+                <button
+                  onClick={() => handleRemoveIndicator(indicator.id)}
+                  className="ml-1 text-gray-500 hover:text-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add Indicator Button */}
+        {!showAddIndicator && (
           <Button
-            key={p.value}
-            onClick={() => setPeriod(p.value)}
-            variant={period === p.value ? 'default' : 'outline'}
+            onClick={() => setShowAddIndicator(true)}
+            variant="outline"
             size="sm"
-            className="shrink-0 min-w-[44px] min-h-[44px]"
+            className="w-fit"
           >
-            {p.label}
+            + Add Indicator
           </Button>
-        ))}
+        )}
+
+        {/* Add Indicator Form */}
+        {showAddIndicator && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex flex-col gap-3">
+              {/* Duplicate Error Message */}
+              {duplicateError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{duplicateError}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Indicator Type
+                </label>
+                <select
+                  value={newIndicatorType}
+                  onChange={(e) => handleIndicatorTypeChange(e.target.value as IndicatorType)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Object.entries(INDICATOR_TEMPLATES).map(([type, config]) => (
+                    <option key={type} value={type}>
+                      {config.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dynamic Parameter Inputs */}
+              {Object.entries(INDICATOR_TEMPLATES[newIndicatorType].paramLabels).map(([key, label]) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {label}
+                  </label>
+                  <input
+                    type="number"
+                    value={newIndicatorParams[key] || ''}
+                    onChange={(e) => {
+                      setNewIndicatorParams({
+                        ...newIndicatorParams,
+                        [key]: parseInt(e.target.value) || 0
+                      });
+                      setDuplicateError(null); // Clear error when parameters change
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
+
+              <div className="flex gap-2">
+                <Button onClick={handleAddIndicator} size="sm">
+                  Add
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowAddIndicator(false);
+                    setDuplicateError(null);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading State */}
@@ -220,9 +663,16 @@ export default function CompanyChart({
             <CardHeader>
               <CardTitle className="text-lg flex items-center justify-between">
                 <span>📈 Price Chart ({period})</span>
-                <span className="text-sm font-normal text-gray-500">
-                  {data.data_points} data points
-                </span>
+                <div className="flex items-center gap-2">
+                  {usingMockData && (
+                    <span className="text-xs font-normal px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                      Demo Data
+                    </span>
+                  )}
+                  <span className="text-sm font-normal text-gray-500">
+                    {data.data_points} data points
+                  </span>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -250,6 +700,55 @@ export default function CompanyChart({
                     dot={false}
                     name="Close Price"
                   />
+                  {/* Render indicator lines */}
+                  {indicators.map((indicator) => {
+                    if (indicator.type === 'BB') {
+                      return (
+                        <React.Fragment key={indicator.id}>
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_upper`}
+                            stroke={indicator.color}
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Upper`}
+                            strokeDasharray="2 2"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_middle`}
+                            stroke="#6b7280"
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Middle`}
+                            strokeDasharray="2 2"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_lower`}
+                            stroke={indicator.color}
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Lower`}
+                            strokeDasharray="2 2"
+                          />
+                        </React.Fragment>
+                      );
+                    } else {
+                      return (
+                        <Line
+                          key={indicator.id}
+                          type="monotone"
+                          dataKey={indicator.id}
+                          stroke={indicator.color}
+                          strokeWidth={1.5}
+                          dot={false}
+                          name={getIndicatorLabel(indicator)}
+                          strokeDasharray="5 5"
+                        />
+                      );
+                    }
+                  })}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

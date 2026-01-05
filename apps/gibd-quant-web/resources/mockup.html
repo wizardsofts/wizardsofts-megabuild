@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian Investment BD - BATBC Ownership</title>
+    <style>
+        :root {
+            --border-color: #e0e0e0;
+            --header-bg: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --accent-blue: #0056b3;
+            --primary-dark: #343a40;
+            --positive-green: #28a745;
+            --negative-red: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            color: var(--text-primary);
+            font-size: 14px;
+            overflow-x: hidden;
+        }
+
+        /* Compact Header */
+        .global-header {
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 20px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-right: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .global-nav ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .global-nav a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .search-bar input {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 300px;
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 100%;
+            padding: 0 20px;
+            margin-top: 20px;
+        }
+
+        /* Stock Header - Dense */
+        .stock-header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stock-title h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            letter-spacing: -0.5px;
+        }
+
+        .stock-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 2px;
+        }
+
+        .price-display {
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        .price-change {
+            font-size: 1rem;
+            color: var(--positive-green);
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* Tabs */
+        .tabs {
+            margin-top: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tabs ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tabs li {
+            padding-bottom: 10px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tabs li.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* Mega Menu Styles */
+        .nav-item-dropdown {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-item-dropdown:hover .mega-menu {
+            display: flex;
+        }
+
+        .mega-menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            /* Header Height */
+            left: -300px;
+            width: 900px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            z-index: 1000;
+            border-top: 3px solid #d32f2f;
+            justify-content: space-between;
+        }
+
+        .mm-col {
+            width: 23%;
+        }
+
+        .mm-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #212529;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .mm-link {
+            display: block;
+            color: #555 !important;
+            font-weight: 400 !important;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            padding: 2px 0;
+        }
+
+        .mm-link:hover {
+            color: #d32f2f !important;
+            text-decoration: underline !important;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr 300px;
+            /* Standardized from News Layout */
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .panel {
+            border: 1px solid var(--border-color);
+            background: #fff;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            background: #f8f9fa;
+            padding: 8px 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .panel-body {
+            padding: 15px;
+        }
+
+        /* Data Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .data-table td {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table td:first-child {
+            font-weight: 500;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Trend Bar */
+        .trend-bar {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 16px;
+            width: 50px;
+        }
+
+        .trend-bar div {
+            width: 20%;
+            background: #e0e0e0;
+            border-radius: 1px;
+        }
+
+        .trend-up {
+            background: var(--positive-green) !important;
+        }
+
+        .trend-down {
+            background: var(--negative-red) !important;
+        }
+
+        .trend-neutral {
+            background: var(--text-secondary) !important;
+        }
+
+        /* Badge Chips */
+        .chip {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="global-header">
+        <div style="display: flex; align-items: center;">
+            <div class="brand">Guardian Investment BD</div>
+            <nav class="global-nav">
+                <ul>
+                    <li><a href="mockup.html">Dashboard</a></li>
+                    <li class="nav-item-dropdown">
+                        <a href="#" style="cursor: default;">Markets ▾</a>
+                        <div class="mega-menu">
+                            <div class="mm-col">
+                                <div class="mm-title">Market Data</div>
+                                <a href="#" class="mm-link">Market Price</a>
+                                <a href="#" class="mm-link">Latest Share Price</a>
+                                <a href="#" class="mm-link">Market Statistics</a>
+                                <a href="#" class="mm-link">Circuit Breaker</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">Top Lists</div>
+                                <a href="#" class="mm-link">Top 10 Gainers</a>
+                                <a href="#" class="mm-link">Top 10 Losers</a>
+                                <a href="#" class="mm-link">Top 20 Shares</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">Events & News</div>
+                                <a href="#" class="mm-link">Valid Announcements</a>
+                                <a href="#" class="mm-link">AGM/EGM & Record Dates</a>
+                                <a href="#" class="mm-link">Recent Market Info</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">Directories</div>
+                                <a href="#" class="mm-link">Company List</a>
+                                <a href="#" class="mm-link">TREC Holders Info</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li><a href="#">Screener</a></li>
+                    <li><a href="#">Portfolio</a></li>
+                    <li><a href="mockup_news.html">News</a></li>
+                    <li class="nav-item-dropdown">
+                        <a href="#" style="cursor: default;">Learn ▾</a>
+                        <div class="mega-menu">
+                            <div class="mm-col">
+                                <div class="mm-title">Investing content</div>
+                                <a href="#" class="mm-link">Investing guides</a>
+                                <a href="#" class="mm-link">Webinars</a>
+                                <a href="#" class="mm-link">Podcasts</a>
+                                <a href="#" class="mm-link">Articles</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">Learn to invest in...</div>
+                                <a href="#" class="mm-link">Stocks</a>
+                                <a href="#" class="mm-link">Bonds</a>
+                                <a href="#" class="mm-link">ETFs/Funds</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">How to invest</div>
+                                <a href="#" class="mm-link">Getting started</a>
+                                <a href="#" class="mm-link">Goals based portfolio construction</a>
+                                <a href="#" class="mm-link">Portfolio maintenance</a>
+                                <a href="#" class="mm-link">Retirement strategies</a>
+                            </div>
+                            <div class="mm-col">
+                                <div class="mm-title">Our research</div>
+                                <a href="#" class="mm-link">Morningstar equity research methodology</a>
+                                <a href="#" class="mm-link">Morningstar manager research methodology</a>
+                            </div>
+                        </div>
+                    </li>
+                    <li><a href="#">Community</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div class="search-bar">
+                <input type="text" placeholder="Search (e.g., BATBC)">
+            </div>
+            <div style="font-size: 0.9rem;">Mashfiqur Rahman</div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Stock Header -->
+        <div class="stock-header">
+            <div class="stock-title">
+                <h1>British American Tobacco Bangladesh</h1>
+                <div class="stock-subtitle">
+                    Trading Code: <strong>BATBC</strong> | Scrip: 14259 | Sector: <strong>Food & Allied</strong>
+                </div>
+            </div>
+            <div>
+                <!-- Sparkline placeholder -->
+            </div>
+            <div style="text-align: right;">
+                <div>
+                    <span class="price-display">248.60</span>
+                    <span style="font-size: 1.2rem; margin-left:5px;">BDT</span>
+                </div>
+                <div class="price-change">Closed</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <ul>
+                <li>Summary</li>
+                <li><a href="mockup_profile.html" style="text-decoration:none; color:inherit;">Company Profile</a></li>
+                <li><a href="mockup_financials.html" style="text-decoration:none; color:inherit;">Financials</a></li>
+                <li><a href="mockup_chart.html" style="text-decoration:none; color:inherit;">Chart</a></li>
+                <li class="active">Holdings</li>
+                <li><a href="mockup_trailing_returns.html" style="text-decoration:none; color:inherit;">Trailing
+                        Returns</a></li>
+                <li>Dividends</li>
+                <li><a href="mockup_news.html" style="text-decoration:none; color:inherit;">News</a></li>
+                <li><a href="mockup_analysis.html" style="text-decoration:none; color:inherit;">Guardian Analysis</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Dense Dashboard Content -->
+        <div class="dashboard-grid">
+
+            <!-- Left Column: Summary Stats -->
+            <div class="col-left">
+                <div class="panel">
+                    <div class="panel-header">Holdings Summary</div>
+                    <div class="panel-body">
+                        <!-- Pie Chart Visualization -->
+                        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                            <div class="pie-chart" style="
+                                width: 140px; 
+                                height: 140px; 
+                                border-radius: 50%; 
+                                background: conic-gradient(
+                                    var(--primary-dark) 0% 72.91%, 
+                                    var(--accent-blue) 72.91% 84.94%, 
+                                    var(--positive-green) 84.94% 91.78%, 
+                                    #e0e0e0 91.78% 100%
+                                );
+                                position: relative;
+                            ">
+                                <div style="
+                                    position: absolute; 
+                                    top: 50%; left: 50%; 
+                                    transform: translate(-50%, -50%); 
+                                    width: 80px; height: 80px; 
+                                    background: #fff; 
+                                    border-radius: 50%;
+                                    display: flex; align-items: center; justify-content: center;
+                                    flex-direction: column;
+                                ">
+                                    <div style="font-size: 0.7rem; color: #666;">Total</div>
+                                    <div style="font-weight: 700; font-size: 0.9rem;">100%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div
+                                    style="width: 10px; height: 10px; background: var(--primary-dark); border-radius: 2px;">
+                                </div>
+                                <span style="color:#666; font-size: 0.9rem;">Sponsor</span>
+                            </div>
+                            <span style="font-weight:600; font-size: 0.9rem;">72.9%</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div
+                                    style="width: 10px; height: 10px; background: var(--accent-blue); border-radius: 2px;">
+                                </div>
+                                <span style="color:#666; font-size: 0.9rem;">Institute</span>
+                            </div>
+                            <span style="font-weight:600; font-size: 0.9rem;">12.0%</span>
+                        </div>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div
+                                    style="width: 10px; height: 10px; background: var(--positive-green); border-radius: 2px;">
+                                </div>
+                                <span style="color:#666; font-size: 0.9rem;">Foreign</span>
+                            </div>
+                            <span style="font-weight:600; font-size: 0.9rem;">6.8%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 10px; height: 10px; background: #e0e0e0; border-radius: 2px;"></div>
+                                <span style="color:#666; font-size: 0.9rem;">Public</span>
+                            </div>
+                            <span style="font-weight:600; font-size: 0.9rem;">7.6%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">Basic Info</div>
+                    <div class="panel-body">
+                        <table class="data-table">
+                            <tr>
+                                <td style="color:#666;">Total Securities</td>
+                                <td style="text-align:right;">540 Mn</td>
+                            </tr>
+                            <tr>
+                                <td style="color:#666;">Market Cap</td>
+                                <td style="text-align:right;">134.4 Bn</td>
+                            </tr>
+                            <tr>
+                                <td style="color:#666;">Share Audit</td>
+                                <td style="text-align:right; color: var(--positive-green);">OK</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Detailed Ownership -->
+            <div class="col-mid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>Detailed Shareholding Composition</span>
+                        <span style="font-weight:400; text-transform:none;">As of Sep 30, 2024</span>
+                    </div>
+                    <div class="panel-body">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Holders</th>
+                                    <th style="text-align:right;">% Holding</th>
+                                    <th style="text-align:right;">Shares (Est.)</th>
+                                    <th style="text-align:center;">Trend (6M)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div>Sponsor / Director</div>
+                                        <div class="chip">Locked</div>
+                                    </td>
+                                    <td>5</td>
+                                    <td style="text-align:right;">72.91%</td>
+                                    <td style="text-align:right;">393,714,000</td>
+                                    <td style="text-align:center;">
+                                        <div style="display:flex; justify-content:center;">
+                                            <div class="trend-bar">
+                                                <div style="height: 50%"></div>
+                                                <div style="height: 50%"></div>
+                                                <div style="height: 50%"></div>
+                                                <div style="height: 50%" class="trend-neutral"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div>Institutions</div>
+                                        <div class="chip">Smart Money</div>
+                                    </td>
+                                    <td>124</td>
+                                    <td style="text-align:right;">12.03%</td>
+                                    <td style="text-align:right;">64,962,000</td>
+                                    <td style="text-align:center;">
+                                        <div style="display:flex; justify-content:center;">
+                                            <div class="trend-bar">
+                                                <div style="height: 40%"></div>
+                                                <div style="height: 45%"></div>
+                                                <div style="height: 50%"></div>
+                                                <div style="height: 60%" class="trend-up"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div>Foreign Investors</div>
+                                    </td>
+                                    <td>12</td>
+                                    <td style="text-align:right;">6.84%</td>
+                                    <td style="text-align:right;">36,936,000</td>
+                                    <td style="text-align:center;">
+                                        <div style="display:flex; justify-content:center;">
+                                            <div class="trend-bar">
+                                                <div style="height: 60%"></div>
+                                                <div style="height: 55%"></div>
+                                                <div style="height: 50%"></div>
+                                                <div style="height: 45%" class="trend-down"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div>Public / Retail</div>
+                                    </td>
+                                    <td>--</td>
+                                    <td style="text-align:right;">7.58%</td>
+                                    <td style="text-align:right;">40,932,000</td>
+                                    <td style="text-align:center;">
+                                        <div style="display:flex; justify-content:center;">
+                                            <div class="trend-bar">
+                                                <div style="height: 30%"></div>
+                                                <div style="height: 40%"></div>
+                                                <div style="height: 45%"></div>
+                                                <div style="height: 50%" class="trend-up"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">Major Institutional Holders (Top 5)</div>
+                    <div class="panel-body">
+                        <div style="padding: 20px; text-align: center; color: #999; font-style: italic;">
+                            Detailed holder data requires Premium Access.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Market Info -->
+            <div class="col-right">
+                <div class="panel">
+                    <div class="panel-header">Market Statistics</div>
+                    <div class="panel-body">
+                        <table class="data-table">
+                            <tr>
+                                <td style="color:#666;">Last Trade</td>
+                                <td style="text-align:right;">248.60</td>
+                            </tr>
+                            <tr>
+                                <td style="color:#666;">Change</td>
+                                <td style="text-align:right; color: #666;">0.00%</td>
+                            </tr>
+                            <tr>
+                                <td style="color:#666;">Volume</td>
+                                <td style="text-align:right;">5,320</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">Insider Actions</div>
+                    <div class="panel-body">
+                        <div style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
+                            Last 6 months
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                            <div
+                                style="width:30px; height:30px; background:#e8f5e9; color:var(--positive-green); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                                B</div>
+                            <div>
+                                <div style="font-weight:600;">Buy</div>
+                                <div style="font-size:0.8rem; color:#666;">0 Transactions</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div
+                                style="width:30px; height:30px; background:#ffebee; color:var(--negative-red); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                                S</div>
+                            <div>
+                                <div style="font-weight:600;">Sell</div>
+                                <div style="font-size:0.8rem; color:#666;">0 Transactions</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+</html>

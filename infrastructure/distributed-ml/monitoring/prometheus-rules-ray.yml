@@ -1,0 +1,39 @@
+groups:
+  - name: ray_cluster
+    interval: 30s
+    rules:
+      - alert: RayHeadNodeDown
+        expr: up{job="ray-cluster"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Ray head node is down"
+          description: "Ray head node on Server 84 has been down for 5 minutes"
+
+      - alert: RayWorkerDown
+        expr: ray_cluster_active_nodes < 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ray worker node missing"
+          description: "Expected at least 2 nodes, only {{ $value }} active"
+
+      - alert: RayHighMemoryUsage
+        expr: ray_object_store_memory_usage / ray_object_store_memory_total > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ray object store memory high"
+          description: "Object store memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RayTaskFailures
+        expr: rate(ray_tasks_failed_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Ray task failure rate"
+          description: "Task failure rate: {{ $value | humanize }} failures/sec"
