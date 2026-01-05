@@ -14,16 +14,10 @@ RUN pip install --no-cache-dir \
     torch==2.1.2 \
     'ray[tune,serve,data]==2.53.0'
 
-WORKDIR /app
+WORKDIR /home/ray
 
-# Use entrypoint script to handle environment variables properly
-RUN echo '#!/bin/bash\n\
-ray start \
-  --address="${RAY_HEAD_ADDRESS}" \
-  --num-cpus="${RAY_NUM_CPUS:-2}" \
-  --num-gpus="${RAY_NUM_GPUS:-0}" \
-  --object-store-memory="${RAY_OBJECT_STORE_MEMORY:-2000000000}" \
-  --block' > /app/start-worker.sh && \
-  chmod +x /app/start-worker.sh
+# Create entrypoint script with proper newlines
+RUN printf '#!/bin/bash\nray start --address="${RAY_HEAD_ADDRESS}" --num-cpus="${RAY_NUM_CPUS:-2}" --num-gpus="${RAY_NUM_GPUS:-0}" --object-store-memory="${RAY_OBJECT_STORE_MEMORY:-2000000000}" --block\n' > /home/ray/start-worker.sh && \
+  chmod +x /home/ray/start-worker.sh
 
-CMD ["/app/start-worker.sh"]
+CMD ["/home/ray/start-worker.sh"]
