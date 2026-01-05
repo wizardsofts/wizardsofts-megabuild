@@ -85,12 +85,12 @@ services:
 
 ## 🛠️ Technology Stack
 
-- Next.js
-- React
+- Next.js 15
+- React 19
 - TypeScript
 - Tailwind CSS
 - **wizwebui** - Component library (`@wizwebui/core`)
-- Chart.js / D3.js (Data visualization)
+- **Recharts** - Financial data visualization (price & volume charts)
 - Docker (Production)
 
 ## ⛔ UI Component Rules - MANDATORY
@@ -271,6 +271,14 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 5, 2026: Integrated CompanyChart into dashboard ticker page Chart tab
+  - Replaced "Chart - Coming Soon" placeholder with functional CompanyChart component
+  - Chart displays period selector (1D, 5D, 1M, 3M, 6M, YTD, 1Y, 5Y, MAX)
+  - Recharts-based price line chart and volume bar chart
+  - Proper error handling when backend API unavailable
+  - Created test page at /test-chart with mock data to demonstrate chart functionality
+  - Verified with Playwright browser automation - chart renders correctly
+  - Commit: `9999d52` feat: Integrate CompanyChart into dashboard ticker page
 - January 5, 2026: Completed test automation for ticker page architecture
   - Created comprehensive test report: [TEST_RESULTS.md](TEST_RESULTS.md)
   - Tested tab navigation (Profile, Holdings, News) - ✅ All passing
