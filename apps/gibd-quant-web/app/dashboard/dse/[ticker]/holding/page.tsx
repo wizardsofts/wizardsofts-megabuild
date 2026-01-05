@@ -107,7 +107,7 @@ export default function HoldingsPage({ params }: HoldingsPageProps) {
 }
 
 function HoldingsPageClient({ ticker }: { ticker: string }) {
-  const [activeTab, setActiveTab] = useState('holdings');
+  const [activeTab, setActiveTab] = useState('profile');
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
   return (
@@ -142,17 +142,16 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
         <div className="relative flex items-center gap-2">
           <TabList className="overflow-x-auto scrollbar-hide whitespace-nowrap flex-1">
             {/* Always visible tabs */}
-            <Tab value="summary" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Summary</Tab>
-            <Tab value="financials" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Financials</Tab>
-            <Tab value="chart" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden sm:inline-flex">Chart</Tab>
+            <Tab value="profile" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Company Profile</Tab>
+            <Tab value="analysis" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Guardian Analysis</Tab>
+            <Tab value="chart" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Chart</Tab>
             <Tab value="holdings" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Holdings</Tab>
 
             {/* Desktop: Show all tabs */}
-            <Tab value="profile" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Company Profile</Tab>
+            <Tab value="financials" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Financials</Tab>
             <Tab value="returns" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Trailing Returns</Tab>
             <Tab value="dividends" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Dividends</Tab>
             <Tab value="news" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">News</Tab>
-            <Tab value="analysis" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden lg:inline-flex">Guardian Analysis</Tab>
           </TabList>
 
           {/* Mobile: More dropdown for hidden tabs */}
@@ -167,10 +166,10 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
             {moreMenuOpen && (
               <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[150px] z-10">
                 <button
-                  onClick={() => { setActiveTab('profile'); setMoreMenuOpen(false); }}
+                  onClick={() => { setActiveTab('financials'); setMoreMenuOpen(false); }}
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  Company Profile
+                  Financials
                 </button>
                 <button
                   onClick={() => { setActiveTab('returns'); setMoreMenuOpen(false); }}
@@ -189,12 +188,6 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   News
-                </button>
-                <button
-                  onClick={() => { setActiveTab('analysis'); setMoreMenuOpen(false); }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  Guardian Analysis
                 </button>
               </div>
             )}
@@ -429,9 +422,6 @@ function HoldingsPageClient({ ticker }: { ticker: string }) {
         </TabPanel>
 
         {/* Other Tab Panels (placeholders) */}
-        <TabPanel value="summary">
-          <div className="text-center py-12 text-gray-400">Summary content coming soon...</div>
-        </TabPanel>
         <TabPanel value="profile">
           <div className="text-center py-12 text-gray-400">Company Profile content coming soon...</div>
         </TabPanel>

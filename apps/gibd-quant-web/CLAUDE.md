@@ -89,8 +89,56 @@ services:
 - React
 - TypeScript
 - Tailwind CSS
+- **wizwebui** - Component library (`@wizwebui/core`)
 - Chart.js / D3.js (Data visualization)
 - Docker (Production)
+
+## ⛔ UI Component Rules - MANDATORY
+
+**CRITICAL**: This project uses the `wizwebui` component library exclusively.
+
+### Absolute Rules
+
+1. **NEVER create custom UI components** without explicit user approval
+2. **ALWAYS use `@wizwebui/core` components**:
+   - Button, Input, Card, Table, Tabs, Badge, Select, Checkbox, etc.
+3. **BEFORE building ANY component**:
+   - Check if wizwebui has it
+   - If missing, ASK USER FIRST
+   - Wait for approval before proceeding
+
+### If Component Missing from wizwebui
+
+```
+STOP and ask:
+"wizwebui doesn't have <ComponentName>. Options:
+ A) Create generic version and add to wizwebui
+ B) Use alternative wizwebui component
+ C) Wait for wizwebui update
+
+Which do you prefer?"
+```
+
+### Adding Components to wizwebui
+
+If approved to add component:
+1. Navigate to `/packages/wizwebui/src/components/`
+2. Create generic, reusable version
+3. Follow wizwebui patterns (variant, density, theme)
+4. Export from `index.ts`
+5. Build: `npm run build`
+6. Update app dependency
+
+### Acceptable Customizations
+
+- ✅ Theme configuration (`ThemeProvider`)
+- ✅ Layout compositions using wizwebui
+- ✅ Utility CSS (if essential)
+- ❌ Custom Button, Input, Form, etc.
+
+### Violation = Immediate Refactor
+
+**NO EXCEPTIONS**. See root `CLAUDE.md` for details.
 
 ## 📁 Project Structure
 
@@ -166,6 +214,11 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 5, 2026: Implemented mobile-responsive design with burger menu navigation
+- January 5, 2026: Migrated Holdings page to wizwebui components
+- January 5, 2026: Implemented Company Profile page with three-column layout
+- January 5, 2026: Fixed wizwebui component bugs (Table, Card, Badge, Tabs)
+- January 5, 2026: Removed Summary tab, made Company Profile the default tab
 - December 30, 2025: Deployed to production via CI/CD
 - December 30, 2025: Added HTTPS verification guidelines
 - December 30, 2025: Fixed coming-soon directory permissions
