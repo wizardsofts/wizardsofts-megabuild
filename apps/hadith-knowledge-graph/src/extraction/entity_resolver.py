@@ -115,8 +115,7 @@ class EntityResolver:
                 "context": extracted.get("context"),
                 "text_span": extracted.get("text_span")
             },
-            confidence_score=extracted.get("confidence", 0.8),
-            data_sources=["llm_extraction"]
+            confidence_score=extracted.get("confidence", 0.8)
         )
 
         self.db.add(entity)
@@ -203,16 +202,25 @@ class EntityResolver:
         """Create new event entity."""
         canonical_name = extracted.get("canonical_name_en", "Unknown")
 
+        # Handle empty strings for integer fields
+        date_hijri_year = extracted.get("date_hijri_year")
+        if date_hijri_year == "" or date_hijri_year is None:
+            date_hijri_year = None
+        elif isinstance(date_hijri_year, str):
+            try:
+                date_hijri_year = int(date_hijri_year)
+            except ValueError:
+                date_hijri_year = None
+
         entity = EventEntity(
             canonical_name_en=canonical_name,
             canonical_name_ar=extracted.get("canonical_name_ar"),
             normalization_key=normalize_name(canonical_name),
             name_variants=extracted.get("variants", [canonical_name]),
-            event_type=extracted.get("event_type"),
-            date_hijri_year=extracted.get("date_hijri_year"),
+            event_type=extracted.get("event_type") or None,
+            date_hijri_year=date_hijri_year,
             attributes={"context": extracted.get("context")},
-            confidence_score=extracted.get("confidence", 0.8),
-            data_sources=["llm_extraction"]
+            confidence_score=extracted.get("confidence", 0.8)
         )
 
         self.db.add(entity)

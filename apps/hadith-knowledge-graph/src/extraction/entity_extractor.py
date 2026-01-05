@@ -106,15 +106,30 @@ Return JSON array:
         try:
             result = self._call_ollama(prompt, system)
 
-            # Handle both array and object responses
+            # Handle various response formats
             if isinstance(result, list):
                 return result
-            elif isinstance(result, dict) and "people" in result:
-                return result["people"]
-            elif isinstance(result, dict) and "entities" in result:
-                return result["entities"]
+            elif isinstance(result, dict):
+                # Check for wrapped arrays
+                if "people" in result:
+                    return result["people"]
+                elif "entities" in result:
+                    return result["entities"]
+                elif "result" in result and isinstance(result["result"], list):
+                    return result["result"]
+                elif "results" in result and isinstance(result["results"], list):
+                    return result["results"]
+                elif "data" in result and isinstance(result["data"], list):
+                    return result["data"]
+                elif "canonical_name_en" in result:
+                    # Single person object returned instead of array
+                    logger.debug(f"Wrapped single person object in array")
+                    return [result]
+                else:
+                    logger.warning(f"Unexpected response format: {result}")
+                    return []
             else:
-                logger.warning(f"Unexpected response format: {result}")
+                logger.warning(f"Unexpected response type: {type(result)}")
                 return []
 
         except Exception as e:
@@ -148,8 +163,19 @@ Return JSON array:
 
             if isinstance(result, list):
                 return result
-            elif isinstance(result, dict) and "places" in result:
-                return result["places"]
+            elif isinstance(result, dict):
+                if "places" in result:
+                    return result["places"]
+                elif "result" in result and isinstance(result["result"], list):
+                    return result["result"]
+                elif "results" in result and isinstance(result["results"], list):
+                    return result["results"]
+                elif "data" in result and isinstance(result["data"], list):
+                    return result["data"]
+                elif "canonical_name_en" in result:
+                    return [result]
+                else:
+                    return []
             else:
                 return []
 
@@ -185,8 +211,19 @@ Return JSON array:
 
             if isinstance(result, list):
                 return result
-            elif isinstance(result, dict) and "events" in result:
-                return result["events"]
+            elif isinstance(result, dict):
+                if "events" in result:
+                    return result["events"]
+                elif "result" in result and isinstance(result["result"], list):
+                    return result["result"]
+                elif "results" in result and isinstance(result["results"], list):
+                    return result["results"]
+                elif "data" in result and isinstance(result["data"], list):
+                    return result["data"]
+                elif "canonical_name_en" in result:
+                    return [result]
+                else:
+                    return []
             else:
                 return []
 
@@ -224,8 +261,20 @@ Return JSON array:
 
             if isinstance(result, list):
                 return result
-            elif isinstance(result, dict) and "topics" in result:
-                return result["topics"]
+            elif isinstance(result, dict):
+                if "topics" in result:
+                    return result["topics"]
+                elif "result" in result and isinstance(result["result"], list):
+                    return result["result"]
+                elif "results" in result and isinstance(result["results"], list):
+                    return result["results"]
+                elif "data" in result and isinstance(result["data"], list):
+                    return result["data"]
+                elif "canonical_name_en" in result:
+                    return [result]
+                else:
+                    logger.debug(f"No topics extracted from response: {result}")
+                    return []
             else:
                 return []
 

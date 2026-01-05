@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # Ollama Configuration
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:3b-instruct-q4_K_M"
+    ollama_model: str = "mistral:7b"
     ollama_embedding_model: str = "nomic-embed-text"
 
     # OpenAI Configuration
@@ -30,11 +30,11 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-large"
 
     # PostgreSQL Configuration
-    postgres_host: str = "localhost"
-    postgres_port: int = 5432
-    postgres_user: str = ""
-    postgres_password: str = ""
-    postgres_db: str = "dailydeenguide"
+    postgres_host: str = "10.0.0.80"
+    postgres_port: int = 5435
+    postgres_user: str = "postgres"
+    postgres_password: str = "29Dec2#24"
+    postgres_db: str = "ws_daily_deen_guide"
 
     # Redis Configuration
     redis_host: str = "localhost"

@@ -5,10 +5,8 @@ global:
   smtp_auth_username: 'alerts@wizardsofts.com'
   smtp_auth_password: '${SMTP_PASSWORD}'
   smtp_require_tls: true
-  
-  # Default timeout for HTTP requests
-  http_config:
-    timeout: 10s
+  # Default timeout for HTTP requests (10 seconds)
+  resolve_timeout: 5m
 
 # Route tree for alert distribution
 route:
@@ -114,12 +112,13 @@ receivers:
           <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
           <p><strong>Description:</strong> {{ range .Alerts }}{{ .Annotations.description }}<br/>{{ end }}</p>
           <p><strong>Runbook:</strong> {{ range .Alerts }}{{ .Annotations.runbook }}<br/>{{ end }}</p>
-    slack_configs:
-      - api_url: '${SLACK_WEBHOOK_URL}'
-        channel: '#critical-alerts'
-        title: 'CRITICAL: {{ .GroupLabels.alertname }}'
-        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
-        color: 'danger'
+    # Slack notifications (only if SLACK_WEBHOOK_URL is configured)
+    # slack_configs:
+    #   - api_url: '${SLACK_WEBHOOK_URL}'
+    #     channel: '#critical-alerts'
+    #     title: 'CRITICAL: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     color: 'danger'
   
   # Security team receiver
   - name: 'security-team'
