@@ -2,6 +2,50 @@
 
 ## Critical Instructions
 
+### Deletion Confirmation Policy
+
+**MANDATORY: Always confirm before deleting ANY module, service, feature, or component.**
+
+Before removing, deleting, or disabling anything:
+1. **List all components** that will be affected by the removal
+2. **Identify dependencies** - what other services rely on the component being removed?
+3. **Assess impact** - will this break monitoring, logging, alerts, or other functionality?
+4. **Present a summary** to the user showing:
+   - Components to be deleted
+   - Dependencies that will be affected
+   - Services that will lose functionality
+   - Required follow-up actions
+5. **Wait for explicit confirmation** before proceeding with deletion
+6. **Document what was removed** in the change log
+
+**Example confirmation format:**
+```
+⚠️ DELETION IMPACT ANALYSIS
+
+Components to be removed:
+- haproxy (load balancer)
+- autoscaler (custom autoscaling service)
+
+Dependencies affected:
+- Traefik will need to handle load balancing (already configured)
+- Manual scaling required (docker service scale)
+
+Services that will lose functionality:
+- Automatic scaling based on load metrics
+
+Associated files/configs:
+- infrastructure/auto-scaling/haproxy/
+- infrastructure/auto-scaling/app/
+- infrastructure/auto-scaling/docker-compose.yml (haproxy/autoscaler sections)
+
+⚠️ NOT AFFECTED (must be preserved):
+- Prometheus, Grafana, Loki (monitoring)
+- Promtail, Alertmanager (logging/alerts)
+- Node Exporter, cAdvisor (metrics)
+
+Proceed with deletion? [Requires explicit user confirmation]
+```
+
 ### No Shortcuts Policy
 
 **IMPORTANT: Do NOT take shortcuts when implementing infrastructure changes.**

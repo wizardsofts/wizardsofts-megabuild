@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useParams } from 'next/navigation';
-import { Tabs, TabList, Tab } from '@wizwebui/core';
+// TODO: Replace with @wizwebui/core Tabs, TabList, Tab once library is fixed (missing exports in dist)
 import ProfileContent from './profile/ProfileContent';
 import CompanyChart from '@/components/company/CompanyChart';
 
@@ -106,26 +106,93 @@ export default function TickerLayout({ children }: TickerLayoutProps) {
       </div>
 
       {/* Tabs Navigation */}
-      <Tabs
-        variant="underline"
-        value={activeTab}
-        onChange={handleTabChange}
-        className="mt-3 md:mt-4"
-      >
+      <div className="mt-3 md:mt-4">
         <div className="relative flex items-center gap-2">
-          <TabList className="overflow-x-auto scrollbar-hide whitespace-nowrap flex-1">
+          <div className="overflow-x-auto scrollbar-hide whitespace-nowrap flex-1 flex gap-0">
             {/* Always visible tabs */}
-            <Tab value="profile" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Company Profile</Tab>
-            <Tab value="analysis" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Guardian Analysis</Tab>
-            <Tab value="chart" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Chart</Tab>
-            <Tab value="holding" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base">Holdings</Tab>
+            <button
+              onClick={() => handleTabChange('profile')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors ${
+                activeTab === 'profile'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Company Profile
+            </button>
+            <button
+              onClick={() => handleTabChange('analysis')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors ${
+                activeTab === 'analysis'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Guardian Analysis
+            </button>
+            <button
+              onClick={() => handleTabChange('chart')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors ${
+                activeTab === 'chart'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Chart
+            </button>
+            <button
+              onClick={() => handleTabChange('holding')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors ${
+                activeTab === 'holding'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Holdings
+            </button>
 
             {/* Desktop: Show all tabs */}
-            <Tab value="financials" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Financials</Tab>
-            <Tab value="returns" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Trailing Returns</Tab>
-            <Tab value="dividends" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">Dividends</Tab>
-            <Tab value="news" className="pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base hidden md:inline-flex">News</Tab>
-          </TabList>
+            <button
+              onClick={() => handleTabChange('financials')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors hidden md:inline-flex ${
+                activeTab === 'financials'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Financials
+            </button>
+            <button
+              onClick={() => handleTabChange('returns')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors hidden md:inline-flex ${
+                activeTab === 'returns'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Trailing Returns
+            </button>
+            <button
+              onClick={() => handleTabChange('dividends')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors hidden md:inline-flex ${
+                activeTab === 'dividends'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Dividends
+            </button>
+            <button
+              onClick={() => handleTabChange('news')}
+              className={`pb-2 md:pb-2.5 text-xs sm:text-sm md:text-base px-3 border-b-2 transition-colors hidden md:inline-flex ${
+                activeTab === 'news'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              News
+            </button>
+          </div>
 
           {/* Mobile: More dropdown for hidden tabs */}
           <div ref={moreMenuRef} className="relative md:hidden flex-shrink-0">
@@ -165,7 +232,7 @@ export default function TickerLayout({ children }: TickerLayoutProps) {
             )}
           </div>
         </div>
-      </Tabs>
+      </div>
 
       {/* Tab Content - Rendered client-side based on activeTab state */}
       <div className="mt-4">

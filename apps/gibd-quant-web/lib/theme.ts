@@ -1,4 +1,13 @@
-import { Theme } from '@wizwebui/core';
+// TODO: Import Theme from @wizwebui/core once library is fixed (missing export in dist)
+// For now, define a local Theme interface
+
+interface Theme {
+  colors?: any;
+  spacing?: any;
+  borderRadius?: any;
+  shadows?: any;
+  typography?: any;
+}
 
 /**
  * Custom theme for Guardian Investment BD

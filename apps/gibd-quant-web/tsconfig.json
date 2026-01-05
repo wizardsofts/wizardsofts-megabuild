@@ -24,6 +24,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@wizardsofts/wizchart-interactive": [
+        "../../../wizardsofts/wizchart/packages/interactive/lib"
       ]
     },
     "target": "ES2017"

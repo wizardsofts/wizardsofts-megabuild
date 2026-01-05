@@ -1,7 +1,11 @@
 version: '3.8'
 
-# Monitoring Stack for Server 81
-# Deployed via Docker Swarm: docker stack deploy -c monitoring-stack.yml monitoring
+# Monitoring Stack for WizardSofts Infrastructure
+# Deployed via Docker Swarm on Server 84 (Swarm Leader)
+# Deploy command: docker stack deploy -c monitoring-stack.yml monitoring
+#
+# Services: Prometheus, Grafana, Loki, Promtail, Alertmanager
+# Access: Grafana on http://10.0.0.84:3002, Prometheus on http://10.0.0.84:9090
 
 services:
   prometheus:
@@ -13,6 +17,7 @@ services:
     volumes:
       - prometheus-data:/prometheus
       - /home/wizardsofts/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /home/wizardsofts/monitoring/prometheus/security-alerts.yml:/etc/prometheus/security-alerts.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -21,7 +26,7 @@ services:
     deploy:
       placement:
         constraints:
-          - node.labels.server==81
+          - node.hostname==gmktec
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -55,28 +60,14 @@ services:
     environment:
       # Admin Configuration
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-W1z4rdS0fts!2025}
-      - GF_INSTALL_PLUGINS=grafana-clock-panel
-
-      # Server Configuration (required for OAuth redirect)
-      - GF_SERVER_ROOT_URL=http://10.0.0.81:3002
-
-      # Keycloak OIDC Configuration (migrated from Server 84 infrastructure)
-      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
-      - GF_AUTH_GENERIC_OAUTH_NAME=Keycloak
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=grafana
-      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=6PR1DorOq6ckb5qVTrZVc5HUHis3iWxv
-      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email roles
-      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/auth
-      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/token
-      - GF_AUTH_GENERIC_OAUTH_API_URL=http://10.0.0.84:8180/realms/wizardsofts-admin/protocol/openid-connect/userinfo
-      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
-      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(roles[*], 'admin') && 'Admin' || 'Viewer'
-      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=false
-      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # Server Configuration
+      - GF_SERVER_ROOT_URL=http://10.0.0.84:3002
     deploy:
       placement:
         constraints:
-          - node.labels.server==81
+          - node.hostname==gmktec
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -107,7 +98,7 @@ services:
     deploy:
       placement:
         constraints:
-          - node.labels.server==81
+          - node.hostname==gmktec
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -156,13 +147,14 @@ services:
         mode: host
     volumes:
       - /home/wizardsofts/monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager-data:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
     deploy:
       placement:
         constraints:
-          - node.labels.server==81
+          - node.hostname==gmktec
       replicas: 1
       restart_policy:
         condition: on-failure
@@ -187,4 +179,6 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  alertmanager-data:
     driver: local

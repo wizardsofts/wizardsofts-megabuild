@@ -12,30 +12,31 @@ import CompanyHeader from '@/components/company/CompanyHeader';
 import CompanyTabs from '@/components/company/CompanyTabs';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     ticker: string;
-  };
+  }>;
 }
 
 /**
  * Generate metadata for SEO
  */
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const ticker = params.ticker.toUpperCase();
-  const details = await getCompanyDetails(ticker);
+  const { ticker } = await params;
+  const upperTicker = ticker.toUpperCase();
+  const details = await getCompanyDetails(upperTicker);
 
   if (!details) {
     return {
-      title: `${ticker} Not Found - Guardian Investment BD`,
-      description: `Company ${ticker} not found in our database`,
+      title: `${upperTicker} Not Found - Guardian Investment BD`,
+      description: `Company ${upperTicker} not found in our database`,
     };
   }
 
   return {
-    title: `${details.company.company_name} (${ticker}) - Guardian Investment BD`,
-    description: `View detailed analysis, trading signals, and charts for ${details.company.company_name} (${ticker}). Sector: ${details.company.sector}`,
+    title: `${details.company.company_name} (${upperTicker}) - Guardian Investment BD`,
+    description: `View detailed analysis, trading signals, and charts for ${details.company.company_name} (${upperTicker}). Sector: ${details.company.sector}`,
     openGraph: {
-      title: `${details.company.company_name} (${ticker})`,
+      title: `${details.company.company_name} (${upperTicker})`,
       description: `${details.company.sector} | ${details.company.category}`,
     },
   };
@@ -45,13 +46,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
  * Main Company Page Component (Server Component)
  */
 export default async function CompanyPage({ params }: PageProps) {
-  const ticker = params.ticker.toUpperCase();
+  const { ticker } = await params;
+  const upperTicker = ticker.toUpperCase();
 
   // Fetch all data in parallel for better performance
   const [companyDetails, companySignals, analysisData] = await Promise.all([
-    getCompanyDetails(ticker),
-    getCompanySignals(ticker, 20),
-    analyzeCompany(ticker),
+    getCompanyDetails(upperTicker),
+    getCompanySignals(upperTicker, 20),
+    analyzeCompany(upperTicker),
   ]);
 
   // Handle case where company is not found
@@ -86,7 +88,7 @@ export default async function CompanyPage({ params }: PageProps) {
         {/* Tabbed content area */}
         <div className="mt-6">
           <CompanyTabs
-            ticker={ticker}
+            ticker={upperTicker}
             companyDetails={companyDetails}
             signals={companySignals}
             analysis={analysis}

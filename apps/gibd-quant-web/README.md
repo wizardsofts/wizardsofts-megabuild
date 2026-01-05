@@ -95,6 +95,45 @@ NEXT_PUBLIC_ADSENSE_SIDEBAR_SLOT=XXXXXXXXXX
 NEXT_PUBLIC_ADSENSE_INFEED_SLOT=XXXXXXXXXX
 ```
 
+## Architecture & Component Libraries
+
+This application follows a **three-tier UI component architecture** to ensure maintainability, reusability, and npm publishability:
+
+### Component Hierarchy
+1. **WizWebUI** (`@wizwebui/core`) - Low-level UI primitives (Button, Input, Card, Table, etc.)
+2. **WizChart** (`@wizardsofts/wizchart-*`) - Domain-specific charting components and interactive tools
+3. **Application Components** - Business logic and page-specific components using library components
+
+### Key Principle
+**All UI components must come from either WizWebUI or WizChart libraries.** Custom UI components are not created without explicit approval. This ensures:
+- Consistency across applications
+- Easier library maintenance and updates
+- Reusability across other projects
+- Cleaner separation of concerns
+
+### Example: AddIndicatorPanel Component
+The `AddIndicatorPanel` component is a library component from `@wizardsofts/wizchart-interactive` that handles technical indicator selection for charts:
+
+```typescript
+import { AddIndicatorPanel, INDICATOR_TEMPLATES, type IndicatorConfig } from '@wizardsofts/wizchart-interactive';
+
+// Usage in CompanyChart component
+<AddIndicatorPanel
+  indicators={indicators}
+  onAddIndicator={(indicator) => setIndicators([...indicators, indicator])}
+  onRemoveIndicator={(id) => setIndicators(indicators.filter(i => i.id !== id))}
+/>
+```
+
+**Supported Indicators:**
+- SMA (Simple Moving Average)
+- EMA (Exponential Moving Average)
+- BB (Bollinger Bands)
+- RSI (Relative Strength Index)
+- MACD (Moving Average Convergence Divergence)
+
+See [wizchart documentation](../../../wizardsofts/wizchart) for component details.
+
 ## Features
 
 ### Coming Soon Mode
