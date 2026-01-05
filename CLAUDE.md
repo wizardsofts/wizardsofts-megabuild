@@ -39,15 +39,15 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 
 | Server | IP | Purpose |
 |--------|-----|---------|
-| Server 80 | 10.0.0.80 | GIBD Services + Ray Worker |
-| Server 81 | 10.0.0.81 | Database Server + Ray Worker |
-| Server 82 | 10.0.0.82 | HPR Server (Monitoring) + Ray Worker |
-| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring, **Ray + Celery**) |
+| Server 80 | 10.0.0.80 | GIBD Services |
+| Server 81 | 10.0.0.81 | Database Server |
+| Server 82 | 10.0.0.82 | HPR Server (Monitoring) |
+| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) |
 | Hetzner | 178.63.44.221 | External services |
 
 ### Distributed ML Infrastructure (Server 84)
 
-**Status:** ✅ Production (Phase 1 & 2 Complete)
+**Status:** ⏸️ Decommissioned (2026-01-05) - Ray cluster stopped due to idle workloads
 
 | Component | Port | Access | Documentation |
 |-----------|------|--------|---------------|
@@ -146,7 +146,37 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 # See docs/FAIL2BAN_SETUP.md for full guide
 ```
 
-## Recent Changes (2025-12-30/31 - 2026-01-04)
+## Recent Changes (2025-12-30/31 - 2026-01-05)
+
+### Ray Cluster Decommissioned (2026-01-05)
+- **Servers**: 80, 81, 84 (Ray cluster shutdown across all nodes)
+- **Reason**: Cluster was idle with no active workloads consuming resources
+- **Actions**:
+  - Stopped and removed all Ray containers (1 head + 11 workers total)
+  - Freed 4.36 GB disk space on Server 84
+  - Freed 16 CPUs and ~25 GiB memory across infrastructure
+  - Cleaned up Ray volumes and temporary files
+  - Reduced Server 80 worker count from 4 to 2 in configuration
+- **Configuration Changes**:
+  - Server 80: Updated `~/ray-workers/docker-compose.yml` to 2 workers (was 4)
+  - Server 81: 2 workers (unchanged)
+  - Server 84: 1 head + 4 workers (unchanged)
+- **Impact**:
+  - Ray cluster can be restarted when needed for distributed ML workloads
+  - Server 80 disk usage: 18% (down from 32%)
+  - Server 84 disk usage: 36% (stable)
+  - Server 81 disk usage: 34% (stable)
+- **Restart Instructions**:
+  ```bash
+  # Server 84 (head node)
+  ssh wizardsofts@10.0.0.84 "cd ~/distributed-ml && docker-compose up -d"
+
+  # Server 80 (2 workers)
+  ssh wizardsofts@10.0.0.80 "cd ~/ray-workers && docker-compose up -d"
+
+  # Server 81 (2 workers)
+  ssh wizardsofts@10.0.0.81 "cd ~/ray-workers && docker-compose up -d"
+  ```
 
 ### Ray Cluster Stability & Disk Management Fixed (2026-01-04)
 - **Servers**: 80, 81, 82, 84 (Distributed Ray + Celery cluster)
