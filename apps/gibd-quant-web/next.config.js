@@ -7,8 +7,8 @@ const nextConfig = {
   // Empty config silences the webpack config warning
   turbopack: {},
 
-  // Transpile @wizwebui/core (linked package via npm link)
-  transpilePackages: ['@wizwebui/core'],
+  // Transpile local packages from monorepo
+  transpilePackages: ['@wizwebui/core', '@wizardsofts/wizchart-interactive'],
 
   // API proxy: Routes /api/* requests to FastAPI backend
   // This avoids CORS issues during development

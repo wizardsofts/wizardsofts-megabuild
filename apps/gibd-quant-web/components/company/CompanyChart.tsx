@@ -33,6 +33,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getPriceHistory } from '@/lib/api/company';
 import type { ChartPeriod, PriceHistory } from '@/lib/types';
+import {
+  AddIndicatorPanel,
+  INDICATOR_TEMPLATES,
+  type IndicatorType,
+  type IndicatorConfig,
+} from '@wizardsofts/wizchart-interactive';
 
 interface CompanyChartProps {
   ticker: string;
@@ -111,53 +117,7 @@ const generateMockData = (ticker: string, period: ChartPeriod, dataPoints: numbe
   };
 };
 
-// Indicator types and their configurations
-type IndicatorType = 'SMA' | 'EMA' | 'BB' | 'RSI' | 'MACD';
-
-interface IndicatorConfig {
-  id: string;
-  type: IndicatorType;
-  params: Record<string, number>;
-  color: string;
-}
-
-const INDICATOR_TEMPLATES: Record<IndicatorType, {
-  name: string;
-  defaultParams: Record<string, number>;
-  paramLabels: Record<string, string>;
-  colors: string[];
-}> = {
-  SMA: {
-    name: 'Simple Moving Average',
-    defaultParams: { period: 20 },
-    paramLabels: { period: 'Period' },
-    colors: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
-  },
-  EMA: {
-    name: 'Exponential Moving Average',
-    defaultParams: { period: 20 },
-    paramLabels: { period: 'Period' },
-    colors: ['#3b82f6', '#f97316', '#06b6d4', '#a855f7'],
-  },
-  BB: {
-    name: 'Bollinger Bands',
-    defaultParams: { period: 20, stdDev: 2 },
-    paramLabels: { period: 'Period', stdDev: 'Std Dev' },
-    colors: ['#ef4444', '#6b7280', '#ef4444'],
-  },
-  RSI: {
-    name: 'Relative Strength Index',
-    defaultParams: { period: 14 },
-    paramLabels: { period: 'Period' },
-    colors: ['#8b5cf6'],
-  },
-  MACD: {
-    name: 'MACD',
-    defaultParams: { fast: 12, slow: 26, signal: 9 },
-    paramLabels: { fast: 'Fast', slow: 'Slow', signal: 'Signal' },
-    colors: ['#2563eb', '#dc2626', '#10b981'],
-  },
-};
+// Indicator types and configurations are now imported from @wizchart/interactive
 
 export default function CompanyChart({
   ticker,
@@ -180,10 +140,6 @@ export default function CompanyChart({
       setLocalIndicators(newIndicators);
     }
   };
-  const [showAddIndicator, setShowAddIndicator] = useState(false);
-  const [newIndicatorType, setNewIndicatorType] = useState<IndicatorType>('SMA');
-  const [newIndicatorParams, setNewIndicatorParams] = useState<Record<string, number>>({ period: 20 });
-  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -339,55 +295,7 @@ export default function CompanyChart({
     });
   }, [data, indicators]);
 
-  // Add new indicator (prevent duplicates)
-  const handleAddIndicator = () => {
-    // Check if indicator with same type and parameters already exists
-    const isDuplicate = indicators.some((indicator) => {
-      if (indicator.type !== newIndicatorType) return false;
-      // Compare all parameters
-      return JSON.stringify(indicator.params) === JSON.stringify(newIndicatorParams);
-    });
-
-    if (isDuplicate) {
-      // Show error message instead of silently closing
-      const indicatorLabel = getIndicatorLabel({
-        id: 'temp',
-        type: newIndicatorType,
-        params: newIndicatorParams,
-        color: '#000',
-      });
-      setDuplicateError(`${indicatorLabel} is already added. Please modify the parameters or select a different indicator.`);
-      return;
-    }
-
-    const template = INDICATOR_TEMPLATES[newIndicatorType];
-    const colorIndex = indicators.filter(i => i.type === newIndicatorType).length;
-    const color = template.colors[colorIndex % template.colors.length];
-
-    const newIndicator: IndicatorConfig = {
-      id: `${newIndicatorType}_${Date.now()}`,
-      type: newIndicatorType,
-      params: { ...newIndicatorParams },
-      color,
-    };
-
-    setIndicators([...indicators, newIndicator]);
-    setShowAddIndicator(false);
-    setNewIndicatorParams(template.defaultParams);
-    setDuplicateError(null); // Clear error on successful add
-  };
-
-  // Remove indicator
-  const handleRemoveIndicator = (id: string) => {
-    setIndicators(indicators.filter(i => i.id !== id));
-  };
-
-  // Update new indicator type
-  const handleIndicatorTypeChange = (type: IndicatorType) => {
-    setNewIndicatorType(type);
-    setNewIndicatorParams(INDICATOR_TEMPLATES[type].defaultParams);
-    setDuplicateError(null); // Clear error when changing indicator type
-  };
+  // Add/Remove indicator handlers are now delegated to AddIndicatorPanel component from wizchart
 
   // Custom tooltip for price chart
   const PriceTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
@@ -545,85 +453,12 @@ export default function CompanyChart({
           </div>
         )}
 
-        {/* Add Indicator Button */}
-        {!showAddIndicator && (
-          <Button
-            onClick={() => setShowAddIndicator(true)}
-            variant="outline"
-            size="sm"
-            className="w-fit"
-          >
-            + Add Indicator
-          </Button>
-        )}
-
-        {/* Add Indicator Form */}
-        {showAddIndicator && (
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-            <div className="flex flex-col gap-3">
-              {/* Duplicate Error Message */}
-              {duplicateError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-700">{duplicateError}</p>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Indicator Type
-                </label>
-                <select
-                  value={newIndicatorType}
-                  onChange={(e) => handleIndicatorTypeChange(e.target.value as IndicatorType)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {Object.entries(INDICATOR_TEMPLATES).map(([type, config]) => (
-                    <option key={type} value={type}>
-                      {config.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Dynamic Parameter Inputs */}
-              {Object.entries(INDICATOR_TEMPLATES[newIndicatorType].paramLabels).map(([key, label]) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {label}
-                  </label>
-                  <input
-                    type="number"
-                    value={newIndicatorParams[key] || ''}
-                    onChange={(e) => {
-                      setNewIndicatorParams({
-                        ...newIndicatorParams,
-                        [key]: parseInt(e.target.value) || 0
-                      });
-                      setDuplicateError(null); // Clear error when parameters change
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              ))}
-
-              <div className="flex gap-2">
-                <Button onClick={handleAddIndicator} size="sm">
-                  Add
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowAddIndicator(false);
-                    setDuplicateError(null);
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Add Indicator Panel - Component from @wizchart/interactive */}
+        <AddIndicatorPanel
+          indicators={indicators}
+          onAddIndicator={(indicator) => setIndicators([...indicators, indicator])}
+          onRemoveIndicator={(id) => setIndicators(indicators.filter(i => i.id !== id))}
+        />
       </div>
 
       {/* Loading State */}

@@ -53,13 +53,41 @@ Expert in React, Next.js, Node.js, Redux, and modern frontend development with *
 - **Testing**: Jest, React Testing Library, Playwright (mobile viewports)
 - **Performance**: Code splitting, lazy loading, SSR/SSG optimization, image optimization
 
-## Component Library Integration
+## ⛔ CRITICAL: UI Component Governance Rules (2026-01-06)
 
-### wizwebui Library Standards
+**ABSOLUTE RULE: NEVER create custom UI components or custom UI rendering logic without explicit user written confirmation.**
 
-**CRITICAL RULE**: ALWAYS use wizwebui components. Creating custom UI components is PROHIBITED.
+This rule is non-negotiable and applies to all frontend work. The three-tier architecture is mandatory.
 
-### When wizwebui Component Doesn't Match Design
+### Three-Tier Architecture (Mandatory)
+
+```
+TIER 1: UI Primitive Libraries
+  @wizwebui/core - Button, Input, Card, Table, Tabs, Badge, etc.
+
+TIER 2: Domain-Specific Libraries
+  @wizchart/* - ChartRenderer, AddIndicatorPanel, TechnicalIndicators, etc.
+
+TIER 3: Application Layer (Data & Configuration ONLY)
+  ✅ API calls, state management, business logic
+  ✅ Composing library components with data/callbacks
+  ✅ Custom hooks for logic (NOT UI rendering)
+  ❌ NO custom JSX/HTML rendering
+  ❌ NO custom UI components
+  ❌ NO inline styled components without library equivalents
+```
+
+### Component Library Integration
+
+**CRITICAL RULE**: ALWAYS use component libraries (`@wizwebui/core` OR `@wizchart/*`). Creating custom UI components is STRICTLY PROHIBITED.
+
+**Before writing ANY UI component:**
+1. Check if `@wizwebui/core` has it (Button, Input, Card, Table, etc.)
+2. Check if `@wizchart/*` has it (Chart, Indicator, etc.)
+3. If NEITHER library has it → **STOP** and ask user for explicit approval
+4. ONLY after approval → Extract to appropriate library
+
+### When Library Component Doesn't Match Design
 
 **MANDATORY Process**:
 
@@ -467,12 +495,26 @@ deploy:
 
 ## Common Pitfalls to Avoid
 
-1. **❌ Creating custom UI components instead of using wizwebui**
-2. **❌ Mixing Client/Server components incorrectly**
-3. **❌ Not handling loading/error states**
-4. **❌ Forgetting to memoize expensive computations**
-5. **❌ Not testing accessibility**
-6. **❌ Deploying without running build locally first**
+**CRITICAL - ZERO TOLERANCE VIOLATIONS:**
+1. **❌ ABSOLUTE: Creating custom UI components instead of using library components**
+   - This triggers immediate refactoring
+   - Includes: custom JSX rendering, inline styled elements, custom form fields
+   - Always check wizwebui/wizchart FIRST
+
+2. **❌ Creating custom UI logic without explicit user approval**
+   - Custom button handlers, custom form logic, custom input rendering
+   - All UI logic MUST be delegated to libraries
+
+3. **❌ Composing custom components from scratch**
+   - Example: Building custom card component from `<div>`
+   - Solution: Use `<Card>` from `@wizwebui/core`
+
+**OTHER PITFALLS:**
+4. **❌ Mixing Client/Server components incorrectly**
+5. **❌ Not handling loading/error states**
+6. **❌ Forgetting to memoize expensive computations**
+7. **❌ Not testing accessibility**
+8. **❌ Deploying without running build locally first**
 
 ## Git Workflow
 
