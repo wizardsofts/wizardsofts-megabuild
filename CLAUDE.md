@@ -47,32 +47,50 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 
 ### Distributed ML Infrastructure (Server 84)
 
-**Status:** ⏸️ Decommissioned (2026-01-05) - Ray cluster stopped due to idle workloads
+**Status:** ✅ **PRODUCTION** - Ray 2.53.0 + Celery (Deployed 2026-01-05)
+**Branch:** `feature/ray-2.53-upgrade` (ready for merge after 72h monitoring)
 
 | Component | Port | Access | Documentation |
 |-----------|------|--------|---------------|
-| **Ray Head** | 8265 (dashboard), 10001 (client) | Local network | [README](infrastructure/distributed-ml/README.md) |
+| **Ray 2.53.0 Head** | 8265 (dashboard), 8080 (metrics) | Local network | [Ray 2.53.0 Deployment](docs/RAY_2.53_DEPLOYMENT_GUIDE.md) |
+| **Ray Workers** | - | Servers 80, 81 | 4 nodes, 18 CPUs, 48 GB RAM |
 | **Redis (Celery)** | 6380 | Local network | [Celery README](infrastructure/distributed-ml/celery/README.md) |
 | **Flower** | 5555 | Local network | [Celery README](infrastructure/distributed-ml/celery/README.md) |
 | **Celery Workers** | - | Internal | 10 workers (ml/data/default queues) |
 | **Celery Beat** | - | Internal | Scheduled task runner |
 
+**Ray 2.53.0 Cluster:**
+- **Nodes**: 4 active (1 head Server 84, 3 workers Servers 80, 81)
+- **CPUs**: 18 total
+- **Memory**: 48.38 GiB
+- **Status**: Healthy - All tests passed ✅
+- **Dashboard**: http://10.0.0.84:8265 (auth: admin / see .env.ray)
+- **Metrics**: http://10.0.0.84:8080/metrics (Prometheus)
+- **Grafana**: `infrastructure/distributed-ml/ray/grafana-ray-dashboard.json`
+
 **Deployment Reports:**
-- [Phase 1: Ray Cluster](docs/PHASE1_DEPLOYMENT_SUMMARY.md) - 9 nodes, 25 CPUs
-- [Phase 2: Celery Integration](docs/PHASE2_CELERY_VALIDATION_REPORT.md) - Task queue + orchestration
-- [Networking Architecture](docs/DISTRIBUTED_ML_NETWORKING.md) - Host networking rationale
+- [Ray 2.53.0 Security Audit](docs/RAY_2.53_SECURITY_AUDIT.md) - CVE analysis
+- [Ray 2.53.0 Deployment Guide](docs/RAY_2.53_DEPLOYMENT_GUIDE.md) - Step-by-step
+- [Ray 2.53.0 Test Results](docs/RAY_2.53_DEPLOYMENT_RESULTS.md) - Validation
+- [Phase 2: Celery Integration](docs/PHASE2_CELERY_VALIDATION_REPORT.md) - Task orchestration
+- [Networking Architecture](docs/DISTRIBUTED_ML_NETWORKING.md) - Host networking
 
 **Quick Access:**
 ```bash
-# Flower dashboard credentials
+# Ray cluster status
+ssh wizardsofts@10.0.0.84 "docker exec ray-head ray status"
+
+# Ray dashboard (http://10.0.0.84:8265)
+# Username: admin
+# Password: (see infrastructure/distributed-ml/ray/.env.ray)
+
+# Flower dashboard
 ssh wizardsofts@10.0.0.84 'grep FLOWER_PASSWORD ~/celery/.env.celery'
 
-# Ray dashboard
-ssh -L 8265:127.0.0.1:8265 wizardsofts@10.0.0.84
-# Then: http://localhost:8265
-
-# Submit test task
-python3 infrastructure/distributed-ml/celery/example_usage.py
+# Ray training with cleanup wrapper
+from utils.ray_training_wrapper import RayTrainingCleanup
+with RayTrainingCleanup() as cleanup:
+    tuner.fit()  # Automatic /tmp cleanup on exit
 ```
 
 ## Common Tasks
@@ -147,6 +165,32 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 ```
 
 ## Recent Changes (2025-12-30/31 - 2026-01-05)
+
+### Ray 2.53.0 Upgrade - DEPLOYED (2026-01-05)
+- **Status**: ✅ **PRODUCTION** - Ray 2.53.0 fully deployed and validated
+- **Branch**: `feature/ray-2.53-upgrade` (ready for merge)
+- **Deployment**: 4 active nodes (Server 84 head + workers on 80, 81), 18 CPUs, 48 GB memory
+- **Changes**:
+  - **Upgraded Ray**: 2.40.0 → 2.53.0 across all nodes
+  - **Security Fixes**: pip 25.3, setuptools 78.1.1 (CVE fixes)
+  - **API Migration**: Migrated to Ray Train V2 API (tune.run() → Tuner)
+  - **Dashboard Auth**: Enabled authentication (mitigates CVE-2023-48022)
+  - **Worker Script Fix**: Changed echo → printf for proper newline handling
+  - **Permissions Fix**: Changed WORKDIR /app → /home/ray for ray user access
+- **Testing Results**:
+  - ✅ Simple Ray job: 10 distributed tasks (PASSED)
+  - ✅ Tuner API: Train V2 compliance (PASSED)
+  - ✅ 2-epoch PPO: Generator-based training (PASSED)
+  - ✅ **10-epoch multi-worker PPO**: 9 trials, 3 parallel, 100% success rate (PASSED)
+- **Performance**: 25% speedup from parallel execution (6.79s for 90 epochs vs ~9s sequential)
+- **Monitoring**: Grafana dashboard created, Prometheus scraping configured
+- **Cleanup**: ray_training_wrapper.py handles automatic /tmp cleanup on workers
+- **Documentation**:
+  - [RAY_2.53_SECURITY_AUDIT.md](docs/RAY_2.53_SECURITY_AUDIT.md)
+  - [RAY_2.53_DEPLOYMENT_GUIDE.md](docs/RAY_2.53_DEPLOYMENT_GUIDE.md)
+  - [RAY_2.53_DEPLOYMENT_RESULTS.md](feature-ray-2.53-upgrade/RAY_2.53_DEPLOYMENT_RESULTS.md)
+  - [RAY_2.53_10EPOCH_TEST_RESULTS.md](feature-ray-2.53-upgrade/RAY_2.53_10EPOCH_TEST_RESULTS.md)
+- **Next Steps**: 72-hour stability monitoring, then merge to master
 
 ### TARP-DRL Production Infrastructure (2026-01-05)
 - **Status**: ✅ Production-ready data pipeline and resource management deployed
