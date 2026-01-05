@@ -144,15 +144,68 @@ If approved to add component:
 
 ```
 app/
-  page.tsx              # Homepage/Dashboard
-  charts/               # Stock charts
-  signals/              # Trading signals
-  multi-criteria/       # Multi-criteria analysis
-  chat/                 # AI chat interface
-  company/              # Company profiles
-components/             # React components
-public/                 # Static assets
+  page.tsx                      # Homepage/Dashboard
+  charts/                       # Stock charts
+  signals/                      # Trading signals
+  multi-criteria/               # Multi-criteria analysis
+  chat/                         # AI chat interface
+  dashboard/
+    dse/
+      [ticker]/
+        page.tsx                # Parent ticker page (stock header + tabs)
+        profile/
+          page.tsx              # Redirects to parent
+          ProfileContent.tsx    # Company Profile tab content
+        holding/
+          page.tsx              # Redirects to parent
+          HoldingContent.tsx    # Holdings tab content
+components/                     # React components
+public/                         # Static assets
 ```
+
+### Ticker Page Architecture (Next.js 15 Pattern)
+
+**URL Structure**:
+- `/dashboard/dse/BATBC` - Parent page with stock header and all tabs
+- `/dashboard/dse/BATBC/profile` - Redirects to parent (profile tab)
+- `/dashboard/dse/BATBC/holding` - Redirects to parent (holdings tab)
+
+**Component Pattern**:
+1. **Parent Page** (`/dashboard/dse/[ticker]/page.tsx`):
+   - Stock header (company name, trading code, price, status)
+   - Tab navigation (8 tabs: Profile, Analysis, Chart, Holdings, etc.)
+   - Mobile-responsive with "More" dropdown for overflow tabs
+   - Renders content components via `<TabPanel>`
+
+2. **Content Components** (`*Content.tsx`):
+   - Contains ONLY the tab content
+   - No headers, no navigation
+   - Receives `ticker` as prop
+   - Uses wizwebui components + Tailwind only
+
+3. **Redirect Pages** (old tab pages):
+   - Use Next.js 15 async params pattern
+   - Redirect to parent page for backward compatibility
+
+**Next.js 15 Async Params**:
+```typescript
+// ✅ CORRECT - Next.js 15 pattern
+export default async function Page({ params }: PageProps) {
+  const { ticker } = await params;
+  // use ticker
+}
+
+// ❌ WRONG - Synchronous access
+export default function Page({ params }: PageProps) {
+  redirect(`/path/${params.ticker}`); // Error!
+}
+```
+
+**Styling Rules**:
+- NO inline styles except data visualizations (conic-gradient, percentage heights)
+- ALL colors via Tailwind classes (text-gray-900, bg-blue-600, etc.)
+- Responsive design with Tailwind breakpoints (sm:, md:, lg:)
+- Theme-based using wizwebui + Tailwind only
 
 ## 🧪 Development Commands
 
@@ -214,6 +267,13 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 5, 2026: Restructured ticker pages to eliminate duplication (~800 lines removed)
+  - Created parent page at `/dashboard/dse/[ticker]` with shared stock header and tabs
+  - Extracted ProfileContent and HoldingContent as tab-only components
+  - Converted profile and holding pages to redirects for backward compatibility
+  - Fixed Next.js 15 async params in redirect pages
+  - Removed all inline styles except data visualizations
+  - All UI styling now theme-based using wizwebui + Tailwind only
 - January 5, 2026: Implemented mobile-responsive design with burger menu navigation
 - January 5, 2026: Migrated Holdings page to wizwebui components
 - January 5, 2026: Implemented Company Profile page with three-column layout

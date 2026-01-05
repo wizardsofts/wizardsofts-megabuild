@@ -13,6 +13,7 @@ interface ProfilePageProps {
   };
 }
 
-export default function ProfilePage({ params }: ProfilePageProps) {
-  redirect(`/dashboard/dse/${params.ticker}`);
+export default async function ProfilePage({ params }: ProfilePageProps) {
+  const { ticker } = await params;
+  redirect(`/dashboard/dse/${ticker}`);
 }
