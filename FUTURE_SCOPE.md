@@ -179,7 +179,7 @@ Classification model predicting UP/DOWN/NEUTRAL price movements. Can be combined
 
 | Application | Status | Priority | Future Scope |
 |-------------|--------|----------|--------------|
-| **gibd-quant-web** | ✅ Production | ⭐⭐⭐⭐⭐ | DivinerReturns dashboard, portfolio analytics, social trading |
+| **gibd-quant-web** | ✅ Production | ⭐⭐⭐⭐⭐ | [Stock charts, DivinerReturns dashboard, portfolio analytics, social trading](apps/gibd-quant-web/FUTURE_SCOPE.md) |
 | **ws-wizardsofts-web** | ✅ Production | ⭐⭐⭐ | User profile system, notification center |
 | **ws-daily-deen-web** | ✅ Production | ⭐⭐ | Prayer time widgets, Islamic content library |
 | **pf-padmafoods-web** | 🚧 Development | ⭐⭐⭐ | E-commerce features, inventory management |
