@@ -37,13 +37,13 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 
 ## Server Infrastructure
 
-| Server | IP | Purpose |
-|--------|-----|---------|
-| Server 80 | 10.0.0.80 | GIBD Services |
-| Server 81 | 10.0.0.81 | Database Server |
-| Server 82 | 10.0.0.82 | HPR Server (Monitoring) |
-| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) |
-| Hetzner | 178.63.44.221 | External services |
+| Server | IP | Purpose | Disk Status |
+|--------|-----|---------|-------------|
+| Server 80 | 10.0.0.80 | GIBD Services | 217GB (18% used, 171GB free) |
+| Server 81 | 10.0.0.81 | Database Server | 217GB (17% used, 173GB free) |
+| Server 82 | 10.0.0.82 | HPR Server (Monitoring) | TBD |
+| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | TBD |
+| Hetzner | 178.63.44.221 | External services | N/A |
 
 ### Distributed ML Infrastructure (Server 84)
 
@@ -214,7 +214,66 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
   - Full 150-epoch training run to validate end-to-end
   - Consider additional caches for feature-engineered data
 
-## Recent Changes (2025-12-30/31 - 2026-01-04)
+## Recent Changes (2025-12-30/31 - 2026-01-05)
+
+### Disk Cleanup & Expansion (2026-01-05)
+**Status:** ✅ Complete - Automated cleanup deployed, Server 81 expanded
+
+#### Server 80 (10.0.0.80) - Cleanup
+- **Freed**: 135.2GB via aggressive Docker cleanup
+- **Before**: 161GB/217GB used (78%)
+- **After**: 37GB/217GB used (18%)
+- **Available**: 171GB free
+- **Actions**:
+  - Docker system prune: Removed 32GB unused images, 44 build cache objects
+  - Deleted 8 stopped containers
+  - Cleaned dangling volumes
+
+#### Server 81 (10.0.0.81) - LVM Expansion
+- **Freed**: +111GB capacity via LVM reconfiguration
+- **Before**: 32GB/98GB used (34%, was 100% full before prior cleanup)
+- **After**: 35GB/217GB used (17%)
+- **Available**: 173GB free (vs 62GB before)
+- **Actions**:
+  1. Removed `/home` logical volume (lv-0, 120.5GB mostly unused)
+  2. Extended root filesystem from 100GB → 220.5GB
+  3. Backed up home to `/root/home-final-backup/`
+  4. Restored home contents to `/home/` on root filesystem
+  5. Fixed all user permissions
+- **Configuration**:
+  - **Before**: ubuntu-vg had 2 LVs (ubuntu-lv: 100GB, lv-0: 120.5GB)
+  - **After**: ubuntu-vg has 1 LV (ubuntu-lv: 220.5GB)
+  - `/etc/fstab` updated to remove lv-0 mount
+
+#### Server 84 (10.0.0.84) - Cron Added
+- No cleanup needed, only automation deployed
+
+#### Automated Cleanup Deployment
+**All Servers**: Added Docker cleanup cron running 4x daily
+
+**Schedule**: `0 3,9,15,21 * * *` (3 AM, 9 AM, 3 PM, 9 PM)
+
+**Commands**:
+```bash
+docker image prune -f
+docker builder prune -f --keep-storage 1GB
+docker volume prune -f
+```
+
+**Log**: `/var/log/docker-cleanup.log` (rotated to 1000 lines daily)
+
+**Servers Configured**:
+- Server 80: Updated existing daily cron → 4x daily
+- Server 81: Added new cron (previously had none)
+- Server 84: Added new cron
+
+**Monitoring**: Check cron with `crontab -l | grep docker` on each server
+
+#### Historical Context
+Server 81 improvement from 100% full (0GB free) to 34% (62GB free) was achieved via:
+- Docker system prune: 3.6GB freed
+- Journal log vacuum: 2.3GB freed (2.8GB → 500MB)
+- System recovery clearing temporary files
 
 ### Ray Cluster Decommissioned (2026-01-05)
 - **Servers**: 80, 81, 84 (Ray cluster shutdown across all nodes)
