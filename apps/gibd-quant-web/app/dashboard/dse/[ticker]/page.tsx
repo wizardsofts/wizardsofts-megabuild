@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabList, Tab, TabPanel } from '@wizwebui/core';
 import ProfileContent from './profile/ProfileContent';
 import HoldingContent from './holding/HoldingContent';
+import NewsContent from './news/NewsContent';
 
 /**
  * Ticker Details Page - Parent page for all ticker-specific tabs
@@ -146,7 +147,7 @@ function TickerPageClient({ ticker }: { ticker: string }) {
         </TabPanel>
 
         <TabPanel value="news">
-          <div className="text-center py-10 text-gray-500">News - Coming Soon</div>
+          <NewsContent ticker={ticker} />
         </TabPanel>
       </Tabs>
     </div>
