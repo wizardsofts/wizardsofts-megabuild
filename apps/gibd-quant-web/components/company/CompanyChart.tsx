@@ -1,12 +1,14 @@
 /**
  * Company Chart Component
  *
- * Interactive price and volume charts with period selection.
+ * Interactive price and volume charts with period selection and technical indicators.
  * Uses Recharts for visualization with responsive design.
  *
  * Features:
  * - Period selector (1D, 5D, 1M, 3M, YTD, 1Y, 5Y, MAX)
- * - Price chart (candlestick/line chart with OHLC data)
+ * - Multi-indicator support with customizable parameters
+ * - Add/remove indicators dynamically
+ * - Price chart (line chart with OHLC data)
  * - Volume bar chart
  * - Auto-fetch data on period change
  * - Mobile-first responsive design
@@ -14,7 +16,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -107,16 +109,53 @@ const generateMockData = (ticker: string, period: ChartPeriod, dataPoints: numbe
   };
 };
 
-type Indicator = 'none' | 'sma20' | 'sma50' | 'ema20' | 'bb' | 'all';
+// Indicator types and their configurations
+type IndicatorType = 'SMA' | 'EMA' | 'BB' | 'RSI' | 'MACD';
 
-const INDICATORS = [
-  { value: 'none' as Indicator, label: 'No Indicators' },
-  { value: 'sma20' as Indicator, label: 'SMA (20)' },
-  { value: 'sma50' as Indicator, label: 'SMA (50)' },
-  { value: 'ema20' as Indicator, label: 'EMA (20)' },
-  { value: 'bb' as Indicator, label: 'Bollinger Bands' },
-  { value: 'all' as Indicator, label: 'All Indicators' },
-];
+interface IndicatorConfig {
+  id: string;
+  type: IndicatorType;
+  params: Record<string, number>;
+  color: string;
+}
+
+const INDICATOR_TEMPLATES: Record<IndicatorType, {
+  name: string;
+  defaultParams: Record<string, number>;
+  paramLabels: Record<string, string>;
+  colors: string[];
+}> = {
+  SMA: {
+    name: 'Simple Moving Average',
+    defaultParams: { period: 20 },
+    paramLabels: { period: 'Period' },
+    colors: ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899'],
+  },
+  EMA: {
+    name: 'Exponential Moving Average',
+    defaultParams: { period: 20 },
+    paramLabels: { period: 'Period' },
+    colors: ['#3b82f6', '#f97316', '#06b6d4', '#a855f7'],
+  },
+  BB: {
+    name: 'Bollinger Bands',
+    defaultParams: { period: 20, stdDev: 2 },
+    paramLabels: { period: 'Period', stdDev: 'Std Dev' },
+    colors: ['#ef4444', '#6b7280', '#ef4444'],
+  },
+  RSI: {
+    name: 'Relative Strength Index',
+    defaultParams: { period: 14 },
+    paramLabels: { period: 'Period' },
+    colors: ['#8b5cf6'],
+  },
+  MACD: {
+    name: 'MACD',
+    defaultParams: { fast: 12, slow: 26, signal: 9 },
+    paramLabels: { fast: 'Fast', slow: 'Slow', signal: 'Signal' },
+    colors: ['#2563eb', '#dc2626', '#10b981'],
+  },
+};
 
 export default function CompanyChart({
   ticker,
@@ -127,7 +166,10 @@ export default function CompanyChart({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
-  const [selectedIndicator, setSelectedIndicator] = useState<Indicator>('none');
+  const [indicators, setIndicators] = useState<IndicatorConfig[]>([]);
+  const [showAddIndicator, setShowAddIndicator] = useState(false);
+  const [newIndicatorType, setNewIndicatorType] = useState<IndicatorType>('SMA');
+  const [newIndicatorParams, setNewIndicatorParams] = useState<Record<string, number>>({ period: 20 });
 
   // Fetch price history when period changes
   useEffect(() => {
@@ -238,34 +280,79 @@ export default function CompanyChart({
     return { upper, middle: sma, lower };
   };
 
-  // Format chart data with indicators
+  // Format chart data with all active indicators
   const chartData = useMemo(() => {
     if (!data) return [];
 
     const prices = data.data.map(d => d.close);
-    const sma20 = calculateSMA(prices, 20);
-    const sma50 = calculateSMA(prices, 50);
-    const ema20 = calculateEMA(prices, 20);
-    const bb = calculateBB(prices, 20);
+    const indicatorData: Record<string, any> = {};
 
-    return data.data.map((item, i) => ({
-      date: new Date(item.date).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      }),
-      close: item.close,
-      volume: item.volume,
-      high: item.high,
-      low: item.low,
-      open: item.open,
-      sma20: sma20[i],
-      sma50: sma50[i],
-      ema20: ema20[i],
-      bbUpper: bb.upper[i],
-      bbMiddle: bb.middle[i],
-      bbLower: bb.lower[i],
-    }));
-  }, [data]);
+    // Calculate all active indicators
+    indicators.forEach((indicator) => {
+      const key = indicator.id;
+
+      if (indicator.type === 'SMA') {
+        indicatorData[key] = calculateSMA(prices, indicator.params.period);
+      } else if (indicator.type === 'EMA') {
+        indicatorData[key] = calculateEMA(prices, indicator.params.period);
+      } else if (indicator.type === 'BB') {
+        const bb = calculateBB(prices, indicator.params.period, indicator.params.stdDev);
+        indicatorData[`${key}_upper`] = bb.upper;
+        indicatorData[`${key}_middle`] = bb.middle;
+        indicatorData[`${key}_lower`] = bb.lower;
+      }
+    });
+
+    return data.data.map((item, i) => {
+      const point: any = {
+        date: new Date(item.date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        close: item.close,
+        volume: item.volume,
+        high: item.high,
+        low: item.low,
+        open: item.open,
+      };
+
+      // Add indicator values
+      Object.keys(indicatorData).forEach(key => {
+        point[key] = indicatorData[key][i];
+      });
+
+      return point;
+    });
+  }, [data, indicators]);
+
+  // Add new indicator
+  const handleAddIndicator = () => {
+    const template = INDICATOR_TEMPLATES[newIndicatorType];
+    const colorIndex = indicators.filter(i => i.type === newIndicatorType).length;
+    const color = template.colors[colorIndex % template.colors.length];
+
+    const newIndicator: IndicatorConfig = {
+      id: `${newIndicatorType}_${Date.now()}`,
+      type: newIndicatorType,
+      params: { ...newIndicatorParams },
+      color,
+    };
+
+    setIndicators([...indicators, newIndicator]);
+    setShowAddIndicator(false);
+    setNewIndicatorParams(template.defaultParams);
+  };
+
+  // Remove indicator
+  const handleRemoveIndicator = (id: string) => {
+    setIndicators(indicators.filter(i => i.id !== id));
+  };
+
+  // Update new indicator type
+  const handleIndicatorTypeChange = (type: IndicatorType) => {
+    setNewIndicatorType(type);
+    setNewIndicatorParams(INDICATOR_TEMPLATES[type].defaultParams);
+  };
 
   // Custom tooltip for price chart
   const PriceTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
@@ -315,12 +402,21 @@ export default function CompanyChart({
     return null;
   };
 
+  // Get indicator label
+  const getIndicatorLabel = (indicator: IndicatorConfig): string => {
+    const template = INDICATOR_TEMPLATES[indicator.type];
+    const paramStr = Object.entries(indicator.params)
+      .map(([key, value]) => value)
+      .join(', ');
+    return `${indicator.type} (${paramStr})`;
+  };
+
   return (
     <div className="space-y-4">
-      {/* Period and Indicator Selectors */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      {/* Period Selector and Indicator Management */}
+      <div className="flex flex-col gap-4">
         {/* Period Selector */}
-        <div className="flex gap-2 overflow-x-auto pb-2 flex-1">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           {PERIODS.map((p) => (
             <Button
               key={p.value}
@@ -334,24 +430,97 @@ export default function CompanyChart({
           ))}
         </div>
 
-        {/* Indicator Selector */}
-        <div className="flex items-center gap-2 shrink-0">
-          <label htmlFor="indicator-select" className="text-sm font-medium text-gray-700 whitespace-nowrap">
-            Indicators:
-          </label>
-          <select
-            id="indicator-select"
-            value={selectedIndicator}
-            onChange={(e) => setSelectedIndicator(e.target.value as Indicator)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            {INDICATORS.map((ind) => (
-              <option key={ind.value} value={ind.value}>
-                {ind.label}
-              </option>
+        {/* Active Indicators */}
+        {indicators.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm font-medium text-gray-700 self-center">Indicators:</span>
+            {indicators.map((indicator) => (
+              <div
+                key={indicator.id}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-md text-sm"
+              >
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: indicator.color }}
+                />
+                <span>{getIndicatorLabel(indicator)}</span>
+                <button
+                  onClick={() => handleRemoveIndicator(indicator.id)}
+                  className="ml-1 text-gray-500 hover:text-red-600"
+                >
+                  ×
+                </button>
+              </div>
             ))}
-          </select>
-        </div>
+          </div>
+        )}
+
+        {/* Add Indicator Button */}
+        {!showAddIndicator && (
+          <Button
+            onClick={() => setShowAddIndicator(true)}
+            variant="outline"
+            size="sm"
+            className="w-fit"
+          >
+            + Add Indicator
+          </Button>
+        )}
+
+        {/* Add Indicator Form */}
+        {showAddIndicator && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Indicator Type
+                </label>
+                <select
+                  value={newIndicatorType}
+                  onChange={(e) => handleIndicatorTypeChange(e.target.value as IndicatorType)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Object.entries(INDICATOR_TEMPLATES).map(([type, config]) => (
+                    <option key={type} value={type}>
+                      {config.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dynamic Parameter Inputs */}
+              {Object.entries(INDICATOR_TEMPLATES[newIndicatorType].paramLabels).map(([key, label]) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {label}
+                  </label>
+                  <input
+                    type="number"
+                    value={newIndicatorParams[key] || ''}
+                    onChange={(e) => setNewIndicatorParams({
+                      ...newIndicatorParams,
+                      [key]: parseInt(e.target.value) || 0
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
+
+              <div className="flex gap-2">
+                <Button onClick={handleAddIndicator} size="sm">
+                  Add
+                </Button>
+                <Button
+                  onClick={() => setShowAddIndicator(false)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading State */}
@@ -428,74 +597,55 @@ export default function CompanyChart({
                     dot={false}
                     name="Close Price"
                   />
-                  {/* SMA 20 */}
-                  {(selectedIndicator === 'sma20' || selectedIndicator === 'all') && (
-                    <Line
-                      type="monotone"
-                      dataKey="sma20"
-                      stroke="#10b981"
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="SMA (20)"
-                      strokeDasharray="5 5"
-                    />
-                  )}
-                  {/* SMA 50 */}
-                  {(selectedIndicator === 'sma50' || selectedIndicator === 'all') && (
-                    <Line
-                      type="monotone"
-                      dataKey="sma50"
-                      stroke="#f59e0b"
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="SMA (50)"
-                      strokeDasharray="5 5"
-                    />
-                  )}
-                  {/* EMA 20 */}
-                  {(selectedIndicator === 'ema20' || selectedIndicator === 'all') && (
-                    <Line
-                      type="monotone"
-                      dataKey="ema20"
-                      stroke="#8b5cf6"
-                      strokeWidth={1.5}
-                      dot={false}
-                      name="EMA (20)"
-                      strokeDasharray="3 3"
-                    />
-                  )}
-                  {/* Bollinger Bands */}
-                  {(selectedIndicator === 'bb' || selectedIndicator === 'all') && (
-                    <>
-                      <Line
-                        type="monotone"
-                        dataKey="bbUpper"
-                        stroke="#ef4444"
-                        strokeWidth={1}
-                        dot={false}
-                        name="BB Upper"
-                        strokeDasharray="2 2"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="bbMiddle"
-                        stroke="#6b7280"
-                        strokeWidth={1}
-                        dot={false}
-                        name="BB Middle"
-                        strokeDasharray="2 2"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="bbLower"
-                        stroke="#ef4444"
-                        strokeWidth={1}
-                        dot={false}
-                        name="BB Lower"
-                        strokeDasharray="2 2"
-                      />
-                    </>
-                  )}
+                  {/* Render indicator lines */}
+                  {indicators.map((indicator) => {
+                    if (indicator.type === 'BB') {
+                      return (
+                        <React.Fragment key={indicator.id}>
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_upper`}
+                            stroke={indicator.color}
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Upper`}
+                            strokeDasharray="2 2"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_middle`}
+                            stroke="#6b7280"
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Middle`}
+                            strokeDasharray="2 2"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey={`${indicator.id}_lower`}
+                            stroke={indicator.color}
+                            strokeWidth={1}
+                            dot={false}
+                            name={`${getIndicatorLabel(indicator)} Lower`}
+                            strokeDasharray="2 2"
+                          />
+                        </React.Fragment>
+                      );
+                    } else {
+                      return (
+                        <Line
+                          key={indicator.id}
+                          type="monotone"
+                          dataKey={indicator.id}
+                          stroke={indicator.color}
+                          strokeWidth={1.5}
+                          dot={false}
+                          name={getIndicatorLabel(indicator)}
+                          strokeDasharray="5 5"
+                        />
+                      );
+                    }
+                  })}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

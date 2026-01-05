@@ -26,7 +26,51 @@ This is a monorepo containing multiple WizardSofts applications and shared infra
 
 ### Traefik (Reverse Proxy)
 - **Config:** `traefik/traefik.yml`, `traefik/dynamic/`
+- **Mode:** Docker Swarm mode enabled (`swarmMode: true`)
 - **Memories:** `traefik-configuration-guide`, `traefik-network-requirements`, `https-dns-strategy`
+
+**IMPORTANT: Traefik Swarm Mode (2026-01-05)**
+
+Traefik is configured with `swarmMode: true` for automatic service discovery and load balancing across Docker Swarm replicas.
+
+**Configuration** (`traefik/traefik.yml`):
+```yaml
+providers:
+  docker:
+    swarmMode: true  # Auto-discover Swarm services
+    network: traefik-network
+```
+
+**Deploying New Services with Traefik (Swarm Mode):**
+```bash
+docker service create \
+  --name my-service \
+  --replicas 2 \
+  --network traefik-network \
+  --label "traefik.enable=true" \
+  --label "traefik.docker.network=traefik-network" \
+  --label "traefik.http.routers.my-service.rule=Host(\`my-service.wizardsofts.com\`)" \
+  --label "traefik.http.routers.my-service.entrypoints=websecure" \
+  --label "traefik.http.routers.my-service.tls.certresolver=letsencrypt" \
+  --label "traefik.http.services.my-service.loadbalancer.server.port=8080" \
+  my-image:latest
+```
+
+**Key Labels for Swarm Services:**
+| Label | Purpose |
+|-------|---------|
+| `traefik.enable=true` | Enable Traefik routing |
+| `traefik.docker.network=<network>` | Specify network for routing |
+| `traefik.http.routers.<name>.rule=...` | Routing rule (Host, Path, etc.) |
+| `traefik.http.services.<name>.loadbalancer.server.port=<port>` | Container port |
+| `traefik.http.services.<name>.loadbalancer.healthcheck.path=/health` | Health check path |
+
+**Benefits of Swarm Mode:**
+- ✅ Automatic service discovery (no manual config)
+- ✅ Load balancing across replicas
+- ✅ Health check-based routing
+- ✅ Zero-downtime deployments
+- ✅ Dynamic scaling with `docker service scale`
 
 ### GitLab (Source Control & CI/CD)
 - **Config:** `infrastructure/gitlab/docker-compose.yml`
@@ -89,8 +133,61 @@ curl --request POST \
 | Server 80 | 10.0.0.80 | GIBD Services | 217GB (18% used, 171GB free) |
 | Server 81 | 10.0.0.81 | Database Server | 217GB (17% used, 173GB free) |
 | Server 82 | 10.0.0.82 | HPR Server (Monitoring) | TBD |
-| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | TBD |
+| Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | 914GB (36% used) |
 | Hetzner | 178.63.44.221 | External services | N/A |
+
+### Docker Snap Limitation (Server 84)
+
+**CRITICAL:** Server 84 runs Docker via **snap package** which has confinement restrictions:
+- ❌ Cannot access NFS mounts for bind volumes (AppArmor blocks)
+- ❌ Docker Swarm services cannot use NFS directories
+- ✅ Regular `docker run` with local volumes works
+- ✅ Docker volumes (local driver) work
+
+**Workaround for NFS access:**
+1. Mount NFS under `/mnt/` (e.g., `/mnt/ollama-models`)
+2. Connect removable-media snap interface: `sudo snap connect docker:removable-media`
+3. Use `docker run` (not Swarm) for NFS-dependent containers
+
+**Permanent Fix:** Migrate from Docker snap to Docker CE (apt package)
+- Requires maintenance window (71+ containers running)
+- See: `docs/SERVER_84_DOCKER_MIGRATION.md` (pending)
+
+### Ollama Deployment (2026-01-05)
+
+**Architecture:**
+- **Server 80:** Swarm service (1 replica) with NFS shared models
+- **Server 84:** Standalone container with local volume
+
+**Current Status:**
+- Swarm service ID: `p7ddluf17lf36x77icjhp212s`
+- Model: mistral:7b (4.4GB)
+- API: http://10.0.0.84:11434 (routing mesh from Server 80 Swarm replica)
+- Standalone: http://10.0.0.84:11434 (local container on Server 84)
+
+**To achieve full Swarm scaling (max 2 on Server 84, max 1 on Server 80):**
+- Requires Docker snap → Docker CE migration on Server 84
+
+**Scaling Commands:**
+```bash
+# Scale Swarm service (Server 80 only currently)
+docker service scale ollama=2
+
+# Check replica distribution
+docker service ps ollama
+```
+
+**Max Replicas Per Node:**
+```bash
+# Set max 2 replicas per node (global setting)
+docker service update --replicas-max-per-node 2 ollama
+
+# Verify setting
+docker service inspect ollama --format '{{.Spec.TaskTemplate.Placement.MaxReplicas}}'
+```
+
+**Note:** `--max-replicas-per-node` is a global setting (same limit for all nodes).
+For different limits per node (e.g., 2 on Server 84, 1 on Server 80), create separate services with node constraints.
 
 ### Server Access & User Configuration
 
@@ -98,7 +195,7 @@ curl --request POST \
 
 #### Agent User Configuration (2026-01-05)
 
-**Status:** ✅ Configured on Servers 80, 81, 84 | ❌ Server 82 (no SSH access)
+**Status:** ✅ Configured on Servers 80, 81, 82, 84
 
 **Passwordless Sudo Permissions:**
 - ✅ Docker commands (`docker`, `docker-compose`)
@@ -121,6 +218,7 @@ curl --request POST \
 ```bash
 ssh agent@10.0.0.80  # Server 80 ✅
 ssh agent@10.0.0.81  # Server 81 ✅
+ssh agent@10.0.0.82  # Server 82 ✅
 ssh agent@10.0.0.84  # Server 84 ✅
 ```
 
