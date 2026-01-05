@@ -138,6 +138,51 @@ docker service create \
 - **SSH Port:** 2222
 - **Docs:** `docs/GITLAB_DEPLOYMENT.md`
 
+#### ⚠️ CRITICAL: GitLab External Dependencies (Server 80)
+
+**GitLab requires external PostgreSQL and Redis on Server 80. These containers are CRITICAL infrastructure.**
+
+| Container | Server | Port | Purpose | **DO NOT REMOVE** |
+|-----------|--------|------|---------|-------------------|
+| `gitlab-postgres` | 10.0.0.80 | 5435 | GitLab database | ⛔ Contains all repos, users, CI/CD |
+| `gitlab-redis` | 10.0.0.80 | 6380 | GitLab cache/sessions | ⛔ Required for GitLab to start |
+
+**Before ANY Docker cleanup on Server 80:**
+```bash
+# ⚠️ ALWAYS CHECK these containers are protected
+ssh agent@10.0.0.80 'docker ps | grep -E "gitlab-postgres|gitlab-redis"'
+
+# ⛔ NEVER run these without checking first:
+# docker system prune -a  ← Will remove stopped gitlab containers!
+# docker volume prune     ← Will DELETE gitlab database!
+```
+
+**Health Check (run if GitLab is down):**
+```bash
+# 1. Check containers running on Server 80
+ssh agent@10.0.0.80 'docker ps | grep gitlab'
+
+# 2. If missing, start them:
+ssh agent@10.0.0.80 'docker start gitlab-postgres gitlab-redis'
+
+# 3. If containers don't exist, recreate (data may be lost!):
+ssh agent@10.0.0.80 'docker run -d --name gitlab-redis --restart unless-stopped -p 6380:6379 redis:7-alpine'
+ssh agent@10.0.0.80 'docker run -d --name gitlab-postgres --restart unless-stopped \
+  -e POSTGRES_USER=gitlab -e POSTGRES_PASSWORD=29Dec2#24 -e POSTGRES_DB=gitlabhq_production \
+  -p 5435:5432 -v gitlab-postgres-data:/var/lib/postgresql/data postgres:15-alpine'
+
+# 4. Restart GitLab on Server 84
+ssh agent@10.0.0.84 'sudo docker restart gitlab'
+
+# 5. If database was lost, restore from backup:
+ssh agent@10.0.0.80 'PGPASSWORD="29Dec2#24" pg_restore -h localhost -p 5435 -U gitlab -d gitlabhq_production /tmp/gitlabhq_production.dump'
+```
+
+**Backup Location:** `/tmp/gitlabhq_production.dump` on Server 80 (create regular backups!)
+
+**Incident History:**
+- **2026-01-05**: GitLab down due to gitlab-postgres and gitlab-redis containers removed during disk cleanup. Restored from Jan 1 backup.
+
 #### GitLab Access for Automation
 
 **Agent User (Automation Account):**
@@ -723,10 +768,24 @@ docker builder prune -f --keep-storage 1GB
 docker volume prune -f
 ```
 
+**⚠️ WARNING: Server 80 Cleanup Excludes GitLab**
+
+The automated cleanup on Server 80 should NOT remove GitLab containers or volumes:
+```bash
+# Safe cleanup for Server 80 (excludes gitlab)
+docker image prune -f
+docker builder prune -f --keep-storage 1GB
+# ⛔ DO NOT: docker volume prune -f  ← Would delete gitlab-postgres-data!
+```
+
+**Critical containers on Server 80 (NEVER remove):**
+- `gitlab-postgres` - GitLab database
+- `gitlab-redis` - GitLab cache
+
 **Log**: `/var/log/docker-cleanup.log` (rotated to 1000 lines daily)
 
 **Servers Configured**:
-- Server 80: Updated existing daily cron → 4x daily
+- Server 80: Updated existing daily cron → 4x daily (**excludes volume prune**)
 - Server 81: Added new cron (previously had none)
 - Server 84: Added new cron
 
