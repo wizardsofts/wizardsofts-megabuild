@@ -271,6 +271,18 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 6, 2026: Implemented multi-indicator support with customizable parameters
+  - Users can add/remove multiple indicators dynamically (no limit)
+  - Each indicator type + parameter combination creates unique instance (SMA 9, SMA 20, SMA 50 all at once)
+  - Inline form (not modal) for indicator configuration with dynamic parameter inputs
+  - Supported indicators: SMA, EMA, Bollinger Bands, RSI, MACD with customizable parameters
+  - SMA/EMA: Period parameter (e.g., 9, 12, 20, 50)
+  - Bollinger Bands: Period + Std Dev (e.g., 20/2, 10/3)
+  - MACD: Fast, Slow, Signal periods (e.g., 12/26/9)
+  - Color-coded indicator badges showing type and parameters
+  - Indicator calculations from OHLCV data in frontend (no backend dependency)
+  - Chart legend automatically updates with all active indicators
+  - Commit: `3a03f26` feat: Implement multi-indicator support with customizable parameters
 - January 5, 2026: Added technical indicator selection to CompanyChart
   - Indicator dropdown with 6 options: None, SMA(20), SMA(50), EMA(20), Bollinger Bands, All
   - Implemented indicator calculations: SMA, EMA, Bollinger Bands (20-period, 2 std dev)
