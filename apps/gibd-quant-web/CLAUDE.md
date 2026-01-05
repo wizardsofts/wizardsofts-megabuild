@@ -271,6 +271,15 @@ This frontend connects to:
 
 ## Recent Changes
 
+- January 6, 2026: Enhanced chart tooltip to display indicator values on hover
+  - Updated PriceTooltip component to show active indicator values
+  - Added special handling for Bollinger Bands (displays upper/middle/lower band values)
+  - Other indicators (SMA, EMA, RSI, MACD) display single calculated value
+  - Indicator values color-coded to match their chart line colors
+  - Indicator values appear below OHLC data with visual separator
+  - Updated `/dashboard/dse/[ticker]/chart/page.tsx` to render CompanyChart component
+  - Tested with multiple active indicators (SMA, EMA, BB) - all values display correctly
+  - Commit: `252fc3f` feat: Enhance chart tooltip to display indicator values on hover
 - January 6, 2026: Implemented multi-indicator support with customizable parameters
   - Users can add/remove multiple indicators dynamically (no limit)
   - Each indicator type + parameter combination creates unique instance (SMA 9, SMA 20, SMA 50 all at once)
