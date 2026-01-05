@@ -6,6 +6,7 @@ import { Tabs, TabList, Tab, TabPanel } from '@wizwebui/core';
 import ProfileContent from './profile/ProfileContent';
 import HoldingContent from './holding/HoldingContent';
 import NewsContent from './news/NewsContent';
+import CompanyChart from '@/components/company/CompanyChart';
 
 /**
  * Ticker Details Page - Parent page for all ticker-specific tabs
@@ -145,7 +146,7 @@ function TickerPageClient({ ticker }: { ticker: string }) {
         </TabPanel>
 
         <TabPanel value="chart">
-          <div className="text-center py-10 text-gray-500">Chart - Coming Soon</div>
+          <CompanyChart ticker={ticker} />
         </TabPanel>
 
         <TabPanel value="holdings">
