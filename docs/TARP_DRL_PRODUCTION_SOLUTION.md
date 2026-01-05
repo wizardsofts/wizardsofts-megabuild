@@ -103,7 +103,42 @@ def train():
 2. Remote: Clean Ray worker /tmp directories
 3. Docker: System prune (volumes, unused containers)
 
-### 3. Updated Data Pipeline
+### 3. Ray Cluster Disk Limits
+
+**File:** `infrastructure/distributed-ml/ray/Dockerfile.ray-head`
+
+**Purpose:** Prevent Ray from consuming unlimited disk space during training.
+
+**Features:**
+- **Object Store Limit:** 5GB maximum for Ray's object store
+- **Automatic Spilling:** Spills to disk when memory > 80%
+- **I/O Worker Limit:** Max 4 concurrent I/O workers
+- **Prevents Accumulation:** Ray cleans old objects when limit reached
+
+**Configuration:**
+```dockerfile
+CMD ["ray", "start", "--head", \
+     "--object-store-memory=5000000000", \
+     "--system-config={
+       \"health_check_failure_threshold\": 30,
+       \"automatic_object_spilling_enabled\": true,
+       \"object_spilling_threshold\": 0.8,
+       \"max_io_workers\": 4
+     }", \
+     "--block"]
+```
+
+**Why This Matters:**
+- **Before:** Ray could use unlimited disk, leading to 100% disk full
+- **After:** Ray limited to 5GB, automatically cleans when approaching limit
+- **Works During Training:** Prevents accumulation before RayResourceManager cleanup
+
+**Disk Protection Strategy:**
+1. **Ray Object Store Limit:** 5GB cap (proactive)
+2. **RayResourceManager:** /tmp cleanup on exit (reactive)
+3. **Disk Monitoring:** Emergency cleanup when < 10GB free
+
+### 4. Updated Data Pipeline
 
 **File:** `apps/gibd-quant-agent/src/portfolio/data/dse_data_pipeline.py`
 
@@ -134,7 +169,7 @@ def load_full_dataset(
     ...
 ```
 
-### 4. Ray Tune API Fixes
+### 5. Ray Tune API Fixes
 
 **File:** `apps/gibd-quant-agent/src/portfolio/rl/train_ppo.py`
 
@@ -164,17 +199,44 @@ def load_full_dataset(
 
 ## Deployment
 
-### Docker Image Build
+### Step 1: Rebuild Ray Head with Disk Limits
+
+**Changes Made:**
+- Added `--object-store-memory=5000000000` (5GB limit)
+- Enabled automatic object spilling when memory > 80%
+- Limited concurrent I/O workers to 4
+
+```bash
+# On Server 84
+cd /opt/wizardsofts-megabuild/infrastructure/distributed-ml/ray
+
+# Rebuild Ray head image
+docker build -t ray-head:latest -f Dockerfile.ray-head .
+
+# Stop existing Ray head
+docker stop ray-head
+docker rm ray-head
+
+# Start new Ray head with disk limits
+docker run -d --name ray-head \
+  --network=host \
+  --shm-size=2gb \
+  ray-head:latest
+```
+
+### Step 2: Build Training Image
 
 ```bash
 # On Server 84
 cd /opt/wizardsofts-megabuild/apps/gibd-quant-agent
 
-# Build v4-final image
-docker build -t gibd-quant-agent-tarp-drl-training:v4-final .
+# Build v5-disk-limits image (incremented version)
+docker build -t gibd-quant-agent-tarp-drl-training:v5-disk-limits .
 ```
 
-### One-Time Data Export
+### Step 3: One-Time Data Export
+
+**Note:** If you already exported data with v4-final, skip this step. Cache is compatible across versions.
 
 ```bash
 ssh wizardsofts@10.0.0.84
@@ -182,7 +244,7 @@ ssh wizardsofts@10.0.0.84
 # Export full dataset to cache
 docker run --rm --network=host \
   -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
-  gibd-quant-agent-tarp-drl-training:v4-final \
+  gibd-quant-agent-tarp-drl-training:v5-disk-limits \
   python -c "
 import sys
 sys.path.insert(0, '/app/src')
@@ -204,14 +266,14 @@ cache.export_to_cache(
 2026-01-04 16:58:23 - INFO:   File size: 12.56 MB
 ```
 
-### Training with Cache
+### Step 4: Training with Cache and Disk Limits
 
 ```bash
-# Start training (uses cache automatically)
+# Start training (uses cache automatically + disk limits)
 docker run -d --name tarp-drl-training \
   --network=host \
   -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
-  gibd-quant-agent-tarp-drl-training:v4-final
+  gibd-quant-agent-tarp-drl-training:v5-disk-limits
 
 # Monitor logs
 docker logs tarp-drl-training -f

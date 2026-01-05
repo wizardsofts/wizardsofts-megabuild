@@ -32,12 +32,13 @@ EXPOSE 6379 8265 10001 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import ray; ray.init(address='auto', ignore_reinit_error=True); print('healthy')"
 
-# Start Ray head node
+# Start Ray head node with disk limits and automatic object spilling
 CMD ["ray", "start", "--head", \
      "--port=6379", \
      "--node-ip-address=10.0.0.84", \
      "--dashboard-host=0.0.0.0", \
      "--dashboard-port=8265", \
      "--metrics-export-port=8080", \
-     "--system-config={\"health_check_failure_threshold\": 30}", \
+     "--object-store-memory=5000000000", \
+     "--system-config={\"health_check_failure_threshold\": 30, \"automatic_object_spilling_enabled\": true, \"object_spilling_threshold\": 0.8, \"max_io_workers\": 4}", \
      "--block"]

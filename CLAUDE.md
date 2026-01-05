@@ -194,6 +194,7 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 
 ### TARP-DRL Production Infrastructure (2026-01-05)
 - **Status**: ✅ Production-ready data pipeline and resource management deployed
+- **Docker Image**: `gibd-quant-agent-tarp-drl-training:v5-disk-limits`
 - **Changes**:
   - **Data Caching Layer** (`apps/gibd-quant-agent/src/portfolio/data/data_cache.py`):
     - Exports PostgreSQL data to parquet format (eliminates disk temp file issues)
@@ -206,6 +207,15 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
     - Cleans Ray worker /tmp directories on Servers 80, 81, 82
     - Safe cleanup: only cleans idle workers (CPU < 5%)
     - Python garbage collection integration
+  - **Ray Cluster Disk Limits** (`infrastructure/distributed-ml/ray/Dockerfile.ray-head`):
+    - **Object Store Limit**: 5GB cap for Ray's object store
+    - **Automatic Spilling**: Enabled when memory usage > 80%
+    - **I/O Worker Limit**: Max 4 concurrent I/O workers
+    - **Prevents Accumulation**: Proactive disk management during training
+    - **Three-Layer Protection**:
+      1. Ray object store limit (5GB cap, proactive)
+      2. RayResourceManager cleanup on exit (reactive)
+      3. Emergency cleanup when disk < 10GB free
   - **Updated Data Pipeline** (`apps/gibd-quant-agent/src/portfolio/data/dse_data_pipeline.py`):
     - Loads from parquet cache by default (`use_cache=True`)
     - Falls back to PostgreSQL if cache unavailable
@@ -214,7 +224,6 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
     - Line 298: `save_checkpoint` returns `checkpoint_dir` (not file path)
     - Line 384: Uses `storage_path` instead of deprecated `local_dir`
     - Checkpoint path: `file:///home/ray/outputs/checkpoints` (ray user home, correct permissions)
-- **Docker Image**: `gibd-quant-agent-tarp-drl-training:v4-final`
 - **Cache Location**: `/home/ray/outputs/data_cache/dse_data_2015-01-01_2024-12-31.parquet`
 - **Test Results**:
   - ✅ Data loading from cache: 828K rows in <1 second
@@ -229,11 +238,21 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
   - Always use ray user home directory (`/home/ray/`) for outputs, not `/app/` (permission errors)
 - **Usage**:
   ```bash
-  # Export data to cache (run once)
+  # 1. Rebuild Ray head with disk limits
   ssh wizardsofts@10.0.0.84
+  cd /opt/wizardsofts-megabuild/infrastructure/distributed-ml/ray
+  docker build -t ray-head:latest -f Dockerfile.ray-head .
+  docker stop ray-head && docker rm ray-head
+  docker run -d --name ray-head --network=host --shm-size=2gb ray-head:latest
+
+  # 2. Build training image
+  cd /opt/wizardsofts-megabuild/apps/gibd-quant-agent
+  docker build -t gibd-quant-agent-tarp-drl-training:v5-disk-limits .
+
+  # 3. Export data to cache (run once, skip if already done with v4)
   docker run --rm --network=host \
     -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
-    gibd-quant-agent-tarp-drl-training:v4-final \
+    gibd-quant-agent-tarp-drl-training:v5-disk-limits \
     python -c "
   from portfolio.data.data_cache import DataCache
   cache = DataCache()
@@ -243,11 +262,11 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
       end_date='2024-12-31'
   )"
 
-  # Training automatically uses cache (no code changes needed)
+  # 4. Start training (uses cache + disk limits)
   docker run -d --name tarp-drl-training \
     --network=host \
     -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
-    gibd-quant-agent-tarp-drl-training:v4-final
+    gibd-quant-agent-tarp-drl-training:v5-disk-limits
   ```
 - **Monitoring**:
   - Check cache: `ls -lh /home/wizardsofts/ray-outputs/data_cache/`
