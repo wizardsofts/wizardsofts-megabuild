@@ -148,6 +148,74 @@ ssh wizardsofts@10.0.0.84 "sudo grep 'Ban' /var/log/fail2ban.log | tail -20"
 
 ## Recent Changes (2025-12-30/31 - 2026-01-05)
 
+### TARP-DRL Production Infrastructure (2026-01-05)
+- **Status**: ✅ Production-ready data pipeline and resource management deployed
+- **Changes**:
+  - **Data Caching Layer** (`apps/gibd-quant-agent/src/portfolio/data/data_cache.py`):
+    - Exports PostgreSQL data to parquet format (eliminates disk temp file issues)
+    - 828,305 rows cached in 12.56 MB compressed parquet file
+    - Load time: <1 second (vs ~30 seconds from PostgreSQL)
+    - **Benefit**: Eliminates PostgreSQL "No space left on device" errors during training
+  - **Ray Resource Manager** (`apps/gibd-quant-agent/src/utils/ray_resource_manager.py`):
+    - Automatic cleanup on exit (normal, exception, Ctrl+C, SIGTERM)
+    - Monitors disk space, triggers cleanup if < 10GB free
+    - Cleans Ray worker /tmp directories on Servers 80, 81, 82
+    - Safe cleanup: only cleans idle workers (CPU < 5%)
+    - Python garbage collection integration
+  - **Updated Data Pipeline** (`apps/gibd-quant-agent/src/portfolio/data/dse_data_pipeline.py`):
+    - Loads from parquet cache by default (`use_cache=True`)
+    - Falls back to PostgreSQL if cache unavailable
+    - Maintains all existing validation and cleaning logic
+  - **Ray Tune API Fixes** (`apps/gibd-quant-agent/src/portfolio/rl/train_ppo.py`):
+    - Line 298: `save_checkpoint` returns `checkpoint_dir` (not file path)
+    - Line 384: Uses `storage_path` instead of deprecated `local_dir`
+    - Checkpoint path: `file:///home/ray/outputs/checkpoints` (ray user home, correct permissions)
+- **Docker Image**: `gibd-quant-agent-tarp-drl-training:v4-final`
+- **Cache Location**: `/home/ray/outputs/data_cache/dse_data_2015-01-01_2024-12-31.parquet`
+- **Test Results**:
+  - ✅ Data loading from cache: 828K rows in <1 second
+  - ✅ Feature engineering: 46 features (23 indicators + 20 time features + 3 base)
+  - ✅ Data quality validation: PASSED (9 warnings, 5840 outliers auto-cleaned)
+  - ⏸️ PPO training: Ray cluster connection timeout (cluster was stopped for idle workloads)
+- **Key Learnings**:
+  - PostgreSQL parallel workers create huge temp files during ORDER BY on large datasets
+  - Increasing `work_mem` from 4MB to 512MB helped but didn't eliminate disk issues
+  - Parquet caching is the proper production solution for repeated training runs
+  - Ray workers accumulate 35GB+ in /tmp directories over time
+  - Always use ray user home directory (`/home/ray/`) for outputs, not `/app/` (permission errors)
+- **Usage**:
+  ```bash
+  # Export data to cache (run once)
+  ssh wizardsofts@10.0.0.84
+  docker run --rm --network=host \
+    -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
+    gibd-quant-agent-tarp-drl-training:v4-final \
+    python -c "
+  from portfolio.data.data_cache import DataCache
+  cache = DataCache()
+  cache.export_to_cache(
+      db_url='postgresql://ws_gibd:PASSWORD@10.0.0.81:5432/ws_gibd_dse_daily_trades',
+      start_date='2015-01-01',
+      end_date='2024-12-31'
+  )"
+
+  # Training automatically uses cache (no code changes needed)
+  docker run -d --name tarp-drl-training \
+    --network=host \
+    -v /home/wizardsofts/ray-outputs:/home/ray/outputs \
+    gibd-quant-agent-tarp-drl-training:v4-final
+  ```
+- **Monitoring**:
+  - Check cache: `ls -lh /home/wizardsofts/ray-outputs/data_cache/`
+  - Monitor training: `docker logs tarp-drl-training -f`
+  - Ray worker disk: Automated cleanup via cron (see "Automated Ray Worker Cleanup" section)
+- **Next Steps**:
+  - Start Ray cluster when needed for training
+  - Full 150-epoch training run to validate end-to-end
+  - Consider additional caches for feature-engineered data
+
+## Recent Changes (2025-12-30/31 - 2026-01-04)
+
 ### Ray Cluster Decommissioned (2026-01-05)
 - **Servers**: 80, 81, 84 (Ray cluster shutdown across all nodes)
 - **Reason**: Cluster was idle with no active workloads consuming resources
