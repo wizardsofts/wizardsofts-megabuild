@@ -1,7 +1,11 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { use } from 'react';
-import Link from 'next/link';
+/**
+ * News Page - Redirects to parent ticker page
+ *
+ * The News content is now rendered as a tab in the parent page.
+ * This route redirects to the main ticker page.
+ */
 
 interface NewsPageProps {
   params: {
@@ -9,23 +13,7 @@ interface NewsPageProps {
   };
 }
 
-export default function NewsPage({ params }: NewsPageProps) {
-  const { ticker } = use(params);
-
-  return (
-    <div className="px-4 md:px-5 mt-3 md:mt-5">
-      <div className="max-w-4xl mx-auto py-12">
-        <h1 className="text-2xl font-semibold mb-4">News - {ticker}</h1>
-        <p className="text-gray-600 mb-6">
-          This page is under development. The Holdings page serves as the reference implementation.
-        </p>
-        <Link
-          href={`/dashboard/dse/${ticker}/holding`}
-          className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          View Holdings Page
-        </Link>
-      </div>
-    </div>
-  );
+export default async function NewsPage({ params }: NewsPageProps) {
+  const { ticker } = await params;
+  redirect(`/dashboard/dse/${ticker}`);
 }

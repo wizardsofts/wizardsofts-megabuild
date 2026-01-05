@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState, use, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabList, Tab, TabPanel } from '@wizwebui/core';
 import ProfileContent from './profile/ProfileContent';
 import HoldingContent from './holding/HoldingContent';
+import NewsContent from './news/NewsContent';
 
 /**
  * Ticker Details Page - Parent page for all ticker-specific tabs
@@ -34,6 +35,24 @@ export default function TickerPage({ params }: TickerPageProps) {
 function TickerPageClient({ ticker }: { ticker: string }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+
+    if (moreMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [moreMenuOpen]);
 
   return (
     <div className="px-3 sm:px-4 md:px-5 mt-3 md:mt-5">
@@ -78,7 +97,7 @@ function TickerPageClient({ ticker }: { ticker: string }) {
           </TabList>
 
           {/* Mobile: More dropdown for hidden tabs */}
-          <div className="relative md:hidden flex-shrink-0">
+          <div ref={moreMenuRef} className="relative md:hidden flex-shrink-0">
             <button
               onClick={() => setMoreMenuOpen(!moreMenuOpen)}
               className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 font-medium text-gray-900"
@@ -146,7 +165,7 @@ function TickerPageClient({ ticker }: { ticker: string }) {
         </TabPanel>
 
         <TabPanel value="news">
-          <div className="text-center py-10 text-gray-500">News - Coming Soon</div>
+          <NewsContent ticker={ticker} />
         </TabPanel>
       </Tabs>
     </div>

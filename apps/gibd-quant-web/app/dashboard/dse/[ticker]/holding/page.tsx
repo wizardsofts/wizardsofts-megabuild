@@ -13,6 +13,7 @@ interface HoldingsPageProps {
   };
 }
 
-export default function HoldingsPage({ params }: HoldingsPageProps) {
-  redirect(`/dashboard/dse/${params.ticker}`);
+export default async function HoldingsPage({ params }: HoldingsPageProps) {
+  const { ticker } = await params;
+  redirect(`/dashboard/dse/${ticker}`);
 }
