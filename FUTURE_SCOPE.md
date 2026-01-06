@@ -2,7 +2,7 @@
 
 **Purpose:** Centralized index of all project roadmaps, planned features, and strategic initiatives across the WizardSofts ecosystem.
 
-**Last Updated:** 2026-01-03
+**Last Updated:** 2026-01-06
 
 ---
 
@@ -11,9 +11,10 @@
 1. [GIBD (GreeNest Investment Bank of Dhaka)](#gibd-greenest-investment-bank-of-dhaka)
 2. [WizardSofts Platform](#wizardsofts-platform)
 3. [Infrastructure & DevOps](#infrastructure--devops)
-4. [PadmaFoods](#padmafoods)
-5. [Daily Deen](#daily-deen)
-6. [Roadmap Summary](#roadmap-summary)
+4. [Knowledge Base Service (Centralized)](#knowledge-base-service-centralized)
+5. [PadmaFoods](#padmafoods)
+6. [Daily Deen](#daily-deen)
+7. [Roadmap Summary](#roadmap-summary)
 
 ---
 
@@ -368,6 +369,64 @@ class LLMDeployment:
 - [ ] Customer loyalty program
 - [ ] Mobile app (React Native)
 - [ ] Integration with payment gateways (bKash, Nagad)
+
+---
+
+## Knowledge Base Service (Centralized)
+
+**Status:** 📋 Planning Phase | **Priority:** ⭐⭐⭐⭐ High
+
+**Brief:**
+Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-knowledge-graph` into a standalone, production-grade service with multi-tenant support. Reduces code duplication (70-75% reuse), improves developer velocity, and enables new applications to access unified knowledge APIs.
+
+**Current Architecture:**
+- gibd-web-scraper: Web scraping + hybrid search (FastAPI, Qdrant, BM25)
+- hadith-knowledge-graph: Entity extraction + graph relationships (Neo4j, ChromaDB)
+- ws-daily-deen-web: No backend integration (target for Phase 3)
+
+**Recommended Stack:**
+- API: Python FastAPI (async, ML-friendly)
+- Database: PostgreSQL (structured) + Qdrant (vectors) + Neo4j (optional)
+- Multi-Tenancy: Namespace-based isolation
+- Authentication: JWT + Keycloak
+- Cost: $20-$100/month for <10 tenants
+
+**4-Phase Implementation Timeline (9 weeks):**
+1. **Phase 1 (Weeks 1-2):** Service boundary definition - Extract shared interfaces
+2. **Phase 2 (Weeks 3-5):** API gateway development - Build FastAPI service
+3. **Phase 3 (Weeks 6-7):** Client migration - Update ws-daily-deen-web
+4. **Phase 4 (Weeks 8-9):** Infrastructure consolidation - Deploy to production
+
+**Expected Outcomes:**
+- ✅ 70-75% code reuse from existing implementations
+- ✅ p95 latency <500ms, 1000 concurrent users
+- ✅ TypeScript SDK for seamless frontend integration
+- ✅ Unified REST API for all applications
+- ✅ SOC 2 Type II compliance path
+
+**Full Documentation:**
+- [docs/KNOWLEDGE_BASE_SERVICE_ARCHITECTURE_RESEARCH.md](docs/KNOWLEDGE_BASE_SERVICE_ARCHITECTURE_RESEARCH.md) - IEEE-style research paper (15,000+ words)
+- [docs/KNOWLEDGE_BASE_SERVICE_FUTURE_SCOPE.md](docs/KNOWLEDGE_BASE_SERVICE_FUTURE_SCOPE.md) - Implementation roadmap and strategic objectives
+- [docs/KNOWLEDGE_BASE_SERVICE_RETROSPECTIVE.md](docs/KNOWLEDGE_BASE_SERVICE_RETROSPECTIVE.md) - Research process evaluation
+
+**Key Features:**
+- [ ] Unified REST API for web scraping, entity extraction, RAG search
+- [ ] Multi-tenant namespace isolation (each tenant gets own Qdrant namespace)
+- [ ] Multi-provider embeddings (FastEmbed local, OpenAI cloud)
+- [ ] Agentic RAG with LangGraph (planning, retrieval, writing, review loops)
+- [ ] Rate limiting and RBAC authorization
+- [ ] Comprehensive audit logging
+
+**Business Value:**
+- Faster feature development (20% velocity improvement)
+- Cost reduction (30% infrastructure savings)
+- Improved knowledge accessibility (3+ apps integrated)
+- Foundation for knowledge marketplace (future)
+
+**Timeline to Production:** Q1-Q2 2026
+
+**Owner:** Architecture Team
+**Status Board:** [GitLab Project Board](http://10.0.0.84:8090/wizardsofts/wizardsofts-megabuild/-/boards)
 
 ---
 
