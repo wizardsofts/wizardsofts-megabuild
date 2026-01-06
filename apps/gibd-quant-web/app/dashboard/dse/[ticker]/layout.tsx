@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname, useParams } from 'next/navigation';
 // TODO: Replace with @wizwebui/core Tabs, TabList, Tab once library is fixed (missing exports in dist)
 import ProfileContent from './profile/ProfileContent';
+import HoldingContent from './holding/HoldingContent';
+import NewsContent from './news/NewsContent';
 import CompanyChart from '@/components/company/CompanyChart';
 
 /**
@@ -247,9 +249,7 @@ export default function TickerLayout({ children }: TickerLayoutProps) {
             onIndicatorsChange={setIndicators}
           />
         )}
-        {activeTab === 'holding' && (
-          <div className="text-center py-10 text-gray-500">Holdings - Coming Soon</div>
-        )}
+        {activeTab === 'holding' && <HoldingContent ticker={ticker} />}
         {activeTab === 'financials' && (
           <div className="text-center py-10 text-gray-500">Financials - Coming Soon</div>
         )}
@@ -259,9 +259,7 @@ export default function TickerLayout({ children }: TickerLayoutProps) {
         {activeTab === 'dividends' && (
           <div className="text-center py-10 text-gray-500">Dividends - Coming Soon</div>
         )}
-        {activeTab === 'news' && (
-          <div className="text-center py-10 text-gray-500">News - Coming Soon</div>
-        )}
+        {activeTab === 'news' && <NewsContent ticker={ticker} />}
       </div>
     </div>
   );
