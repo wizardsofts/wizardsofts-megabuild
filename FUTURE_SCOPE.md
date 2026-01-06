@@ -2,7 +2,7 @@
 
 **Purpose:** Centralized index of all project roadmaps, planned features, and strategic initiatives across the WizardSofts ecosystem.
 
-**Last Updated:** 2026-01-06
+**Last Updated:** 2026-01-06 (Added News Entity Extraction)
 
 ---
 
@@ -135,6 +135,62 @@ Classification model predicting UP/DOWN/NEUTRAL price movements. Can be combined
 - [ ] Sentiment analysis using LLMs (Ollama integration)
 - [ ] News impact on stock predictions correlation
 - [ ] Real-time alert system for market-moving news
+
+---
+
+### News Entity Extraction & Knowledge Graph
+
+**Status:** 📋 Planning Phase | **Priority:** ⭐⭐⭐⭐ High
+
+**Brief:**
+Comprehensive NLP pipeline for extracting structured information from newspaper articles (political, business, economic, general) and constructing a knowledge graph for advanced querying, sentiment analysis, and market intelligence.
+
+**Key Capabilities:**
+- Named Entity Recognition (NER) for persons, organizations, locations, dates, financial figures
+- Relationship extraction (employment, ownership, competition, partnerships)
+- Event detection (M&As, earnings, appointments, policy changes)
+- Knowledge graph construction (Neo4j-based)
+- Entity-level sentiment tracking
+
+**Entity Categories by News Type:**
+
+| News Type | Primary Entities | Key Events |
+|-----------|------------------|------------|
+| **Political** | Politicians, parties, government agencies | Elections, policy announcements, diplomatic meetings |
+| **Business** | Companies, executives, investors | Earnings, M&As, IPOs, product launches |
+| **Economic** | Central banks, regulators, markets | Interest rate changes, GDP reports, trade agreements |
+| **General** | People, places, organizations | Incidents, cultural events, discoveries |
+
+**Implementation Phases:**
+
+| Phase | Focus | Timeline |
+|-------|-------|----------|
+| Phase 1 | Core NLP pipeline (NER, entity linking) | Weeks 1-4 |
+| Phase 2 | Relationship & event extraction | Weeks 5-8 |
+| Phase 3 | Knowledge graph population | Weeks 9-12 |
+| Phase 4 | Query interface & integration | Weeks 13-16 |
+| Phase 5 | Advanced intelligence (market impact) | Weeks 17-24 |
+
+**Technical Stack:**
+- NER: spaCy 3.x with transformer models
+- Entity Linking: Wikidata/Wikipedia
+- Graph Database: Neo4j 5.x (Server 84)
+- Relation Extraction: REBEL, OpenIE
+- API: FastAPI + GraphQL
+
+**Integration Points:**
+- gibd-quant-web: News feed with entity highlights, sentiment charts
+- DivinerReturns: News sentiment as prediction feature
+- Knowledge Base Service: Shared embedding infrastructure
+
+**Business Value:**
+- Stock impact analysis from news sentiment
+- Executive movement tracking across companies
+- Competitor mention monitoring
+- Event-driven trading signals
+- Market intelligence dashboards
+
+**Full Roadmap:** [apps/gibd-quant-agent/docs/FUTURE_SCOPE_NEWS_ENTITY_EXTRACTION.md](apps/gibd-quant-agent/docs/FUTURE_SCOPE_NEWS_ENTITY_EXTRACTION.md)
 
 ---
 
@@ -475,6 +531,7 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 | Initiative | Team | Timeline | Status |
 |------------|------|----------|--------|
 | **DivinerReturns Web Dashboard** | GIBD Quant | 4 weeks | 🟡 Planning |
+| **News Entity Extraction Pipeline** | GIBD Quant | 8 weeks | 🟡 Planning |
 | **ws-gateway OAuth2 Completion** | Platform | 2 weeks | 🟡 Pending |
 | **Security Hardening (fail2ban rollout)** | DevOps | 1 week | 🟢 In Progress |
 | **Hadith Knowledge Graph Data Ingestion** | Daily Deen | 6 weeks | 🔴 Not Started |
