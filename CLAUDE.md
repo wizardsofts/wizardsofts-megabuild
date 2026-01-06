@@ -260,13 +260,14 @@ curl --request POST \
 | Service | Port | Purpose | Data | Impact if Removed |
 |---------|------|---------|------|-------------------|
 | PostgreSQL (host) | 5432 | Main database server | `/var/lib/postgresql` | ⛔ ALL apps broken |
-| `ray-worker-*` | - | Distributed ML | - | ⚠️ ML training disabled |
 
-#### Server 84 (10.0.0.84)
+#### Server 84 (10.0.0.84) - Core Infrastructure
 | Container | Port | Purpose | Data Volume | Impact if Removed |
 |-----------|------|---------|-------------|-------------------|
 | `gitlab` | 8090, 2222, 5050 | Source control & CI/CD | `/mnt/data/docker/gitlab/` | ⛔ ALL repos inaccessible |
 | `traefik` | 80, 443, 8080 | Reverse proxy & SSL | `traefik-certs` | ⛔ ALL web services down |
+| `keycloak` | 8180 | OAuth2/OIDC Identity Provider | `keycloak-postgres` | ⛔ Authentication broken |
+| `keycloak_postgres` | 5433 | Keycloak database | `keycloak-postgres-data` | ⛔ ALL auth data lost |
 | `prometheus` | 9090 | Metrics collection | `prometheus-data` | ⛔ Alerting broken |
 | `grafana` | 3002 | Dashboards | `grafana-data` | ⚠️ No visualization |
 | `alertmanager` | 9093 | Alert routing | - | ⛔ No alert notifications |
@@ -275,6 +276,46 @@ curl --request POST \
 | `appwrite-mariadb` | 3306 | Appwrite database | `appwrite-mariadb` | ⛔ ALL Appwrite data lost |
 | `mailcowdockerized-*` | 25, 465, 587, 993 | Email server | `mailcow-*` volumes | ⛔ Email service down |
 | `ollama` | 11434 | LLM inference | NFS mount | ⚠️ AI features disabled |
+
+#### Server 84 - Spring Boot Microservices
+| Container | Port | Purpose | Config | Impact if Removed |
+|-----------|------|---------|--------|-------------------|
+| `ws-gateway` | 8080 | API Gateway | `apps/ws-gateway/` | ⛔ ALL API calls fail |
+| `ws-discovery` | 8761 | Eureka Service Registry | `apps/ws-discovery/` | ⛔ Service discovery broken |
+| `ws-company` | 8081 | Company data service | `apps/ws-company/` | ⚠️ Company data unavailable |
+| `ws-trades` | 8082 | Trades data service | `apps/ws-trades/` | ⚠️ Trades data unavailable |
+| `ws-news` | 8083 | News data service | `apps/ws-news/` | ⚠️ News data unavailable |
+
+#### Server 84 - Frontend Applications
+| Container | Port | Purpose | Config | Impact if Removed |
+|-----------|------|---------|--------|-------------------|
+| `gibd-quant-web` | 3000 | GIBD Quantitative Trading UI | `apps/gibd-quant-web/` | ⚠️ Trading UI down |
+| `ws-wizardsofts-web` | 3001 | WizardSofts Main Website | `apps/ws-wizardsofts-web/` | ⚠️ Main site down |
+| `daily-deen-guide-frontend` | 3002 | Daily Deen Guide App | `apps/ws-daily-deen-web/` | ⚠️ DDG app down |
+| `ddg-bff` | 4000 | Daily Deen Guide Backend | `apps/ws-daily-deen-web/` | ⚠️ DDG API down |
+
+#### Python Services & Scripts (Servers 80/84)
+| Service | Location | Purpose | Schedule | Impact if Removed |
+|---------|----------|---------|----------|-------------------|
+| `gibd-news` | `apps/gibd-news/` | DSE stock data fetcher | Daily cron | ⛔ No market data updates |
+| `gibd-quant-agent` | `apps/gibd-quant-agent/` | TARP-DRL training | On-demand | ⚠️ ML training unavailable |
+| `gibd-web-scraper` | `apps/gibd-web-scraper/` | Web scraping service | On-demand | ⚠️ Scraping unavailable |
+| `hadith-knowledge-graph` | `apps/hadith-knowledge-graph/` | Hadith processing | On-demand | ⚠️ Hadith updates unavailable |
+| `backfill_indicators.py` | Server 80 `/home/agent/scripts/` | Technical indicators | Daily 12 PM | ⛔ No indicator updates |
+| `backup-gitlab-db.sh` | Server 80 `/home/agent/gitlab-backups/` | GitLab DB backup | Daily 2 AM | ⛔ No GitLab backups |
+
+#### Incident Log - What Was Removed & Why
+
+| Date | What Was Removed | Why | Impact | Resolution |
+|------|------------------|-----|--------|------------|
+| 2026-01-05 | `gitlab-postgres`, `gitlab-redis` on Server 80 | Removed during disk cleanup (`docker system prune`). Containers were stopped and got pruned. | GitLab completely down for ~2 hours. | Recreated containers, restored from `/tmp/gitlabhq_production.dump` backup. |
+| 2026-01-05 | Ray cluster (Servers 80, 81, 84) | Intentionally decommissioned - cluster was idle with no active workloads. | ML training requires manual restart. | Documented restart instructions in CLAUDE.md. |
+
+**Lessons Learned:**
+- ⛔ NEVER run `docker system prune -a` without checking for stopped critical containers first
+- ⛔ NEVER run `docker volume prune` without explicit user confirmation
+- ✅ Critical containers should have `--restart unless-stopped` policy
+- ✅ All critical databases need automated backups (now configured for GitLab)
 
 **⚠️ Before ANY Docker cleanup command:**
 ```bash
