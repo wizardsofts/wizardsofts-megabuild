@@ -1,5 +1,11 @@
 # WizardSofts Megabuild - Claude Code Instructions
 
+## Communication Style
+
+**ALWAYS reply in a lean, brief manner.** Be concise and direct. Avoid verbose explanations unless explicitly requested. This rule applies to ALL responses.
+
+---
+
 ## Critical Instructions
 
 ### Deletion Confirmation Policy
@@ -45,6 +51,23 @@ Associated files/configs:
 
 Proceed with deletion? [Requires explicit user confirmation]
 ```
+
+### Script-First Policy
+
+**ALWAYS write reusable scripts for repetitive operations.** Never run ad-hoc commands for tasks executed multiple times.
+
+**Must be scripted:**
+- Server cleanup (Docker prune, log rotation, temp files)
+- Database backup/restore
+- File backup/sync
+- Upload/download to/from servers
+- Deployment procedures
+- Health checks and monitoring
+- Environment setup
+
+**Location:** `scripts/` directory, named descriptively (e.g., `backup-postgres.sh`, `cleanup-ray-workers.sh`)
+
+---
 
 ### No Shortcuts Policy
 
@@ -815,6 +838,68 @@ PGPASSWORD='29Dec2#24' psql -h 10.0.0.81 -U ws_gibd -d ws_gibd_dse_daily_trades 
 - Monitor daily cron job execution (automated)
 - Consider Redis caching layer for frequently accessed indicators
 - Expand to real-time indicator calculation for intraday trading signals
+
+### GIBD News Data Pipeline (2026-01-06)
+
+**Status**: ✅ **OPERATIONAL** - Cron jobs running on Server 84 (wizardsofts user)
+
+**Purpose**: Automated DSE stock price collection and financial news scraping for the quant trading system.
+
+**Cron Job Location**: Server 84 under `wizardsofts` user (NOT `agent` user!)
+
+```bash
+# View cron jobs
+ssh wizardsofts@10.0.0.84 "crontab -l | grep -A1 GIBD"
+```
+
+**Active Cron Schedule (Server 84):**
+
+| Schedule | Service | Purpose |
+|----------|---------|---------|
+| `0 */2 * * *` | fetch-financialexpress | Financial Express news URLs |
+| `15 */2 * * *` | fetch-tbsnews | TBS News URLs |
+| `30 */2 * * *` | fetch-dailystar | Daily Star news URLs |
+| `45 */2 * * *` | fetch-news-details | Extract full article content |
+| `0 10 * * 1-5` | fetch-stock-data | DSE daily prices (4 PM BDT) |
+| `*/5 3-9 * * 1-5` | scrape-share-price | Live prices during trading |
+
+**Critical Files (Server 84):**
+
+| Path | Purpose |
+|------|---------|
+| `/opt/wizardsofts-megabuild/apps/gibd-news/` | Application root |
+| `/opt/wizardsofts-megabuild/apps/gibd-news/.env` | **REQUIRED** - Environment config |
+| `/opt/wizardsofts-megabuild/apps/gibd-news/logs/` | Cron job logs |
+
+**⚠️ CRITICAL: Missing .env File Issue (Fixed 2026-01-06)**
+
+If cron logs show `env file .env not found`:
+```bash
+ssh wizardsofts@10.0.0.84
+cd /opt/wizardsofts-megabuild/apps/gibd-news
+cp .env.test .env  # OR edit with proper credentials
+chmod 600 .env
+```
+
+**Check Data Freshness:**
+```bash
+# Latest stock price data
+PGPASSWORD='29Dec2#24' psql -h 10.0.0.81 -U ws_gibd -d ws_gibd_dse_daily_trades \
+  -c "SELECT MAX(txn_date) as latest, COUNT(*) as total FROM ws_dse_daily_prices;"
+```
+
+**Run Manually:**
+```bash
+ssh wizardsofts@10.0.0.84
+cd /opt/wizardsofts-megabuild/apps/gibd-news
+docker-compose run --rm fetch-stock-data
+docker-compose run --rm fetch-financialexpress
+```
+
+**Documentation**: [GIBD_NEWS_DATA_PIPELINE_HANDOFF.md](docs/GIBD_NEWS_DATA_PIPELINE_HANDOFF.md)
+
+**Incident History:**
+- **2026-01-06**: Data stale 100 days due to missing `.env` file. Fixed by copying `.env.test` to `.env`.
 
 ## Recent Changes (2025-12-30/31 - 2026-01-05)
 
