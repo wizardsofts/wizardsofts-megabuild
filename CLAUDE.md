@@ -240,6 +240,59 @@ curl --request POST \
 | Server 84 (HP) | 10.0.0.84 | Production (Appwrite, microservices, GitLab, monitoring) | 914GB (36% used) |
 | Hetzner | 178.63.44.221 | External services | N/A |
 
+### ⚠️ Critical Infrastructure Services (DO NOT REMOVE)
+
+**These services are CRITICAL. Before ANY cleanup or removal, verify with user.**
+
+#### Server 80 (10.0.0.80)
+| Container | Port | Purpose | Data Volume | Impact if Removed |
+|-----------|------|---------|-------------|-------------------|
+| `gitlab-postgres` | 5435 | GitLab database | `gitlab-postgres-data` | ⛔ ALL GitLab data lost |
+| `gitlab-redis` | 6380 | GitLab cache | - | ⛔ GitLab won't start |
+| `hadith-neo4j` | 7474, 7687 | Knowledge graph DB | `hadith-neo4j-data` | ⛔ Hadith app broken |
+| `hadith-chromadb` | 8000 | Vector embeddings | `hadith-chromadb-data` | ⛔ Hadith search broken |
+| `hadith-redis` | 6379 | Hadith app cache | - | ⚠️ App performance degraded |
+| `loki` | 3100 | Log aggregation | `loki-data` | ⚠️ Logs lost |
+| `node-exporter` | 9100 | Host metrics | - | ⚠️ Monitoring gaps |
+| `cadvisor` | 8081 | Container metrics | - | ⚠️ Monitoring gaps |
+
+#### Server 81 (10.0.0.81)
+| Service | Port | Purpose | Data | Impact if Removed |
+|---------|------|---------|------|-------------------|
+| PostgreSQL (host) | 5432 | Main database server | `/var/lib/postgresql` | ⛔ ALL apps broken |
+| `ray-worker-*` | - | Distributed ML | - | ⚠️ ML training disabled |
+
+#### Server 84 (10.0.0.84)
+| Container | Port | Purpose | Data Volume | Impact if Removed |
+|-----------|------|---------|-------------|-------------------|
+| `gitlab` | 8090, 2222, 5050 | Source control & CI/CD | `/mnt/data/docker/gitlab/` | ⛔ ALL repos inaccessible |
+| `traefik` | 80, 443, 8080 | Reverse proxy & SSL | `traefik-certs` | ⛔ ALL web services down |
+| `prometheus` | 9090 | Metrics collection | `prometheus-data` | ⛔ Alerting broken |
+| `grafana` | 3002 | Dashboards | `grafana-data` | ⚠️ No visualization |
+| `alertmanager` | 9093 | Alert routing | - | ⛔ No alert notifications |
+| `loki` | 3100 | Log aggregation | `loki-data` | ⚠️ Logs lost |
+| `appwrite-*` | various | Backend-as-a-Service | `appwrite-*` volumes | ⛔ App backends broken |
+| `appwrite-mariadb` | 3306 | Appwrite database | `appwrite-mariadb` | ⛔ ALL Appwrite data lost |
+| `mailcowdockerized-*` | 25, 465, 587, 993 | Email server | `mailcow-*` volumes | ⛔ Email service down |
+| `ollama` | 11434 | LLM inference | NFS mount | ⚠️ AI features disabled |
+
+**⚠️ Before ANY Docker cleanup command:**
+```bash
+# 1. List what will be affected
+docker system df -v
+
+# 2. Check critical containers are running
+docker ps | grep -E "gitlab|traefik|prometheus|appwrite|mailcow"
+
+# 3. NEVER run without verification:
+# docker system prune -a      ← Removes ALL unused images
+# docker volume prune         ← DELETES ALL unused volumes (DATA LOSS!)
+
+# 4. Safe cleanup (images only, preserves volumes):
+docker image prune -f
+docker builder prune -f --keep-storage 1GB
+```
+
 ### Docker Swarm Cluster (2026-01-06)
 
 **Manager Node:** Server 84 (gmktec) - Docker CE 27.5.1
