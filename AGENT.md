@@ -1111,7 +1111,144 @@ stages:
 | **Changelog** | `CHANGELOG.md` | Every release |
 | **README** | Per-service `README.md` | Setup/usage changes |
 
-### 7.2 Code Documentation Standards
+### 7.2 Documentation Structure
+
+All documentation follows a hierarchical structure. Place documents in the correct location.
+
+#### Root-Level Documentation (7 files max)
+
+```
+/                                       # Repository root
+├── README.md                           # Project overview
+├── CLAUDE.md                           # Claude AI instructions
+├── AGENT.md                            # Universal agent instructions (this file)
+├── CONSTITUTION.md                     # Project principles
+├── CONTRIBUTING.md                     # Contribution guidelines
+├── CHANGELOG.md                        # Change log
+└── SECURITY.md                         # Security policy
+```
+
+#### /docs/ Directory Structure
+
+```
+/docs/
+├── README.md                           # Documentation index
+├── QUICK_START.md                      # Fast onboarding
+│
+├── architecture/                       # System design and decisions
+│   ├── README.md
+│   ├── monorepo-strategy.md
+│   └── distributed-ml.md
+│
+├── deployment/                         # Service deployment guides
+│   ├── README.md                       # Deployment checklist
+│   ├── appwrite.md
+│   ├── gitlab.md
+│   ├── traefik.md
+│   ├── keycloak.md
+│   ├── ray-cluster.md
+│   ├── ollama.md
+│   ├── mailcow.md
+│   └── monitoring.md
+│
+├── operations/                         # SRE/Operations runbook
+│   ├── README.md
+│   ├── server-infrastructure.md
+│   ├── docker-swarm.md
+│   ├── backup-restore.md
+│   ├── disk-management.md
+│   ├── troubleshooting/
+│   │   ├── gitlab.md
+│   │   ├── appwrite.md
+│   │   └── networking.md
+│   └── maintenance/
+│       ├── cron-jobs.md
+│       └── certificate-renewal.md
+│
+├── security/                           # Security documentation
+│   ├── README.md
+│   ├── hardening-guide.md
+│   ├── fail2ban-setup.md
+│   ├── firewall-rules.md
+│   ├── secrets-management.md
+│   └── vulnerability-scanning.md
+│
+├── cicd/                               # CI/CD and automation
+│   ├── README.md
+│   ├── gitlab-pipelines.md
+│   ├── gitlab-runners.md
+│   ├── branch-protection.md
+│   └── github-sync.md
+│
+├── integrations/                       # Third-party integrations
+│   ├── README.md
+│   ├── claude-slack.md
+│   ├── dns-setup.md
+│   └── oauth2-sso.md
+│
+├── data-pipelines/                     # Data processing
+│   ├── README.md
+│   ├── gibd-news-pipeline.md
+│   ├── indicator-backfill.md
+│   └── data-cache.md
+│
+├── handoffs/                           # Session handoffs
+│   ├── README.md
+│   └── YYYY-MM-DD-topic.md
+│
+└── archive/                            # Historical documentation
+    ├── README.md
+    ├── migrations/                     # Completed migrations
+    ├── retrospectives/                 # Post-mortems
+    ├── audits/                         # Security audits
+    └── status-reports/                 # Completion reports
+```
+
+#### App-Specific Documentation
+
+Each app maintains its own documentation:
+
+```
+/apps/{app-name}/
+├── README.md                           # Required: App overview
+├── CLAUDE.md                           # Optional: AI instructions
+└── docs/                               # Detailed documentation
+    ├── architecture.md
+    ├── api.md
+    └── ...
+```
+
+#### Document Placement Rules
+
+| Document Type | Location | Example |
+|---------------|----------|---------|
+| Service deployment | `/docs/deployment/` | `appwrite.md` |
+| Troubleshooting | `/docs/operations/troubleshooting/` | `gitlab.md` |
+| Security hardening | `/docs/security/` | `fail2ban-setup.md` |
+| CI/CD configuration | `/docs/cicd/` | `gitlab-runners.md` |
+| Integration guides | `/docs/integrations/` | `claude-slack.md` |
+| Data pipelines | `/docs/data-pipelines/` | `indicator-backfill.md` |
+| Session handoffs | `/docs/handoffs/` | `2026-01-07-ray-upgrade.md` |
+| Completed migrations | `/docs/archive/migrations/` | `phase0-logs/` |
+| Post-mortems | `/docs/archive/retrospectives/` | `security-incident.md` |
+| Status reports | `/docs/archive/status-reports/` | `*_COMPLETE.md` |
+| App-specific docs | `/apps/{app}/docs/` | `architecture.md` |
+
+#### What Goes to Archive
+
+Move to `/docs/archive/` when:
+- Migration/project is complete
+- Status report is no longer active
+- Document is superseded by newer version
+- Audit is older than 6 months
+
+**Archive subdirectories:**
+- `migrations/` - Phase logs, database migrations
+- `retrospectives/` - Post-mortems, lessons learned
+- `audits/` - Security audits and reviews
+- `status-reports/` - One-time completion reports (`*_COMPLETE.md`, `*_READY.md`)
+
+### 7.3 Code Documentation Standards
 
 **Functions/Methods:**
 ```typescript
@@ -2162,13 +2299,20 @@ Examples:
 
 ---
 
-*Document Version: 1.4.0*
+*Document Version: 1.5.0*
 *Last Updated: 2026-01-07*
 *Applies to: All AI coding agents working on wizardsofts-megabuild*
 
 ---
 
 ## Changelog
+
+### v1.5.0 (2026-01-07)
+- Added Section 7.2: Documentation Structure
+  - Hierarchical /docs/ directory structure
+  - Document placement rules by type
+  - Archive policy for completed/superseded docs
+  - App-specific documentation guidelines
 
 ### v1.4.0 (2026-01-07)
 - Added Section 13: Docker Deployment
