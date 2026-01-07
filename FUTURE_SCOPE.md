@@ -344,6 +344,48 @@ class LLMDeployment:
 
 ---
 
+### Traefik Security Hardening & CI/CD Automation
+
+**Status:** 🔴 CRITICAL | **Priority:** ⭐⭐⭐⭐⭐ URGENT
+
+**Current State:**
+- ❌ Traefik not running via Docker Compose (manual deployment only)
+- ❌ 7 critical security vulnerabilities identified
+- ❌ No CI/CD automation (all manual SSH deployments)
+- ❌ Passwords hardcoded in `.env` file
+- ⚠️ Docker socket exposed directly
+- ⚠️ Weak Basic Auth, wildcard CORS, permissive rate limiting
+
+**Roadmap:**
+
+| Phase | Timeline | Focus | Status |
+|-------|----------|-------|--------|
+| **Phase 1: Critical Fixes** | Week 1 | Password rotation, socket proxy, security headers, CORS fixes, rate limiting, OAuth2, dashboard security | 📋 Ready |
+| **Phase 2: Configuration** | Week 2-3 | Health checks, TLS hardening, IP whitelisting, custom error pages, request validation | 📋 Planned |
+| **Phase 3: CI/CD Automation** | Week 3-4 | GitLab secrets, secure pipeline, image scanning, runner setup, automated deployment | 📋 Planned |
+| **Phase 4: Advanced Security** | Month 2+ | mTLS, WAF (ModSecurity), centralized logging, intrusion detection, disaster recovery | 📋 Future |
+
+**Key Deliverables:**
+- ✅ [Executive Summary](TRAEFIK_AUDIT_EXECUTIVE_SUMMARY.md) - Leadership overview
+- ✅ [Security Audit Report](TRAEFIK_SECURITY_AUDIT_REPORT.md) - Detailed vulnerabilities (37 KB, 26 issues)
+- ✅ [Implementation Guide](TRAEFIK_IMPLEMENTATION_GUIDE.md) - Step-by-step instructions (21 KB)
+- ✅ [CI/CD Security Guide](CICD_SECURITY_HARDENING_GUIDE.md) - Pipeline automation (20 KB)
+- ✅ [Quick Action Checklist](TRAEFIK_QUICK_ACTION_CHECKLIST.md) - Week 1-3 tasks (9 KB)
+- ✅ [Future Scope Document](TRAEFIK_SECURITY_FUTURE_SCOPE.md) - Complete roadmap (this initiative)
+
+**Success Metrics:**
+- Zero hardcoded passwords in codebase
+- 100% deployments via CI/CD
+- SSL Labs grade A or higher
+- < 5 minute deployment time with automatic rollback
+
+**Estimated Effort:** 130-180 developer hours over 6-8 weeks  
+**Cost:** $0 (all open-source tools)
+
+**📋 Complete Details:** [TRAEFIK_SECURITY_FUTURE_SCOPE.md](TRAEFIK_SECURITY_FUTURE_SCOPE.md)
+
+---
+
 ### GitLab CI/CD Enhancements
 
 **Status:** ✅ Production | **Priority:** ⭐⭐⭐⭐ High
