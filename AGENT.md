@@ -1091,7 +1091,191 @@ When you encounter difficulties or blockers during implementation:
 
 If you hit a snag, inform the user - work through it together rather than taking shortcuts.
 
-### 5.4 Communication Style
+### 5.4 Port Binding When Planning
+
+**MANDATORY: When planning any infrastructure, service, or deployment, always include port binding strategy.**
+
+Before starting any deployment or service setup:
+
+````markdown
+## Port Binding Strategy
+
+### Ports to be Used
+
+| Service/Component | Port | Protocol | External | Internal | Purpose             |
+| ----------------- | ---- | -------- | -------- | -------- | ------------------- |
+| Service A         | 3000 | HTTP     | Yes      | No       | API Gateway         |
+| Service B         | 5432 | TCP      | No       | Yes      | PostgreSQL Database |
+| Cache Layer       | 6379 | TCP      | No       | Yes      | Redis               |
+| Monitoring        | 9090 | HTTP     | Yes      | Yes      | Prometheus Metrics  |
+
+### Port Availability Check
+
+Before deployment, verify:
+
+- [ ] Port is not already in use: `netstat -an | grep :<port>`
+- [ ] Port is within allowed range (1024-65535 for non-root)
+- [ ] No firewall rules blocking the port
+- [ ] Port is documented in service configuration
+- [ ] Port matches docker-compose/k8s manifests
+- [ ] Port is registered in DNS (if applicable)
+
+### Port Binding Example
+
+```yaml
+# docker-compose.yml
+services:
+  myservice:
+    ports:
+      - "3000:3000" # HOST:CONTAINER
+    environment:
+      - PORT=3000 # Application listens on 3000 internally
+```
+````
+
+### Port Conflict Resolution
+
+If port is already in use:
+
+1. **Check what's using the port**: `lsof -i :<port>` or `netstat -tlnp | grep :<port>`
+2. **Options**:
+   - Kill the occupying process (if safe): `kill -9 <PID>`
+   - Change the port number to an available one
+   - Use a different host/interface
+3. **Document the decision** in your planning notes
+4. **Verify after deployment** that the service is accessible on the correct port
+
+````
+
+### 5.5 Database Configuration Validation
+
+**MANDATORY: When working with databases, ALWAYS validate database details from user input BEFORE using them.**
+
+**Database details that MUST be validated:**
+
+- Database name
+- Username
+- Password
+- Host/IP address
+- Port number
+- Connection type (TCP/socket)
+- SSL/TLS requirements
+
+**Validation Checklist:**
+
+```markdown
+## Database Configuration Validation
+
+### Input Validation
+
+- [ ] Database name is provided and non-empty
+- [ ] Database name matches naming conventions (alphanumeric, hyphens, underscores)
+- [ ] Username is provided and non-empty
+- [ ] Password is provided (or confirm if optional)
+- [ ] Port number is provided and valid (1-65535)
+- [ ] Port matches expected service (e.g., 5432 for PostgreSQL)
+- [ ] Host/IP is resolvable or a valid IP address
+
+### Pre-Connection Verification
+
+```bash
+# Verify connectivity before use
+# For PostgreSQL
+psql -h <host> -p <port> -U <username> -d <database> -c "SELECT 1;"
+
+# For MySQL/MariaDB
+mysql -h <host> -p <port> -u <username> -p<password> -D <database> -e "SELECT 1;"
+
+# For Redis
+redis-cli -h <host> -p <port> ping
+
+# Check port is listening
+netstat -an | grep <port> | grep LISTEN
+nc -zv <host> <port>
+````
+
+### Configuration Validation Template
+
+**Ask the user to confirm these details:**
+
+```markdown
+## Database Configuration Confirmation
+
+Please confirm the following database details:
+
+| Detail          | Value              | Verification              |
+| --------------- | ------------------ | ------------------------- |
+| Database Name   | [user-provided]    | [ ] Correct               |
+| Username        | [user-provided]    | [ ] Correct               |
+| Password        | ••••••••••         | [ ] Correct               |
+| Host/IP         | [user-provided]    | [ ] Resolvable/reachable  |
+| Port            | [user-provided]    | [ ] Valid range (1-65535) |
+| Connection Type | TCP / Socket / SSL | [ ] Correct               |
+| Database Exists | Yes / No           | [ ] Confirmed             |
+
+### Validation Commands to Run
+
+Before proceeding, I will run:
+
+1. **Connectivity Test**: Test connection with provided credentials
+2. **Permissions Check**: Verify user has required permissions
+3. **Database Access**: Confirm database is accessible
+4. **Existing Data**: Check for existing data (if applicable)
+
+**Please confirm these details are correct before I proceed.**
+```
+
+### Connection String Validation
+
+Always validate connection strings before use:
+
+```bash
+# PostgreSQL
+postgresql://username:password@host:port/database
+
+# MySQL
+mysql://username:password@host:port/database
+
+# MongoDB
+mongodb://username:password@host:port/database?authSource=admin
+
+# Validate each component:
+# [ ] Username has no special chars (except @ in password)
+# [ ] Password is URL-encoded (spaces=%20, special=percent-encoded)
+# [ ] Host resolves to valid IP
+# [ ] Port is accessible
+# [ ] Database/auth source exists
+```
+
+### Common Validation Errors & Solutions
+
+| Error                   | Cause                            | Solution                        |
+| ----------------------- | -------------------------------- | ------------------------------- |
+| Connection refused      | Service not running / wrong port | Verify service running + port   |
+| Authentication failed   | Wrong username/password          | Confirm credentials with user   |
+| Host not found          | Invalid hostname/IP              | Verify hostname/IP address      |
+| Port out of range       | Port < 1 or > 65535              | Use valid port (1-65535)        |
+| Permission denied       | User lacks database permissions  | Grant proper permissions        |
+| Database does not exist | Database not created             | Create database or use existing |
+| SSL certificate error   | SSL/TLS not properly configured  | Verify SSL settings             |
+
+### When to Ask User to Re-validate
+
+**STOP and ask user to re-provide database details if:**
+
+- Connection test fails
+- Credentials appear to be incorrect
+- Port is already in use by different service
+- Host is not resolvable
+- Database does not exist (and needs to be created)
+- Permission errors occur
+- Any validation step fails
+
+**Never proceed with unverified database configuration.**
+
+---
+
+### 5.6 Communication Style
 
 **Reply in a lean, brief manner.** Be concise and direct. Avoid verbose explanations unless explicitly requested.
 
