@@ -1,86 +1,30 @@
 # WizardSofts Megabuild - Claude Code Instructions
 
-## Communication Style
-
-**ALWAYS reply in a lean, brief manner.** Be concise and direct. Avoid verbose explanations unless explicitly requested. This rule applies to ALL responses.
-
----
-
-## Critical Instructions
-
-### Deletion Confirmation Policy
-
-**MANDATORY: Always confirm before deleting ANY module, service, feature, or component.**
-
-Before removing, deleting, or disabling anything:
-1. **List all components** that will be affected by the removal
-2. **Identify dependencies** - what other services rely on the component being removed?
-3. **Assess impact** - will this break monitoring, logging, alerts, or other functionality?
-4. **Present a summary** to the user showing:
-   - Components to be deleted
-   - Dependencies that will be affected
-   - Services that will lose functionality
-   - Required follow-up actions
-5. **Wait for explicit confirmation** before proceeding with deletion
-6. **Document what was removed** in the change log
-
-**Example confirmation format:**
-```
-⚠️ DELETION IMPACT ANALYSIS
-
-Components to be removed:
-- haproxy (load balancer)
-- autoscaler (custom autoscaling service)
-
-Dependencies affected:
-- Traefik will need to handle load balancing (already configured)
-- Manual scaling required (docker service scale)
-
-Services that will lose functionality:
-- Automatic scaling based on load metrics
-
-Associated files/configs:
-- infrastructure/auto-scaling/haproxy/
-- infrastructure/auto-scaling/app/
-- infrastructure/auto-scaling/docker-compose.yml (haproxy/autoscaler sections)
-
-⚠️ NOT AFFECTED (must be preserved):
-- Prometheus, Grafana, Loki (monitoring)
-- Promtail, Alertmanager (logging/alerts)
-- Node Exporter, cAdvisor (metrics)
-
-Proceed with deletion? [Requires explicit user confirmation]
-```
-
-### Script-First Policy
-
-**ALWAYS write reusable scripts for repetitive operations.** Never run ad-hoc commands for tasks executed multiple times.
-
-**Must be scripted:**
-- Server cleanup (Docker prune, log rotation, temp files)
-- Database backup/restore
-- File backup/sync
-- Upload/download to/from servers
-- Deployment procedures
-- Health checks and monitoring
-- Environment setup
-
-**Location:** `scripts/` directory, named descriptively (e.g., `backup-postgres.sh`, `cleanup-ray-workers.sh`)
+> **Imports:** [AGENT.md](AGENT.md) - Universal agent instructions apply to all AI coding assistants.
+>
+> This file contains **Claude Code specific** additions. See AGENT.md for:
+> - Session lifecycle (startup, work, handoff)
+> - Code investigation protocol (2-level deep)
+> - Behavior change protocol (stop & inform)
+> - Reflection & learning protocol
+> - Critical operational policies (deletion, scripts, shortcuts)
+> - TDD workflow requirements
+> - Documentation standards
+> - Code review protocol
+> - Deployment & CI/CD
+> - Monorepo navigation
 
 ---
 
-### No Shortcuts Policy
+## Critical Policies
 
-**IMPORTANT: Do NOT take shortcuts when implementing infrastructure changes.**
+> **See [AGENT.md Section 5](AGENT.md#5-critical-operational-policies)** for:
+> - Deletion Confirmation Policy
+> - Script-First Policy
+> - No Shortcuts Policy
+> - Communication Style
 
-When you encounter difficulties or blockers during implementation:
-1. **Do NOT skip steps** or implement workarounds that compromise the goal
-2. **Do NOT abandon the proper solution** in favor of a quick fix
-3. **Report blockers immediately** and work through them collaboratively
-4. **Follow through to completion** - partial implementations create tech debt
-5. **Document challenges** so we can address root causes together
-
-If you hit a snag, let me know - we will fix them together.
+---
 
 ## Project Overview
 
