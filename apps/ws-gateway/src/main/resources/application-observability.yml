@@ -1,0 +1,101 @@
+# Observability Configuration
+# Profile: observability
+#
+# Activate with: spring.profiles.active=observability
+
+# Security Audit Configuration
+security:
+  audit:
+    # Enable publishing events to external systems
+    publish-events: ${AUDIT_PUBLISH_EVENTS:false}
+
+    # Webhook for event delivery (e.g., SIEM integration)
+    webhook-url: ${AUDIT_WEBHOOK_URL:}
+    webhook-auth-header: ${AUDIT_WEBHOOK_AUTH:}
+
+# Prometheus Metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ws-gateway
+      environment: ${SPRING_PROFILES_ACTIVE:dev}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms, 100ms, 200ms, 500ms, 1s
+
+  # Health indicators
+  health:
+    show-details: when_authorized
+
+# Logging Configuration
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{correlationId:-}] %-5level %logger{36} - %msg%n"
+
+  level:
+    # Security audit logging
+    SECURITY_AUDIT: INFO
+
+    # Application logging
+    com.wizardsofts.gibd.gateway_service: INFO
+    com.wizardsofts.gibd.gateway_service.audit: INFO
+    com.wizardsofts.gibd.gateway_service.filter: DEBUG
+
+    # Spring Security
+    org.springframework.security: WARN
+    org.springframework.security.oauth2: INFO
+
+    # Gateway
+    org.springframework.cloud.gateway: INFO
+
+    # Keycloak
+    org.keycloak: WARN
+
+  # Separate file for security audit logs
+  file:
+    name: logs/gateway.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+
+# Tracing Configuration (for distributed tracing)
+spring:
+  application:
+    name: ws-gateway
+
+  # Sleuth/Micrometer Tracing
+  sleuth:
+    enabled: ${TRACING_ENABLED:false}
+    sampler:
+      probability: ${TRACING_SAMPLE_RATE:0.1}
+    baggage:
+      correlation-fields: X-Correlation-ID
+      remote-fields: X-Correlation-ID
+
+  # Zipkin exporter
+  zipkin:
+    enabled: ${ZIPKIN_ENABLED:false}
+    base-url: ${ZIPKIN_URL:http://localhost:9411}
+
+# Rate Limiting (for security)
+resilience4j:
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: ${RATE_LIMIT_REQUESTS:100}
+        limitRefreshPeriod: ${RATE_LIMIT_PERIOD:1s}
+        timeoutDuration: 0
+      authRateLimiter:
+        limitForPeriod: ${AUTH_RATE_LIMIT_REQUESTS:10}
+        limitRefreshPeriod: ${AUTH_RATE_LIMIT_PERIOD:1m}
+        timeoutDuration: 0

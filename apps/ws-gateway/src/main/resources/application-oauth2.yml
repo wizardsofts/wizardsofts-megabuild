@@ -1,0 +1,56 @@
+# =============================================================================
+# OAuth2 Security Configuration for ws-gateway
+# =============================================================================
+# This profile enables OAuth2/OIDC authentication via Keycloak.
+# Activate with: --spring.profiles.active=oauth2
+# =============================================================================
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Keycloak realm issuer URI
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:https://id.wizardsofts.com/realms/wizardsofts}
+          # JWKS endpoint for public keys
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://id.wizardsofts.com/realms/wizardsofts/protocol/openid-connect/certs}
+
+# =============================================================================
+# JWT Validation Settings
+# =============================================================================
+jwt:
+  # Audiences that this resource server accepts
+  # Tokens must contain at least one of these in the 'aud' claim
+  allowed-audiences: ws-gateway,account
+
+# =============================================================================
+# Actuator Endpoints (Security-aware)
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logging:
+  level:
+    org.springframework.security: INFO
+    org.springframework.security.oauth2: DEBUG
+    com.wizardsofts.gibd.gateway_service.config: DEBUG
+    com.wizardsofts.gibd.gateway_service.filter: DEBUG

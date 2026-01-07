@@ -1,0 +1,41 @@
+# Test Configuration for ws-gateway
+# Profile: test
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Use a mock issuer for testing
+          issuer-uri: https://id.wizardsofts.com/realms/wizardsofts
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+# Disable actual OAuth2 validation in tests
+security:
+  oauth2:
+    audience: ws-gateway
+
+# Disable tenant provisioning in tests
+tenant:
+  max-per-owner: 3
+
+# Disable audit event publishing in tests
+security:
+  audit:
+    publish-events: false
+
+# In-memory database for testing
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+# Logging
+logging:
+  level:
+    com.wizardsofts: DEBUG
+    org.springframework.security: DEBUG

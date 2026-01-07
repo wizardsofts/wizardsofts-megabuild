@@ -1,0 +1,90 @@
+# Development Configuration
+# Profile: development
+#
+# Activate with: SPRING_PROFILES_ACTIVE=development,oauth2,database
+
+spring:
+  # Development Keycloak (local or dev server)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/wizardsofts}
+
+  # Development database
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:gibd_gateway_dev}
+    username: ${DB_USER:gibd}
+    password: ${DB_PASSWORD:gibd_dev}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  # JPA settings for development
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+# Security settings (relaxed for development)
+security:
+  oauth2:
+    audience: ws-gateway
+  audit:
+    publish-events: false
+
+# Rate limiting (relaxed)
+rate-limit:
+  window-seconds: 60
+  cleanup-interval-seconds: 600
+
+# API keys (development values)
+api-key:
+  max-per-tenant: 50
+  default-expiry-days: 30
+
+# Tenant limits (relaxed)
+tenant:
+  max-per-owner: 20
+
+# Actuator (full access in development)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Logging (verbose for debugging)
+logging:
+  level:
+    root: INFO
+    com.wizardsofts: DEBUG
+    SECURITY_AUDIT: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Swagger UI enabled
+springdoc:
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+  api-docs:
+    enabled: true
+
+# Server settings
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-stacktrace: on_param

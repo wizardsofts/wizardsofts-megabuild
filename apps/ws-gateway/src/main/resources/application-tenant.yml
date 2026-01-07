@@ -1,0 +1,73 @@
+# Tenant Onboarding Configuration
+# Profile: tenant
+#
+# Activate with: spring.profiles.active=tenant
+
+tenant:
+  # Maximum tenants per owner email
+  max-per-owner: 5
+
+  # Provisioning retry settings
+  provisioning:
+    retry:
+      max-attempts: 3
+      delay-ms: 5000
+
+  # Default subscription features by tier
+  features:
+    free:
+      max-users: 5
+      api-rate-limit: 100
+      data-retention-days: 30
+    starter:
+      max-users: 25
+      api-rate-limit: 1000
+      data-retention-days: 90
+    professional:
+      max-users: 100
+      api-rate-limit: 10000
+      data-retention-days: 365
+    enterprise:
+      max-users: -1  # unlimited
+      api-rate-limit: -1  # unlimited
+      data-retention-days: -1  # unlimited
+
+# Keycloak Admin API Configuration
+keycloak:
+  admin:
+    base-url: ${KEYCLOAK_ISSUER_URI:https://id.wizardsofts.com}
+    realm: ${KEYCLOAK_REALM:wizardsofts}
+
+# JPA/Database Configuration
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  # Enable async processing for tenant provisioning
+  task:
+    execution:
+      pool:
+        core-size: 2
+        max-size: 10
+        queue-capacity: 100
+      thread-name-prefix: tenant-provisioning-
+
+# API Documentation
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: method
+  api-docs:
+    groups:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    com.wizardsofts.gibd.gateway_service.service.TenantOnboardingService: INFO
+    com.wizardsofts.gibd.gateway_service.service.KeycloakTenantProvisioningService: INFO

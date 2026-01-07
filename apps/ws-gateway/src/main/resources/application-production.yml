@@ -1,0 +1,84 @@
+# Production Configuration
+# Profile: production
+#
+# Activate with: SPRING_PROFILES_ACTIVE=production,oauth2,database,observability
+
+spring:
+  # Security settings for production
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://id.wizardsofts.com/realms/wizardsofts
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+# Production database (use environment variables)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  # Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+# Security settings
+security:
+  oauth2:
+    audience: ws-gateway
+  audit:
+    publish-events: true
+    webhook-url: ${AUDIT_WEBHOOK_URL:}
+
+# Rate limiting (production values)
+rate-limit:
+  window-seconds: 60
+  cleanup-interval-seconds: 300
+
+# API keys
+api-key:
+  max-per-tenant: 20
+  default-expiry-days: 365
+
+# Keycloak admin
+keycloak:
+  admin:
+    base-url: https://id.wizardsofts.com
+    realm: wizardsofts
+
+# Tenant limits
+tenant:
+  max-per-owner: 10
+
+# Actuator (restricted in production)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+
+# Logging (reduced verbosity)
+logging:
+  level:
+    root: WARN
+    com.wizardsofts: INFO
+    SECURITY_AUDIT: INFO
+    org.springframework.security: WARN
+    org.springframework.cloud.gateway: WARN
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server settings
+server:
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
