@@ -6,14 +6,23 @@ Step-by-step deployment guides for all services in the WizardSofts infrastructur
 
 | Service | Guide | Server(s) |
 |---------|-------|-----------|
-| Appwrite | [appwrite.md](appwrite.md) | Server 84 |
-| GitLab | [gitlab.md](gitlab.md) | Server 84 |
-| Traefik | [traefik.md](traefik.md) | Server 84 |
-| Keycloak | [keycloak.md](keycloak.md) | Server 84 |
-| Ray Cluster | [ray-cluster.md](ray-cluster.md) | Servers 80, 81, 84 |
-| Ollama | [ollama.md](ollama.md) | Server 84 (Swarm) |
-| Mailcow | [mailcow.md](mailcow.md) | Server 84 |
-| Monitoring | [monitoring.md](monitoring.md) | Server 84 |
+| Appwrite | [APPWRITE_DEPLOYMENT.md](APPWRITE_DEPLOYMENT.md) | Server 84 |
+| GitLab | [GITLAB_DEPLOYMENT.md](GITLAB_DEPLOYMENT.md) | Server 84 |
+| Traefik | [TRAEFIK_DEPLOYMENT.md](TRAEFIK_DEPLOYMENT.md) | Server 84 |
+| Keycloak | [KEYCLOAK_HANDOFF.md](KEYCLOAK_HANDOFF.md) | Server 84 |
+| Ray Cluster | [RAY_2.53_DEPLOYMENT_GUIDE.md](RAY_2.53_DEPLOYMENT_GUIDE.md) | Servers 80, 81, 84 |
+| Ollama | [OLLAMA_SWARM_DEPLOYMENT_GUIDE.md](OLLAMA_SWARM_DEPLOYMENT_GUIDE.md) | Server 84 (Swarm) |
+| Mailcow | [MAILCOW_HANDOFF.md](MAILCOW_HANDOFF.md) | Server 84 |
+| Monitoring | [MONITORING_IMPLEMENTATION_GUIDE.md](MONITORING_IMPLEMENTATION_GUIDE.md) | Server 84 |
+| Server 82 | [SERVER_82_DEPLOYMENT.md](SERVER_82_DEPLOYMENT.md) | Server 82 |
+
+## Additional Guides
+
+| Guide | Description |
+|-------|-------------|
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | General deployment procedures |
+| [ENV_CONFIGURATION_GUIDE.md](ENV_CONFIGURATION_GUIDE.md) | Environment variable configuration |
+| [TRAEFIK_SECURITY_GUIDE.md](TRAEFIK_SECURITY_GUIDE.md) | Why Traefik is better than direct port exposure |
 
 ## Server Infrastructure
 

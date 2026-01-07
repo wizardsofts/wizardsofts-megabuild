@@ -1,12 +1,31 @@
-# Traefik Security Implementation Guide
+# Traefik Deployment & Security Guide
 
-**Date**: January 7, 2025  
-**Status**: Ready for implementation  
-**Estimated Time**: 2-4 weeks for all fixes
+> **Version:** 2.0
+> **Last Updated:** 2026-01-07
+> **Status:** Production Configuration
+
+**Related Documentation:**
+- [Traefik Security Concepts](TRAEFIK_SECURITY_GUIDE.md) - Why Traefik is better than direct port exposure
+- [Traefik Migration](../archive/migrations/TRAEFIK_CONFIG_MIGRATION.md) - Historical migration notes
 
 ---
 
-## Phase 1: Critical Fixes (Days 1-3)
+## Quick Reference
+
+```bash
+# Restart Traefik
+ssh agent@10.0.0.84 "sudo docker restart traefik"
+
+# View logs
+ssh agent@10.0.0.84 "docker logs traefik -f --tail 100"
+
+# Check routing
+ssh agent@10.0.0.84 "docker exec traefik traefik healthcheck"
+```
+
+---
+
+## Phase 1: Critical Fixes
 
 ### Step 1.1: Secure Password Management
 

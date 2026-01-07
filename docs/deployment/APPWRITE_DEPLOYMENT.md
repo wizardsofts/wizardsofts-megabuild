@@ -1,16 +1,73 @@
 # Appwrite Deployment Guide for WizardSofts
 
-> **Version:** 1.1
+> **Version:** 2.0
 > **Appwrite Version:** 1.8.1
-> **Last Updated:** 2025-12-30
+> **Last Updated:** 2026-01-07
 > **Status:** Deployed & Operational
 > **Shared Service:** BondWala, GIBD, and future WizardSofts projects
+
+**Consolidated Guide** - This document combines deployment, security hardening, quick start, and fresh install instructions.
+
+**Quick Links:**
+- [Quick Start](#quick-start-5-minutes) - Deploy in 5 minutes
+- [Full Deployment](#deployment-steps) - Complete step-by-step
+- [Security Hardening](#security-hardening-details) - Enterprise-grade security
+- [Operations](#operations-runbook) - Day-to-day management
+- [Troubleshooting](#troubleshooting) - Common issues
 
 ---
 
 ## Overview
 
 This document provides complete deployment instructions for the self-hosted Appwrite Backend-as-a-Service (BaaS) platform serving all WizardSofts projects, starting with BondWala's push notification system replacing Firebase Cloud Messaging (FCM).
+
+---
+
+## Quick Start (5 Minutes)
+
+For experienced users who want to deploy quickly:
+
+```bash
+# 1. Copy configuration
+cp .env.appwrite.template .env.appwrite
+
+# 2. Edit environment (set domain and passwords)
+# _APP_DOMAIN=appwrite.wizardsofts.com
+# _APP_DB_PASS=<your-secure-password>
+# _APP_CONSOLE_WHITELIST_EMAILS=admin@wizardsofts.com
+
+# 3. Create networks
+docker network create gibd-network
+docker network create traefik-public
+
+# 4. Deploy
+docker compose -f docker-compose.appwrite.yml --env-file .env.appwrite up -d
+
+# 5. Verify (wait 2-3 minutes for startup)
+curl https://appwrite.wizardsofts.com/v1/health
+
+# 6. Access console
+# Navigate to: https://appwrite.wizardsofts.com
+# Sign up with whitelisted email
+```
+
+**Essential Commands:**
+```bash
+# View logs
+docker logs appwrite -f --tail 50
+
+# Health checks
+curl https://appwrite.wizardsofts.com/v1/health | jq
+
+# Restart
+docker compose -f docker-compose.appwrite.yml restart appwrite
+
+# Stop/Start
+docker compose -f docker-compose.appwrite.yml down
+docker compose -f docker-compose.appwrite.yml up -d
+```
+
+For detailed setup, continue to [Full Deployment](#deployment-steps).
 
 **Service Applies To:**
 - BondWala (primary: push notifications)

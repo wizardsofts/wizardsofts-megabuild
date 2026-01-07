@@ -1,8 +1,20 @@
 # GitLab Deployment Guide
 
+> **Version:** 2.0
+> **Last Updated:** 2026-01-07
+> **Status:** Deployed & Operational
+
 ## Overview
 
 GitLab CE is deployed on HP Server (10.0.0.84) as the source control and CI/CD platform for WizardSofts projects.
+
+**Related Documentation:**
+- [GitLab Admin User](../operations/GITLAB_ADMIN_USER.md) - Admin credentials & permissions
+- [GitLab Agent User](../operations/GITLAB_AGENT_USER.md) - Automation account
+- [GitLab Runners](../cicd/GITLAB_RUNNER_SETUP.md) - Runner configuration
+- [Branch Protection](../cicd/GITLAB_BRANCH_PROTECTION.md) - Protected branches
+- [CI/CD Secrets](../cicd/GITLAB_CICD_SECRETS.md) - Variables & secrets
+- [GitHub Sync](../cicd/GITLAB_GITHUB_SYNC.md) - Mirror to GitHub
 
 ## Configuration
 

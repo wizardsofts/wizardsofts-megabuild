@@ -1,14 +1,20 @@
 # Ray 2.53.0 Deployment Guide
 
-**Date Created**: 2026-01-05
-**Status**: Ready for Deployment
-**Target Servers**: 84 (head), 80, 81, 82 (workers)
+> **Version:** 2.0
+> **Last Updated:** 2026-01-07
+> **Status:** Deployed & Operational
+> **Target Servers:** 84 (head), 80, 81, 82 (workers)
+
+**Related Documentation:**
+- [Ray Worker Cleanup](../operations/maintenance/RAY_WORKER_CLEANUP.md) - Cleanup procedures
+- [Ray Security Audit](../archive/audits/RAY_2.53_SECURITY_AUDIT.md) - CVE analysis
+- [Ray Upgrade Plan](../archive/migrations/RAY_2.53_UPGRADE_PLAN.md) - Migration details
 
 ---
 
 ## Prerequisites
 
-- [x] Security audit complete ([RAY_2.53_SECURITY_AUDIT.md](RAY_2.53_SECURITY_AUDIT.md))
+- [x] Security audit complete ([archive/audits/RAY_2.53_SECURITY_AUDIT.md](../archive/audits/RAY_2.53_SECURITY_AUDIT.md))
 - [x] Dockerfiles updated (infrastructure/distributed-ml/ray/)
 - [x] Environment configuration updated (.env.ray)
 - [ ] Training code migration completed (train_ppo.py)
