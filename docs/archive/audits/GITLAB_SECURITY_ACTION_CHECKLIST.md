@@ -1,26 +1,30 @@
 # GitLab Security Audit - Quick Action Checklist
 
 **Date**: January 7, 2026  
-**Purpose**: Quick reference for implementation  
+**Purpose**: Quick reference for implementation
 
 ---
 
 ## 🔴 IMMEDIATE ACTIONS (Do First)
 
 ### [ ] 1. Review Audit Report
+
 - **File**: `GITLAB_SECURITY_AUDIT_REPORT.md`
 - **Time**: 30 minutes
 - **Focus**: Section 2 (Security Vulnerabilities)
 
 ### [ ] 2. Backup Current GitLab
+
 ```bash
 cd /opt/wizardsofts-megabuild/infrastructure/gitlab
 docker exec gitlab gitlab-backup create BACKUP=pre-security-audit-$(date +%Y%m%d)
 ```
+
 - **Time**: 10 minutes
 - **Location**: `/var/opt/gitlab/backups/` (inside container)
 
 ### [ ] 3. Rotate Database Password
+
 ```bash
 # Generate new password
 NEW_PASS=$(openssl rand -base64 32)
@@ -32,11 +36,14 @@ ssh wizardsofts@10.0.0.80
 docker exec -it gibd-postgres psql -U postgres
 # ALTER USER gitlab WITH PASSWORD 'NEW_PASSWORD';
 ```
+
 - **Time**: 15 minutes
 - **Impact**: 5-minute GitLab restart required
 
 ### [ ] 4. Remove Hardcoded Credentials
+
 **Files to clean**:
+
 - [ ] `infrastructure/gitlab/README.md` (line 58)
 - [ ] `GITLAB_MIGRATION_PLAN.md` (lines 131-133, 189-191)
 - [ ] `infrastructure/gitlab/.env` (add to .gitignore)
@@ -50,6 +57,7 @@ sed -i "s/M9TcxUSpsqL5nSuX/your_secure_password_here/" infrastructure/gitlab/REA
 echo "infrastructure/gitlab/.env" >> .gitignore
 git commit -am "security: Remove hardcoded credentials"
 ```
+
 - **Time**: 10 minutes
 
 ---
@@ -57,6 +65,7 @@ git commit -am "security: Remove hardcoded credentials"
 ## 📅 Week 1: Critical Security Fixes
 
 ### [ ] Day 1: Upgrade GitLab
+
 - [ ] Create pre-upgrade backup ✅ (done above)
 - [ ] Update docker-compose.yml: `18.4.1` → `18.7.0`
 - [ ] Pull new image: `docker-compose pull`
@@ -67,6 +76,7 @@ git commit -am "security: Remove hardcoded credentials"
 - **Rollback available**: Yes
 
 ### [ ] Day 2-3: Credential Management
+
 - [ ] Rotate database password ✅ (done above)
 - [ ] Update GitLab .env file
 - [ ] Restart GitLab
@@ -76,6 +86,7 @@ git commit -am "security: Remove hardcoded credentials"
 - **Downtime**: 5 minutes
 
 ### [ ] Day 4-5: Documentation & Communication
+
 - [ ] Update README with security notices
 - [ ] Create .env.example templates
 - [ ] Document password rotation procedure
@@ -83,61 +94,64 @@ git commit -am "security: Remove hardcoded credentials"
 
 ---
 
-## 📅 Week 2: Authentication & Backups
+## 📅 Week 2: HTTPS/TLS & Backups
 
-> **Note**: HTTPS/TLS DEFERRED - GitLab is local network only (10.0.0.0/24)
+### [ ] Day 1-2: HTTPS/TLS Setup
 
-### [ ] Day 1: 2FA Preparation
-- [ ] Document 2FA setup process
-- [ ] Create user communication email
-- [ ] Test 2FA setup with test account
-
-### [ ] Day 2: 2FA Enforcement
-- [ ] Login as admin
-- [ ] Admin Area → Settings → General → Sign-in restrictions
-- [ ] Check: "Require two-factor authentication"
-- [ ] Grace period: 7 days
-- [ ] Save changes
-- [ ] Send notification to all users
+- [ ] Obtain SSL certificate (Let's Encrypt)
+- [ ] Configure Traefik reverse proxy
+- [ ] Update GitLab external_url to https://
+- [ ] Test HTTPS access
+- [ ] Enable HSTS headers
+- [ ] Verify HTTP→HTTPS redirect
+- **Downtime**: 10 minutes
 
 ### [ ] Day 3-4: Backup Automation
+
+- [ ] Mount NFS at `/mnt/gitlab-backups`
 - [ ] Create `/opt/wizardsofts-megabuild/scripts/gitlab-backup.sh`
 - [ ] Test backup script
-- [ ] Create backup directory: `/mnt/backups/gitlab`
 - [ ] Add cron job: Daily at 2 AM
   ```bash
   0 2 * * * /opt/wizardsofts-megabuild/scripts/gitlab-backup.sh
   ```
+- [ ] Verify backup rotation (keep 14 days)
 
 ### [ ] Day 5: Disaster Recovery Testing
+
 - [ ] Restore backup to test instance
 - [ ] Verify all data intact
 - [ ] Document restoration procedure
 - [ ] Time the restoration process
+- **No production downtime required**
 
 ---
 
-## 📅 Week 3: Keycloak SSO & Resource Limits (REQUIRED)
+## 📅 Week 3: Keycloak SSO & Resource Limits
 
-### [ ] Day 1-2: Keycloak SSO Integration
+### [ ] Day 1-2: Keycloak SSO Integration (OPTIONAL)
+
 - [ ] Create GitLab client in Keycloak (http://10.0.0.84:8180/admin)
   - Client ID: gitlab
-  - Valid Redirect URI: http://10.0.0.84:8090/users/auth/openid_connect/callback
+  - Valid Redirect URI: https://gitlab.wizardsofts.com/users/auth/openid_connect/callback
 - [ ] Note Client Secret from Credentials tab
 - [ ] Add KEYCLOAK_CLIENT_SECRET to .env
 - [ ] Update docker-compose.yml with omniauth config
 - [ ] Restart GitLab
 - [ ] Test: Click "Keycloak" button on login page
 - [ ] Verify user account linking works
+- **Note**: SSO is optional; can be skipped or implemented later
 
 ### [ ] Day 3: Resource Limits
+
 - [ ] Add resource limits to docker-compose.yml
-- [ ] **CPU: 2 cores max, 1 core reserved** (reduced)
-- [ ] **Memory: 4GB max, 2GB reserved** (reduced)
+- [ ] **CPU: 2 cores reserved, 4 cores max**
+- [ ] **Memory: 2GB reserved, 4GB max**
 - [ ] Monitor resource usage after restart
 - [ ] Verify GitLab functions normally
 
 ### [ ] Day 4: Rate Limiting
+
 - [ ] Update docker-compose.yml with rate limit config
 - [ ] Set: 10 requests/60 seconds
 - [ ] Configure Rack Attack for bruteforce protection
@@ -145,6 +159,7 @@ git commit -am "security: Remove hardcoded credentials"
 - [ ] Test: Excessive requests should get 429
 
 ### [ ] Day 5: SSH Key Restrictions
+
 - [ ] Admin Area → Settings → General → SSH key restrictions
 - [ ] RSA minimum: 3072 bits
 - [ ] ECDSA minimum: 384 bits
@@ -157,23 +172,27 @@ git commit -am "security: Remove hardcoded credentials"
 ## 📅 Week 4-6: Verification & Monitoring
 
 ### [ ] Verify Container Scanning (Already Configured)
+
 - [ ] Check `.gitlab/ci/security.gitlab-ci.yml` for Trivy config
 - [ ] Verify pipeline runs include security stage
 - [ ] Run manual scan test
 - [ ] ✅ No changes needed if already working
 
 ### [ ] Performance Tuning
+
 - [ ] Configure Puma workers: 3 (reduced for 2 CPU limit)
 - [ ] Configure Sidekiq concurrency: 15 (reduced)
 - [ ] Enable database connection pooling
 - [ ] Monitor performance metrics
 
 ### [ ] Grafana Loki Integration
+
 - [ ] Configure GitLab log shipping
 - [ ] Create Grafana dashboards
 - [ ] Set up log-based alerts
 
 ### [ ] Access Control Review
+
 - [ ] Review user permissions
 - [ ] Remove inactive users
 - [ ] Audit admin accounts
@@ -184,55 +203,69 @@ git commit -am "security: Remove hardcoded credentials"
 ## ✅ Validation Checklist (After All Phases)
 
 ### [ ] Security Validation
+
 ```bash
 # Run validation script
 cd /opt/wizardsofts-megabuild
-./scripts/gitlab-security-validation.sh
+./scripts/gitlab-integration-test.sh  # Comprehensive test suite
 ```
 
 **Manual Checks**:
-- [ ] GitLab version is latest stable
-- [ ] 2FA enforced for all users
-- [ ] Keycloak SSO working (click "Keycloak" on login page)
+
+- [ ] GitLab version is latest stable (18.7.0+)
+- [ ] 2FA available for users (optional, not enforced)
+- [ ] HTTPS enabled on all endpoints
+- [ ] HSTS header present
+- [ ] Keycloak SSO working (if enabled - click "Keycloak" on login page)
 - [ ] Backups running daily at 2 AM
+- [ ] Backup rotation working (14 days kept)
 - [ ] No hardcoded credentials in README or docs
 - [ ] Container scanning enabled (verify in pipelines)
 - [ ] Rate limiting active (test with excessive requests)
 - [ ] SSH key restrictions in place (3072-bit RSA minimum)
-- [ ] Resource limits applied (2 CPU / 4GB RAM)
+- [ ] Resource limits applied (2 CPU/4GB RAM)
+- [ ] Loki receiving logs
+- [ ] Grafana dashboards populating
+- [ ] Prometheus metrics collecting
 
 ### [ ] Functional Testing
+
 - [ ] User login works
 - [ ] Git clone via HTTPS works
 - [ ] Git push via SSH works
 - [ ] CI/CD pipelines run successfully
 - [ ] Container registry push/pull works
 - [ ] Webhooks fire correctly
+- [ ] NFS backup mount accessible
 
 ### [ ] Performance Testing
+
 - [ ] Page load times < 2 seconds
 - [ ] Git operations fast
 - [ ] Pipeline execution not degraded
-- [ ] No resource exhaustion
+- [ ] No resource exhaustion (CPU <80%, Memory <85%)
 
 ---
 
 ## 📊 Progress Tracking (Revised 6-Week Plan)
 
-| Phase | Status | Start Date | Completion Date | Notes |
-|-------|--------|------------|-----------------|-------|
-| Immediate Actions | 🔲 Not Started | | | Backup, credentials, remove passwords from docs |
-| Week 1: Critical Fixes | 🔲 Not Started | | | Version upgrade, credential rotation |
-| Week 2: Auth & Backups | 🔲 Not Started | | | 2FA, automated backups, DR testing |
-| Week 3: SSO & Limits | 🔲 Not Started | | | **Keycloak SSO (required)**, 2 CPU/4GB limits |
-| Week 4-6: Verification | 🔲 Not Started | | | Container scanning verify, monitoring |
-| Final Validation | 🔲 Not Started | | | All checks pass |
+| Phase                   | Status         | Start Date | Completion Date | Notes                                            |
+| ----------------------- | -------------- | ---------- | --------------- | ------------------------------------------------ |
+| Immediate Actions       | 🔲 Not Started |            |                 | Backup, credentials, remove passwords from docs  |
+| Week 1: Critical Fixes  | 🔲 Not Started |            |                 | Version upgrade, credential rotation             |
+| Week 2: HTTPS & Backups | 🔲 Not Started |            |                 | HTTPS/TLS, automated backups, NFS, DR testing    |
+| Week 3: SSO & Limits    | 🔲 Not Started |            |                 | Keycloak SSO (OPTIONAL), rate limiting, SSH keys |
+| Week 4-6: Monitoring    | 🔲 Not Started |            |                 | Loki/Grafana, Prometheus, container scanning     |
+| Final Validation        | 🔲 Not Started |            |                 | All integration tests pass (✅)                  |
 
-**Changes from Original 8-Week Plan**:
-- ❌ HTTPS/TLS: DEFERRED (local network only)
-- ⬆️ Keycloak SSO: Moved to Week 3 (required)
-- ✅ Container Scanning: Already done, verify only
-- 📉 Resource Limits: 2 CPU/4GB (reduced from 4 CPU/8GB)
+**Updated 6-Week Plan**:
+
+- ✅ HTTPS/TLS: NOW IN WEEK 2 (critical)
+- ⚡ Keycloak SSO: OPTIONAL (Week 3)
+- ✅ 2FA Enforcement: OPTIONAL (not mandatory)
+- ✅ NFS Backups: REQUIRED (with 14-day rotation)
+- 📊 Integration Tests: Required after each phase
+- 📈 Resource Limits: 2 CPU/4GB (optimized)
 
 **Legend**: 🔲 Not Started | 🟡 In Progress | ✅ Complete | ❌ Blocked
 
@@ -242,7 +275,7 @@ cd /opt/wizardsofts-megabuild
 
 **Technical Issues**: devops@wizardsofts.com  
 **Security Incidents**: security@wizardsofts.com  
-**Emergency Rollback**: [Senior DevOps Lead]  
+**Emergency Rollback**: [Senior DevOps Lead]
 
 ---
 
