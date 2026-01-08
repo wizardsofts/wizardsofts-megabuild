@@ -11,6 +11,12 @@ This document defines the complete software development lifecycle (SDLC) protoco
 1. [Session Lifecycle](#1-session-lifecycle)
 2. [Code Investigation Protocol](#2-code-investigation-protocol)
 3. [Behavior Change Protocol](#3-behavior-change-protocol)
+   - [3.1 Stop and Inform](#31-mandatory-stop-and-inform-before-changing-behavior)
+   - [3.2 Behavior Change Report](#32-behavior-change-report-format)
+   - [3.3 Removal/Deletion Protocol](#33-removaldeletion-protocol)
+   - [3.4 Examples](#34-examples-of-when-to-stop)
+   - [3.5 Decision Flowchart](#35-quick-decision-flowchart)
+   - [3.6 Breaking Changes Protocol](#36-breaking-changes-protocol-infrastructureservicesapplicationsfeatures) ⭐ NEW
 4. [Reflection & Learning Protocol](#4-reflection--learning-protocol)
 5. [Critical Operational Policies](#5-critical-operational-policies)
 6. [Test-Driven Development (TDD)](#6-test-driven-development-tdd)
@@ -83,39 +89,305 @@ Before ending ANY session:
   - Files modified (for quick reference)
 - [ ] features.json status updated (if applicable)
 - [ ] Changes pushed to remote branch
+- [ ] Session artifacts saved to appropriate folders (see Section 1.3.2)
 ```
 
-**Progress Log Format:**
+#### 1.3.1 Active Logging for Implementation
+
+**For detailed logging procedures, see:** [docs/operations/SESSION_LOGGING_GUIDE.md](docs/operations/SESSION_LOGGING_GUIDE.md)
+
+**Quick Reference:**
+
+| Component | Location |
+|-----------|----------|
+| Server command logs | `/tmp/session-YYYYMMDD-HHMMSS.log` |
+| System state snapshots | `/tmp/system-state-YYYYMMDD-HHMMSS.log` |
+| Session artifacts | `docs/handoffs/YYYY-MM-DD-<task>/` |
+| Retrospectives | `docs/archive/retrospectives/` |
+
+**At Session End (MANDATORY):**
+1. Move logs from `/tmp/` to `docs/handoffs/<session>/`
+2. Create `implementation-log.md` with structured notes
+3. Save command history
+4. Create session README
+
+#### 1.3.2 Document Storage Structure
+
+**MANDATORY: All session artifacts MUST be saved to project folders, never left in /tmp**
+
+**For full directory structure, see:** [Section 7.2 Documentation Structure](#72-documentation-structure)
+
+**Key Locations:**
+
+| Document Type | Location |
+|---------------|----------|
+| Session handoffs | `docs/handoffs/YYYY-MM-DD-<task>/` |
+| Retrospectives | `docs/archive/retrospectives/` |
+| Troubleshooting | `docs/operations/troubleshooting/` |
+| Deployment logs | `infrastructure/<service>/deployment-logs/` |
+
+**Document Lifecycle:**
+1. **During Implementation:** Create logs in `/tmp/`
+2. **At Session End:** Move to `docs/handoffs/<session>/`
+3. **After Session:** Update docs with ground truth findings
+4. **Periodic Cleanup:** Archive sessions older than 6 months
+
+**For progress log format and templates, see:** [docs/operations/SESSION_LOGGING_GUIDE.md](docs/operations/SESSION_LOGGING_GUIDE.md)
+
+### 1.4 Handling Implementation Blockers
+
+**When unexpected issues arise during implementation:**
+
+#### 1.4.1 Blocker Classification
+
+**CRITICAL: Distinguish between blockers you can fix vs. those requiring user input:**
+
+| Blocker Type            | Examples                                                                                | Action Required                                 |
+| ----------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Easy Fix**            | Missing dependency, syntax error, test failure, incorrect configuration value           | Fix immediately, continue work                  |
+| **Moderate Fix**        | Integration failure with known solution, missing environment variable, permission issue | Fix if solution is clear, otherwise inform user |
+| **Complex Decision**    | Architectural choice, breaking change required, multiple solution paths                 | STOP → Inform user → Wait for confirmation      |
+| **External Dependency** | Third-party service down, missing credentials, infrastructure not ready                 | STOP → Inform user → Wait for resolution        |
+
+#### 1.4.2 Resolution Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  BLOCKER ENCOUNTERED DURING IMPLEMENTATION                  │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+           ┌────────────────────────┐
+           │  Can I fix this easily? │
+           │  (< 15 min, clear path) │
+           └────────┬───────────────┘
+                    │
+      ┌─────────────┴─────────────┐
+      │ YES                       │ NO
+      ▼                           ▼
+┌─────────────────┐    ┌──────────────────────┐
+│  FIX IT         │    │  STOP & INFORM USER  │
+│  Document fix   │    │  Present options     │
+│  Continue work  │    │  Wait for direction  │
+└─────────────────┘    └──────────────────────┘
+```
+
+#### 1.4.3 Easy Fix Examples
+
+**Fix immediately without user consultation:**
 
 ```markdown
-## Session YYYY-MM-DDTHH:MM:SSZ
+## Examples of Easy Fixes
 
-### Accomplished
+✅ **Missing Package**
 
-- Implemented feature X in service Y
-- Added 5 unit tests, 2 integration tests
-- Updated API documentation
+- Error: `ModuleNotFoundError: No module named 'requests'`
+- Fix: `pip install requests` or add to requirements.txt
+- Action: Fix, commit, continue
 
-### Files Modified
+✅ **Syntax Error**
 
-- apps/ws-gateway/src/main/java/...
-- apps/ws-gateway/src/test/java/...
-- docs/API.md
+- Error: `SyntaxError: invalid syntax`
+- Fix: Correct the syntax error
+- Action: Fix, commit, continue
 
-### Next Steps
+✅ **Test Failure (Simple)**
 
-1. Complete error handling for edge case Z
-2. Add E2E tests for the new endpoint
-3. Update Postman collection
+- Error: Assertion failed, expected 200 got 404
+- Fix: Correct the test expectation or fix the code
+- Action: Fix, verify tests pass, continue
 
-### Blockers
+✅ **Wrong Port/URL**
 
-- None / OR describe blocker with context
+- Error: Connection refused on port 3000
+- Fix: Update to correct port (e.g., 3001)
+- Action: Fix, verify connectivity, continue
 
-### Commits
+✅ **File Permission**
 
-- abc123: feat(gateway): add health endpoint
-- def456: test(gateway): add health endpoint tests
+- Error: Permission denied reading /var/log/app.log
+- Fix: `chmod 644` or run as appropriate user
+- Action: Fix, verify access, continue
+
+✅ **Environment Variable**
+
+- Error: DATABASE_URL not set
+- Fix: Export variable or add to .env file
+- Action: Fix, verify config loaded, continue
+```
+
+#### 1.4.4 User Consultation Required
+
+**STOP and inform user for these scenarios:**
+
+```markdown
+## When to Stop and Consult User
+
+❌ **Architectural Decision**
+
+- Multiple ways to implement feature
+- Trade-offs between approaches
+- Performance vs. simplicity choice
+  → Present options A/B/C, recommend, wait for confirmation
+
+❌ **Breaking Change Required**
+
+- Planned change won't work without breaking existing functionality
+- Need to modify API contract
+- Requires database migration
+  → Explain issue, propose solution, wait for approval
+
+❌ **Missing Infrastructure**
+
+- Database not running
+- External service not available
+- Credentials not provided
+  → Document what's missing, stop work, inform user
+
+❌ **Scope Change**
+
+- Original plan insufficient for requirement
+- Additional work needed beyond scope
+- Dependencies not anticipated
+  → Explain gap, propose updated plan, wait for confirmation
+
+❌ **Conflicting Requirements**
+
+- User requirement conflicts with existing system
+- Security policy prevents planned approach
+- Performance target not achievable with current design
+  → Explain conflict, propose alternatives, wait for decision
+```
+
+#### 1.4.5 Blocker Resolution Template
+
+**When informing user about a blocker:**
+
+```markdown
+## 🛑 IMPLEMENTATION BLOCKER
+
+### What Happened
+
+[Brief description of the blocker encountered]
+
+### Context
+
+- **Task**: [What you were implementing]
+- **Expected**: [What should have happened]
+- **Actual**: [What actually happened]
+- **Root Cause**: [Why it happened]
+
+### Impact
+
+- **Work Stopped At**: [Specific step/file/line]
+- **Blocking**: [What can't proceed without resolution]
+- **Not Blocking**: [What can still be done]
+
+### Investigation Done
+
+- [x] Checked X
+- [x] Verified Y
+- [x] Tested Z
+- [Result summary]
+
+### Options for Resolution
+
+**Option A: [Recommended]**
+
+- Description: [What to do]
+- Pros: [Benefits]
+- Cons: [Drawbacks]
+- Effort: [Time estimate]
+- Risk: [Low/Medium/High]
+
+**Option B: [Alternative]**
+
+- Description: [What to do]
+- Pros: [Benefits]
+- Cons: [Drawbacks]
+- Effort: [Time estimate]
+- Risk: [Low/Medium/High]
+
+**Option C: [Do nothing / Workaround]**
+
+- Description: [What to do]
+- Pros: [Benefits]
+- Cons: [Drawbacks]
+- Impact: [What won't work]
+
+### My Recommendation
+
+[Option X] because [clear reasoning]
+
+---
+
+**Waiting for your direction on how to proceed.**
+```
+
+#### 1.4.6 Post-Resolution Reflection
+
+**MANDATORY: After resolving any blocker, update the plan:**
+
+```markdown
+## After Blocker Resolution
+
+1. **Document the Blocker**
+   - Add to claude-progress.txt under "Blockers Resolved"
+   - Include root cause and solution
+2. **Update the Plan**
+
+   - If blocker revealed planning gap → update plan document
+   - If blocker indicates broader issue → add to investigation checklist
+   - If blocker is recurring pattern → create troubleshooting memory
+
+3. **Verify No Similar Blockers**
+
+   - Check if same issue exists elsewhere in codebase
+   - Proactively fix or document similar cases
+   - Update relevant documentation
+
+4. **Learning Capture**
+   - If blocker was unexpected → why wasn't it caught in planning?
+   - If blocker required special knowledge → create memory
+   - If blocker revealed tool limitation → document workaround
+```
+
+#### 1.4.7 Examples from Recent Work
+
+**Example 1: NFS Permission Issue (Easy Fix)**
+
+```markdown
+Blocker: GitLab container couldn't write to NFS mount
+Root Cause: NFS export had root_squash enabled
+Solution: Changed export to no_root_squash in /etc/exports
+Action: Fixed immediately, verified with mount test, continued work
+Time: 10 minutes
+Documentation: Added to troubleshooting memory
+```
+
+**Example 2: Database Password Missing (Easy Fix)**
+
+```markdown
+Blocker: Integration test failing with "password required"
+Root Cause: Test script expected password in env var, but it's in docker config
+Solution: Modified test to extract password from GitLab Rails instead
+Action: Fixed immediately, tests passed, continued work
+Time: 5 minutes
+Documentation: Updated test script comments
+```
+
+**Example 3: Architecture Decision (User Consultation)**
+
+```markdown
+Blocker: Backup script needs to handle multiple services, original design insufficient
+Root Cause: Plan assumed single service, but need orchestrator for 5+ services
+Solution Options:
+A. Extend existing script with service discovery
+B. Create global orchestrator (2-3 hours)
+C. Keep manual per-service scripts for now
+Action: STOPPED, informed user, presented options, recommended B
+Outcome: User confirmed Option B, added to future scope (Section 4.4)
+Documentation: Created Section 4.4 in plan document
 ```
 
 ---
@@ -560,6 +832,437 @@ function newFeature() {}
     │  Wait for approval  │           │                     │
     └─────────────────────┘           └─────────────────────┘
 ```
+
+### 3.6 Breaking Changes Protocol (Infrastructure/Services/Applications/Features)
+
+**CRITICAL: When making breaking changes to infrastructure, services, applications, or features, you MUST scan for consumers and obtain user approval.**
+
+This protocol extends Section 3 to cover infrastructure and system-level breaking changes, not just code behavior changes.
+
+#### 3.6.1 What Triggers This Protocol
+
+**MANDATORY PROTOCOL WHEN:**
+
+| Change Type        | Examples                                                                          | Action      |
+| ------------------ | --------------------------------------------------------------------------------- | ----------- |
+| **Infrastructure** | Changing ports, removing services, altering networking, modifying database schema | STOP & SCAN |
+| **Service APIs**   | Changing API endpoints, response formats, authentication, rate limits             | STOP & SCAN |
+| **Deployments**    | Disabling services, changing deployment strategy, modifying resource limits       | STOP & SCAN |
+| **Features**       | Removing features, changing default behavior, disabling functionality             | STOP & SCAN |
+| **Integrations**   | Changing external service connections, removing integrations, updating protocols  | STOP & SCAN |
+| **Configuration**  | Changing default settings, removing config options, modifying behavior flags      | STOP & SCAN |
+
+#### 3.6.2 Consumer Scanning Procedure
+
+**Before making ANY breaking change, complete this scan:**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STEP 1: IDENTIFY THE CHANGE                                                │
+│  □ What exactly is being changed?                                           │
+│  □ What is the current behavior/configuration?                              │
+│  □ What is the new behavior/configuration?                                  │
+│  □ When will this take effect?                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STEP 2: SCAN FOR CONSUMERS (MANDATORY)                                     │
+│  □ Search codebase for references to this component/service/feature         │
+│  □ Find all configuration files that reference this                         │
+│  □ Find all documentation that describes this                               │
+│  □ Find all tests that depend on this                                       │
+│  □ Find all deployed instances that use this                                │
+│  □ Find all external systems that integrate with this                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STEP 3: CATEGORIZE IMPACT (MANDATORY)                                      │
+│  □ Direct impact: What fails immediately?                                   │
+│  □ Indirect impact: What breaks as a result?                                │
+│  □ Cascading impact: What depends on those?                                 │
+│  □ User impact: How do users experience this?                               │
+│  □ Data impact: Is data migration required?                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STEP 4: CREATE IMPACT REPORT (MANDATORY)                                   │
+│  □ List all affected components                                             │
+│  □ List all affected teams/services                                         │
+│  □ Document what breaks                                                     │
+│  □ Document required mitigations                                            │
+│  □ Create options (proceed / deprecate / don't change)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  STEP 5: INFORM USER & GET APPROVAL (MANDATORY)                             │
+│  □ Present impact report                                                    │
+│  □ Present all options with pros/cons                                       │
+│  □ Get explicit confirmation to proceed                                     │
+│  □ Update plan based on user decision                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.6.3 Consumer Search Commands
+
+**For each component/service/feature, search:**
+
+```bash
+# 1. Code references
+grep -rn "component-name\|service-name\|feature-name" \
+  apps/ infrastructure/ scripts/ \
+  --include="*.ts" --include="*.js" --include="*.py" --include="*.java" \
+  --include="*.yml" --include="*.yaml" --include="*.json"
+
+# 2. Docker/Kubernetes references
+grep -rn "service-name" \
+  docker-compose*.yml \
+  infrastructure/*/docker-compose.yml \
+  infrastructure/*/k8s/*.yml
+
+# 3. Configuration references
+grep -rn "service-name\|FEATURE_FLAG\|CONFIG_SETTING" \
+  infrastructure/ .env* \
+  --include="*.env" --include="*.conf" --include="*.config"
+
+# 4. Documentation references
+grep -rn "service-name\|component-name" \
+  docs/ \
+  --include="*.md" --include="*.adoc"
+
+# 5. Test references
+grep -rn "service-name" \
+  apps/ \
+  --include="*.test.ts" --include="*Test.java" --include="test_*.py"
+
+# 6. Docker image references
+grep -rn "image.*service-name" docker-compose*.yml infrastructure/*/
+
+# 7. Environment variable references
+grep -rn "SERVICE_NAME\|FEATURE_ENABLED" \
+  apps/ infrastructure/ \
+  --include="*.ts" --include="*.js" --include="*.py" --include="Dockerfile"
+```
+
+#### 3.6.4 Impact Analysis Report Template
+
+**When presenting to user, use this format:**
+
+````markdown
+## 🛑 BREAKING CHANGE IMPACT ANALYSIS
+
+### Change Summary
+
+**Component:** [Service/Infrastructure/Feature name]  
+**Type:** [Infrastructure / API / Feature / Integration / Configuration]  
+**Current State:** [How it currently works]  
+**Proposed Change:** [What will change]  
+**Reason:** [Why this change is needed]
+
+---
+
+### Consumers Identified
+
+#### Direct Consumers (Will Break Immediately)
+
+| Consumer  | Type    | Location             | How It Uses          | Required Fix           |
+| --------- | ------- | -------------------- | -------------------- | ---------------------- |
+| Service A | Service | `apps/service-a/`    | Calls endpoint       | Update endpoint calls  |
+| Config B  | Config  | `docker-compose.yml` | Uses old port        | Update port reference  |
+| Test C    | Test    | `apps/test.ts:150`   | Expects old behavior | Update test assertions |
+
+**Count:** N direct consumers requiring changes
+
+#### Indirect Consumers (Will Break as a Result)
+
+| Consumer      | Depends On           | Impact            | Severity |
+| ------------- | -------------------- | ----------------- | -------- |
+| Feature X     | Service A            | Cannot query data | HIGH     |
+| Dashboard Y   | Service A API        | Displays error    | HIGH     |
+| Integration Z | Configuration change | Connection fails  | MEDIUM   |
+
+**Count:** N indirect consumers affected
+
+#### Cascading Dependencies (Transitive Impact)
+
+| Level  | Consumers                    | Impact             |
+| ------ | ---------------------------- | ------------------ |
+| Tier 2 | 3 consumers of Service A     | Data inconsistency |
+| Tier 3 | 5 consumers of Dashboard Y   | UI errors          |
+| Tier 4 | 2 consumers of Integration Z | Sync failures      |
+
+---
+
+### Impact Assessment
+
+#### Services Impacted
+
+- [ ] **Production Services:** [List N services]
+- [ ] **Staging Services:** [List N services]
+- [ ] **Development Services:** [List N services]
+
+#### Data Impact
+
+- [ ] **Data Migration Required:** Yes / No
+  - If yes: [Migration strategy]
+- [ ] **Data Loss Risk:** Yes / No
+  - If yes: [Mitigation strategy]
+- [ ] **Rollback Capability:** [How to rollback]
+
+#### User-Facing Impact
+
+- [ ] **User-visible changes:** [What users see]
+- [ ] **User disruption:** [Downtime, errors, degraded service]
+- [ ] **Support load:** [Expected support tickets]
+- [ ] **Communication needed:** [User notifications required]
+
+#### Effort & Timeline
+
+| Task               | Effort        | Dependencies               |
+| ------------------ | ------------- | -------------------------- |
+| Consumer #1 fix    | 2 hours       | Depends on consumer #2     |
+| Consumer #2 fix    | 3 hours       | Blocks consumer #1         |
+| Database migration | 1 hour        | Must run before deployment |
+| Testing            | 4 hours       | After all consumer fixes   |
+| Documentation      | 1 hour        | Final step                 |
+| **Total**          | **~11 hours** | **Sequential tasks**       |
+
+---
+
+### Options Available
+
+#### Option A: Proceed with Breaking Change (Recommended)
+
+**Description:** Make the change immediately, update all consumers, coordinate migration
+
+**Pros:**
+
+- Resolves underlying issue
+- All systems on same version
+- Clean state going forward
+
+**Cons:**
+
+- N consumers need updates
+- Requires effort: [X hours]
+- Risk of missing a consumer
+- User disruption: [duration/scope]
+
+**Effort:** [High/Medium/Low]  
+**Risk:** [High/Medium/Low]  
+**Timeline:** [How long to complete all updates]
+
+#### Option B: Deprecation Period
+
+**Description:** Keep old behavior for N releases, add deprecation warning, then remove
+
+**Pros:**
+
+- Allows gradual migration
+- Consumers have time to update
+- Reduces risk of missing something
+- Users get warning period
+
+**Cons:**
+
+- Technical debt (maintain two versions)
+- Longer time to resolution
+- More testing required
+- Code complexity increases
+
+**Timeline:**
+
+- Phase 1 (Release X.Y.0): Add deprecation warning
+- Phase 2 (Release X.Y.5): Remove old behavior
+- Grace period: [X releases / Y weeks]
+
+**Effort:** [Effort breakdown for each phase]
+
+#### Option C: Alternative Approach
+
+**Description:** [Alternative way to achieve goal without breaking changes]
+
+**Implementation:** [How to do it differently]
+
+**Pros:** [Benefits of alternative]  
+**Cons:** [Trade-offs]  
+**Effort:** [How much work]
+
+#### Option D: Don't Make Change
+
+**Description:** Keep current behavior and address concerns differently
+
+**Why this might be needed:** [Reasons to consider not changing]  
+**Workarounds for users:** [How to live with current behavior]
+
+---
+
+### Recommendation
+
+**I recommend: [Option A / B / C / D]**
+
+**Reasoning:**
+
+- Reason 1
+- Reason 2
+- Reason 3
+
+---
+
+### Risk Mitigation Plan (If Proceeding)
+
+**For each affected consumer:**
+
+| Consumer  | Mitigation             | Owner  | Timeline |
+| --------- | ---------------------- | ------ | -------- |
+| Service A | Update endpoint calls  | Team A | Day 1    |
+| Config B  | Update port in compose | Ops    | Day 1    |
+| Test C    | Update test assertions | Dev    | Day 1    |
+
+**Rollback Plan:**
+
+```bash
+# If something breaks, rollback procedure:
+1. Revert change with: git revert <commit>
+2. Restart affected services
+3. Verify with integration tests
+4. Communicate to users
+```
+````
+
+**Testing Plan:**
+
+- [ ] Unit tests for each consumer fix
+- [ ] Integration tests for all updated components
+- [ ] Staging deployment and full smoke test
+- [ ] Canary deployment to production (if applicable)
+
+**Monitoring & Observability:**
+
+- [ ] Metrics to monitor post-deployment
+- [ ] Alerts for failure conditions
+- [ ] Rollback triggers defined
+
+---
+
+### Attached Documentation
+
+- **Consumer scan results:** [Link to full scan output]
+- **Code references:** [Link to grep search results]
+- **Deployment plan:** [Link to deployment documentation]
+- **Rollback plan:** [Link to rollback procedures]
+
+---
+
+**🛑 AWAITING USER CONFIRMATION**
+
+Please confirm one of:
+
+1. **Option A** - Proceed with breaking change
+2. **Option B** - Deprecation period (specify release numbers)
+3. **Option C** - Alternative approach
+4. **Option D** - Don't make change
+
+You can also:
+
+- Request modifications to the plan
+- Ask for additional analysis
+- Propose a different timeline
+- Identify consumers I may have missed
+
+````
+
+#### 3.6.5 Examples of Proper Scanner Output
+
+**Example 1: Removing a Microservice Port**
+
+```markdown
+## BREAKING CHANGE: Remove Internal Message Queue Service
+
+### Change
+- **Component:** `rabbitmq` service on port 5672
+- **Current:** 3 internal services use it (events, notifications, cache)
+- **Proposed:** Replace with direct database events table
+
+### Consumers Found
+
+#### Direct (Will Break)
+- `gibd-quant-agent`: Line 145 publishes messages
+- `ws-gateway`: Line 89 consumes messages
+- `gibd-news`: Line 234 consumes messages
+
+#### Indirect (Will Fail as Result)
+- `gibd-quant-web`: Websocket updates from notifications
+- `monitoring-dashboard`: Event stream visualization
+
+#### Cascading
+- 5 user dashboards depend on real-time updates
+
+### Recommendation
+**Option B: Deprecation Period**
+- Release X.Y.0: Add new database events table, dual-write
+- Release X.Y.5: Remove RabbitMQ, use only DB events
+- Grace period: 5 releases (~10 weeks)
+
+### Effort: 8 hours (spread over 2 releases)
+````
+
+**Example 2: Changing API Response Format**
+
+```markdown
+## BREAKING CHANGE: API Response Format
+
+### Change
+
+- **Endpoint:** `/api/v1/stocks`
+- **Current:** `{ stocks: [...] }`
+- **Proposed:** `{ data: [...], meta: {...} }`
+
+### Consumers Found
+
+#### Codebases Using This
+
+- `gibd-quant-web` (4 locations)
+- `gibd-quant-agent` (2 locations)
+- External dashboards (3 customers)
+- Mobile app (unknown versions)
+
+#### Tests Impacted
+
+- 8 API tests expect old format
+- 2 integration tests
+
+### Recommendation
+
+**Option B: Deprecation**
+
+- Support both formats for 2 releases
+- Add `Accept-Format: legacy` header option
+- Promote `v2` endpoint with new format
+
+### Effort: 6 hours
+```
+
+#### 3.6.6 When NOT to Use This Protocol
+
+**Skip this protocol (use simpler Behavior Change protocol) when:**
+
+- Adding new functionality (backwards compatible)
+- Fixing bugs (no behavior contract change)
+- Internal refactoring (same inputs/outputs)
+- Performance optimization (no external change)
+- Non-production environment changes
+
+**Use this protocol when:**
+
+- ANY change affects multiple codebases
+- ANY change affects deployed infrastructure
+- ANY change affects external integrations
+- ANY change affects users or applications
+- ANY change to APIs or contracts
 
 ---
 
@@ -1273,6 +1976,117 @@ mongodb://username:password@host:port/database?authSource=admin
 
 **Never proceed with unverified database configuration.**
 
+### 5.6 Script Maintenance Protocol
+
+**MANDATORY: Keep infrastructure validation and setup scripts updated as the project evolves.**
+
+See also: Section 5.2 (Script-First Policy)
+
+#### 5.6.1 Core Infrastructure Scripts
+
+The following scripts in `scripts/` directory MUST be kept current:
+
+| Script                               | Purpose                   | Based On                                  |
+| ------------------------------------ | ------------------------- | ----------------------------------------- |
+| `validate-service-infrastructure.sh` | Ground truth verification | GitLab session 2026-01-08, AGENT.md § 9.0 |
+| `setup-service-backups.sh`           | NFS backup automation     | GitLab backup setup, AGENT.md § 9.1       |
+| `test-service-integration.sh`        | Integration test runner   | 28-test validation, AGENT.md § 9.4        |
+
+**Full documentation**: See `scripts/README.md`
+
+#### 5.6.2 When to Update Scripts
+
+Update infrastructure scripts when:
+
+| Trigger Event                        | Action Required                             | Example                                                |
+| ------------------------------------ | ------------------------------------------- | ------------------------------------------------------ |
+| **Adding new services**              | Extend test coverage, add validation checks | New Keycloak deployment → add SSO tests                |
+| **Changing infrastructure patterns** | Update validation logic                     | Move from Docker Compose → Swarm → update port checks  |
+| **Discovering failure modes**        | Add corresponding checks                    | NFS permission issue → add mount permission validation |
+| **Updating conventions**             | Align scripts with standards                | Backup path change → update setup-service-backups.sh   |
+| **Security improvements**            | Add security validation                     | New hardening rules → add firewall/SSL checks          |
+
+#### 5.6.3 Script Update Checklist
+
+**Before ANY infrastructure change:**
+
+```markdown
+## Script Update Assessment
+
+- [ ] Will this change affect existing validation scripts?
+- [ ] Do new services need test coverage?
+- [ ] Are new failure modes being introduced?
+- [ ] Has the standard changed (e.g., backup paths)?
+- [ ] Do security policies require new checks?
+
+If YES to any: Update scripts BEFORE deploying change
+```
+
+**After ANY infrastructure change:**
+
+```markdown
+## Script Verification
+
+- [ ] Run validate-service-infrastructure.sh on affected service
+- [ ] Run test-service-integration.sh to verify tests still work
+- [ ] Update test expectations if infrastructure changed
+- [ ] Document new patterns in script comments
+- [ ] Test scripts in staging before production use
+```
+
+#### 5.6.4 Script Versioning
+
+Track script changes in git with descriptive commits:
+
+```bash
+# Good commit messages
+git commit -m "feat(scripts): add Keycloak SSO validation tests"
+git commit -m "fix(scripts): update NFS permission checks for no_root_squash"
+git commit -m "docs(scripts): document new backup retention validation"
+
+# Bad commit messages (avoid)
+git commit -m "update scripts"
+git commit -m "fixes"
+```
+
+#### 5.6.5 Testing Script Changes
+
+**MANDATORY: Test script modifications before committing:**
+
+```bash
+# 1. Test with --dry-run flag (if available)
+./scripts/setup-service-backups.sh gitlab 10.0.0.84 10.0.0.80 --dry-run
+
+# 2. Test against staging service first
+./scripts/validate-service-infrastructure.sh gitlab-staging 10.0.0.85
+
+# 3. Verify exit codes and error handling
+./scripts/test-service-integration.sh gitlab 10.0.0.84 --strict
+
+# 4. Test with edge cases
+./scripts/validate-service-infrastructure.sh nonexistent-service 10.0.0.84  # Should fail gracefully
+```
+
+#### 5.6.6 Documentation Updates
+
+When updating scripts, also update:
+
+1. **scripts/README.md** - Usage examples, new options, when to use
+2. **AGENT.md (this file)** - If protocol changes
+3. **Service AGENT.md** - Service-specific test requirements
+4. **CHANGELOG.md** - Note script improvements
+
+#### 5.6.7 Script Maintenance Schedule
+
+| Frequency                   | Task                 | Action                                     |
+| --------------------------- | -------------------- | ------------------------------------------ |
+| **After each infra change** | Verify scripts work  | Run against affected services              |
+| **Monthly**                 | Review for drift     | Check if scripts match current reality     |
+| **Quarterly**               | Update test coverage | Add tests for new services/patterns        |
+| **Annually**                | Comprehensive audit  | Review all scripts, remove obsolete checks |
+
+**Never proceed with unverified database configuration.**
+
 ---
 
 ### 5.6 Communication Style
@@ -1516,7 +2330,40 @@ Move to `/docs/archive/` when:
 - `audits/` - Security audits and reviews
 - `status-reports/` - One-time completion reports (`*_COMPLETE.md`, `*_READY.md`)
 
-### 7.3 Code Documentation Standards
+### 7.3 Documentation Efficiency Rules
+
+**MANDATORY: Minimize documentation files per session.**
+
+#### Rules
+
+1. **Update existing files** rather than creating new ones
+2. **One handoff document per session** (not multiple summaries)
+3. **Append with timestamps** when adding to existing docs:
+   ```markdown
+   ## Update (2026-01-08)
+   - Added rate limiting configuration
+   - Fixed NFS permission issue
+   ```
+4. **Delete redundant files** before committing
+
+#### Prohibited Patterns
+
+- ❌ Creating `QUICK_REFERENCE.md` alongside `SUMMARY.md` (redundant)
+- ❌ Multiple conversation summaries for same session
+- ❌ Separate files for related content that fits in one doc
+
+#### Allowed Patterns
+
+- ✅ One `README.md` per session handoff folder
+- ✅ Appending updates with timestamps to existing docs
+- ✅ Moving completed work to `docs/archive/` (not duplicating)
+
+#### Session Documentation Limit
+
+- **Maximum new files per session:** 3 (handoff + retrospective + blocker if needed)
+- **Prefer:** Updating existing files over creating new ones
+
+### 7.4 Code Documentation Standards
 
 **Functions/Methods:**
 
@@ -1542,7 +2389,7 @@ Move to `/docs/archive/` when:
 // See: https://paper-reference.com/algorithm-explanation
 ```
 
-### 7.3 Changelog Format
+### 7.5 Changelog Format
 
 Follow [Keep a Changelog](https://keepachangelog.com/):
 
@@ -1642,6 +2489,329 @@ Brief description of what this PR does.
 ## 9. Deployment & CI/CD
 
 > **For Docker deployments:** See [Section 13: Docker Deployment](#13-docker-deployment) for detailed Docker best practices.
+
+### 9.0 CRITICAL: Ground Truth Verification Protocol
+
+**MANDATORY: Before planning ANY work (infrastructure, feature development, bug fixes, tests, docs, service deployment, or blocker resolution), verify actual system state against documented assumptions.**
+
+#### 9.0.1 When to Verify Ground Truth
+
+Verify ground truth in these scenarios:
+
+| Scenario                                           | Verification Required | Why                                             |
+| -------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| Any planning (features, bugs, tests, docs, infra)  | ✅ YES                | Plans must match reality, not assumptions       |
+| Resolving blockers from tests/reports              | ✅ YES                | Root cause may differ from symptoms             |
+| Following migration/deployment guides              | ✅ YES                | Actual state may differ from guide assumptions  |
+| Estimating/assessing effort (avoid time estimates) | ✅ YES                | Prevents effort mis-sizing                      |
+| User reports service down/broken                   | ✅ YES                | Service may be running (network/firewall issue) |
+| Documentation conflicts                            | ✅ YES                | Reality trumps documentation                    |
+
+#### 9.0.2 Ground Truth Investigation Commands
+
+**Infrastructure State:**
+
+```bash
+# Check running containers
+ssh user@host "docker ps -a | grep service-name"
+
+# Check container health and uptime
+ssh user@host "docker inspect service-name --format '{{.State.Health.Status}} {{.State.StartedAt}}'"
+
+# Check container configuration and recent logs (if applicable)
+ssh user@host "docker inspect service-name | head -40"
+ssh user@host "docker logs --tail 200 service-name"
+
+# Check listening ports
+ssh user@host "ss -tlnp | grep ':PORT'"
+ssh user@host "docker exec service-name netstat -tlnp"
+
+# Check firewall rules
+ssh user@host "sudo ufw status"
+
+# Check mounted filesystems
+ssh user@host "mount | grep nfs"
+ssh user@host "df -h | grep /mnt"
+
+# Check NFS exports
+ssh user@nfs-server "cat /etc/exports"
+ssh user@nfs-server "showmount -e localhost"
+```
+
+**Service Configuration:**
+
+```bash
+# Check actual config in container
+ssh user@host "docker exec service-name cat /etc/service/config.yml"
+
+# Check environment variables
+ssh user@host "docker exec service-name env | grep SERVICE"
+
+# Check service internal health
+ssh user@host "curl -s http://127.0.0.1:PORT/health"
+
+# Check logs for errors (recent)
+ssh user@host "docker logs service-name 2>&1 | tail -200"
+```
+
+**Storage and Backups:**
+
+```bash
+# Check NFS directory structure
+ssh user@nfs-server "ls -la /mnt/data/Backups/server/"
+ssh user@nfs-server "du -sh /mnt/data/Backups/server/*"
+
+# Check service backup configuration
+ssh user@host "docker exec service-name grep -i backup /etc/service/config"
+```
+
+#### 9.0.3 Ground Truth Validation Checklist
+
+**Before planning, verify:**
+
+```markdown
+## Ground Truth Verification for: <task/blocker>
+
+### Documentation Claims vs Reality
+
+| Claim from Docs | Command to Verify                | Actual Reality        | Match?      |
+| --------------- | -------------------------------- | --------------------- | ----------- |
+| Service is down | `docker ps \| grep service`      | Container UP 39 hours | ❌ Mismatch |
+| Port 3000       | `netstat -tlnp \| grep service`  | Actually port 3002    | ❌ Mismatch |
+| NFS not mounted | `mount \| grep nfs`              | /mnt/data mounted     | ❌ Mismatch |
+| Config missing  | `docker exec service cat config` | Config exists         | ❌ Mismatch |
+
+### Root Cause Analysis
+
+**Documented Assumption:** [What docs/tests said was wrong]
+**Actual Reality:** [What ground truth investigation revealed]
+**Real Blocker:** [Actual issue, e.g., firewall blocking, not service down]
+
+### Corrected Plan
+
+**Original Effort Assumption (no time):** [Effort/complexity based on docs]
+**Updated Effort (no time):** [Effort/complexity based on ground truth]
+**Difference:** [Why the assumption was wrong]
+
+### Findings to Update
+
+- [ ] Update documentation: [file/section]
+- [ ] Update integration tests: [wrong URLs/assumptions]
+- [ ] Update blocker analysis: [severity/root cause]
+- [ ] Create memory: [troubleshooting guide based on findings]
+```
+
+#### 9.0.4 Flagging Documentation Mismatches
+
+**MANDATORY: If ground truth differs from documentation, STOP and report:**
+
+```markdown
+## ⚠️ DOCUMENTATION MISMATCH DETECTED
+
+### Mismatch Summary
+
+| Document    | Location | Claim                   | Reality                     | Impact              |
+| ----------- | -------- | ----------------------- | --------------------------- | ------------------- |
+| BLOCKERS.md | Line 63  | NFS /mnt/gitlab-backups | Actually /mnt/data exported | 1 hour wasted       |
+| test script | Line 45  | Grafana on .80:3000     | Actually .84:3002           | Test false negative |
+
+### Recommended Actions
+
+1. **Immediate:** Update [document] with correct information
+2. **Immediate:** Fix [test script] with actual endpoints
+3. **Next session:** Audit related docs for similar mismatches
+
+### Lessons Learned
+
+[What caused the mismatch? How to prevent in future?]
+```
+
+#### 9.0.5 Integration with Planning
+
+**Updated Planning Workflow (applies to ALL planning):**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 1: Read Documentation/Reports                         │
+│  □ Understand documented issue/blocker                      │
+│  □ Note assumptions and claims                              │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 2: VERIFY GROUND TRUTH (NEW - MANDATORY)              │
+│  □ SSH to actual servers (or inspect environment)           │
+│  □ Check running services, health, configuration, recent logs│
+│  □ Verify ports, mounts, NFS, secrets, and configs           │
+│  □ Compare reality vs documentation                         │
+│  □ Document mismatches                                      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STEP 3: Create Corrected Plan                              │
+│  □ Base effort (not time) on actual state (not docs)        │
+│  □ Identify real blockers (not symptoms)                    │
+│  □ Flag docs that need updating                             │
+│  □ Present findings to user                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 9.0.6 Automated Pre-Flight Verification (Scripts)
+
+**PREFERRED: Use validation scripts instead of manual SSH commands.**
+
+For infrastructure work, run the validation script:
+
+```bash
+./scripts/validate-service-infrastructure.sh <service-name> <host-ip>
+
+# Examples:
+./scripts/validate-service-infrastructure.sh gitlab 10.0.0.84
+./scripts/validate-service-infrastructure.sh keycloak 10.0.0.84 --strict
+```
+
+For backup configuration setup:
+
+```bash
+./scripts/setup-service-backups.sh <service-name> <host-ip> <nfs-server> --dry-run
+
+# Example:
+./scripts/setup-service-backups.sh nexus 10.0.0.84 10.0.0.80 --dry-run
+```
+
+For integration testing after changes:
+
+```bash
+./scripts/test-service-integration.sh <service-name> <host-ip>
+
+# Examples:
+./scripts/test-service-integration.sh gitlab 10.0.0.84
+./scripts/test-service-integration.sh gitlab 10.0.0.84 --skip backup --skip monitoring
+```
+
+**See:** [scripts/README.md](scripts/README.md) for full script documentation.
+**See:** [docs/operations/checklists/README.md](docs/operations/checklists/README.md) for manual checklists.
+
+#### 9.0.7 App-Specific Pre-Flight Checklists
+
+**Each app's AGENT.md MAY define its own pre-flight checklist.** Check the app's AGENT.md first.
+
+| App | Checklist Location |
+|-----|-------------------|
+| ws-gateway | `apps/ws-gateway/AGENT.md` → Java Spring checklist |
+| gibd-quant-agent | `apps/gibd-quant-agent/AGENT.md` → Python ML checklist |
+| gibd-web-scraper | `apps/gibd-web-scraper/AGENT.md` → Python checklist |
+| gibd-news | `apps/gibd-news/AGENT.md` → Data pipeline checklist |
+
+**If no app-specific checklist exists, use the generic checklist in:**
+`docs/operations/checklists/README.md`
+
+### 9.1 Service Backup Storage Convention
+
+**MANDATORY: All service backups MUST follow standardized NFS directory structure.**
+
+#### 9.1.1 Backup Directory Structure
+
+```
+/mnt/data/Backups/server/
+├── gitlab/              # GitLab backups (config, DB dumps, repositories, uploads)
+├── postgres/            # PostgreSQL dumps
+├── redis/               # Redis RDB snapshots
+├── nexus/               # Nexus repository backups
+├── keycloak/            # Keycloak exports
+├── grafana/             # Grafana dashboards
+└── <service-name>/      # Any service backup
+```
+
+_All backup artifacts for a given service (config, DB, files, blobs) must reside inside that service's folder. Use date-based subfolders (e.g., `YYYY-MM-DD/`) when size or retention needs clarity; keep flat layout only if volume is small and retention policy is simple._
+
+#### 9.1.2 Backup Configuration Pattern
+
+**For ALL services requiring backups:**
+
+```yaml
+# 1. Create service backup directory on NFS server (10.0.0.80)
+ssh agent@10.0.0.80 "sudo mkdir -p /mnt/data/Backups/server/<service-name>"
+ssh agent@10.0.0.80 "sudo chown <service-uid>:<service-gid> /mnt/data/Backups/server/<service-name>"
+
+# 2. Export via NFS (if not already exported)
+# /mnt/data is already exported with proper permissions
+
+# 3. Mount on service host
+ssh agent@<service-host> "sudo mkdir -p /mnt/<service-name>-backups"
+ssh agent@<service-host> "sudo mount -t nfs 10.0.0.80:/mnt/data/Backups/server/<service-name> /mnt/<service-name>-backups"
+
+# 4. Add to /etc/fstab for persistence
+echo "10.0.0.80:/mnt/data/Backups/server/<service-name> /mnt/<service-name>-backups nfs defaults 0 0" | sudo tee -a /etc/fstab
+
+# 5. Configure service to use backup directory
+# In docker-compose.yml or service config:
+volumes:
+  - /mnt/<service-name>-backups:/var/backups/<service-name>
+```
+
+#### 9.1.3 GitLab Backup Example
+
+**Following the standard pattern:**
+
+```bash
+# On NFS server (10.0.0.80)
+sudo mkdir -p /mnt/data/Backups/server/gitlab
+sudo chown 998:998 /mnt/data/Backups/server/gitlab  # git user UID:GID
+
+# On GitLab server (10.0.0.84)
+sudo mkdir -p /mnt/gitlab-backups
+sudo mount -t nfs 10.0.0.80:/mnt/data/Backups/server/gitlab /mnt/gitlab-backups
+echo "10.0.0.80:/mnt/data/Backups/server/gitlab /mnt/gitlab-backups nfs defaults 0 0" | sudo tee -a /etc/fstab
+
+# Update gitlab.rb or GITLAB_OMNIBUS_CONFIG
+gitlab_rails['backup_path'] = '/var/opt/gitlab/backups'
+
+# Mount in docker-compose.yml
+volumes:
+  - /mnt/gitlab-backups:/var/opt/gitlab/backups
+```
+
+#### 9.1.4 Backup Testing
+
+**After configuring backups, verify:**
+
+```bash
+# Test backup creation
+docker exec <service> <backup-command>
+
+# Verify file appears on NFS
+ssh agent@10.0.0.80 "ls -lh /mnt/data/Backups/server/<service-name>/"
+
+# Test backup restoration (in staging/test environment)
+docker exec staging-<service> <restore-command>
+docker exec staging-<service> <verify-command>
+```
+
+#### 9.1.5 Backup Retention Policy
+
+**Standard retention for all services:**
+
+```bash
+# Keep last 7 daily backups, 4 weekly, 12 monthly
+# Implement via cron or service-specific backup configuration
+
+# Example: GitLab backup retention in gitlab.rb
+gitlab_rails['backup_keep_time'] = 604800  # 7 days in seconds
+```
+
+#### 9.1.6 When to Deviate from Pattern
+
+**ONLY deviate from `/mnt/data/Backups/server/<service>/` if:**
+
+- Service has specific technical requirement (document why in service AGENT.md)
+- Security/compliance requires different location (document in security docs)
+- After consulting with team (document decision in ADR)
+
+**NEVER** use service operational data directories for backups (e.g., `/mnt/data/docker/<service>/backups/` is NOT acceptable).
+
+---
 
 ### 9.0 CRITICAL: No Direct Deployment
 
@@ -2799,6 +3969,12 @@ curl -X POST \
 │  □ Read claude-progress.txt                                 │
 │  □ npm test (or equivalent)                                 │
 │  □ Pick ONE task                                            │
+│  PLAN (Any work: infra, features, bugs, tests, docs)        │
+│  □ Verify ground truth: SSH/inspect actual state            │
+│  □ Check services, ports, configs, mounts, recent logs      │
+│  □ Compare reality vs docs - flag mismatches                │
+│  □ Base plan/effort (no time estimates) on actual state     │
+├─────────────────────────────────────────────────────────────┤
 ├─────────────────────────────────────────────────────────────┤
 │  INVESTIGATE (Before ANY change)                            │
 │  □ Level 0: Read target code completely                     │
@@ -2817,6 +3993,12 @@ curl -X POST \
 │  □ Implement → commit                                       │
 │  □ Refactor → commit                                        │
 │  □ Update docs → commit                                     │
+├─────────────────────────────────────────────────────────────┤
+│  HIT A BLOCKER?                                             │
+│  □ Easy fix (<15 min)? → Fix, document, continue            │
+│  □ Complex/unclear? → STOP, inform user, present options    │
+│  □ After resolution: Update plan, document learning         │
+│  □ Fix blockers BEFORE continuing implementation            │
 ├─────────────────────────────────────────────────────────────┤
 │  END                                                        │
 │  □ All tests pass                                           │
@@ -2888,13 +4070,49 @@ Examples:
 
 ---
 
-_Document Version: 1.5.0_
-_Last Updated: 2026-01-07_
+_Document Version: 1.7.0_
+_Last Updated: 2026-01-08_
 _Applies to: All AI coding agents working on wizardsofts-megabuild_
 
 ---
 
 ## Changelog
+
+### v1.7.0 (2026-01-08)
+
+- Added Section 1.4: Handling Implementation Blockers
+  - Blocker classification (Easy Fix vs User Consultation)
+  - Resolution workflow with decision tree
+  - Easy fix examples (missing packages, syntax errors, wrong ports)
+  - User consultation scenarios (architectural decisions, breaking changes)
+  - Blocker resolution template
+  - Post-resolution reflection and plan updates
+  - Real-world examples from recent work
+- Updated Quick Reference Card with "HIT A BLOCKER?" section
+- Emphasizes fixing blockers before continuing implementation
+- Guides when to involve user vs proceed autonomously
+
+### v1.6.1 (2026-01-08)
+
+- Broadened Ground Truth Verification to ALL planning (features, bugs, tests, docs, infra)
+- Enforced effort-only planning (avoid time estimates) and added configuration/recent logs to checks
+- Clarified backup convention: all artifacts per service live in `/mnt/data/Backups/server/<service>/` with recommended date-based subfolders; keep flat only for small/simple retention
+- Updated Quick Reference planning step to reflect scope and effort-only guidance
+
+### v1.6.0 (2026-01-08)
+
+- Added Section 9.0: Ground Truth Verification Protocol
+  - Mandatory verification before planning infrastructure changes
+  - Commands for checking actual system state (containers, ports, mounts, configs)
+  - Ground truth validation checklist with documentation mismatch detection
+  - Integration with planning workflow to verify reality vs documentation
+  - Prevents wasted effort on incorrect assumptions
+- Added Section 9.1: Service Backup Storage Convention
+  - Standardized backup directory structure: `/mnt/data/Backups/server/<service>/`
+  - Backup configuration pattern for all services
+  - GitLab backup example following the standard
+  - Backup testing and retention policy
+  - Explicit guidance on when to deviate from pattern
 
 ### v1.5.0 (2026-01-07)
 

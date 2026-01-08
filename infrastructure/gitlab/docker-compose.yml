@@ -3,7 +3,7 @@ services:
     image: gitlab/gitlab-ce:18.4.1-ce.0
     container_name: gitlab
     restart: always
-    hostname: '10.0.0.84'
+    hostname: "10.0.0.84"
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'http://10.0.0.84:8090'
@@ -21,11 +21,23 @@ services:
         redis['enable'] = false
         gitlab_rails['redis_host'] = '10.0.0.80'
         gitlab_rails['redis_port'] = 6380
+        # Backup configuration
+        gitlab_rails['backup_path'] = '/var/opt/gitlab/backups'
+        gitlab_rails['backup_keep_time'] = 604800
+        # Rate limiting
+        gitlab_rails['rate_limit_requests_per_period'] = 300
+        gitlab_rails['rate_limit_period'] = 60
+        gitlab_rails['throttle_unauthenticated_enabled'] = true
+        gitlab_rails['throttle_unauthenticated_requests_per_period'] = 100
+        gitlab_rails['throttle_unauthenticated_period_in_seconds'] = 60
+        gitlab_rails['throttle_authenticated_web_enabled'] = true
+        gitlab_rails['throttle_authenticated_web_requests_per_period'] = 300
+        gitlab_rails['throttle_authenticated_web_period_in_seconds'] = 60
     ports:
-      - '8090:8090'
-      - '8443:8443'
-      - '2222:22'
-      - '5050:5050'
+      - "8090:8090"
+      - "8443:8443"
+      - "2222:22"
+      - "5050:5050"
     volumes:
       - /mnt/data/docker/gitlab/config:/etc/gitlab
       - /mnt/data/docker/gitlab/logs:/var/log/gitlab
@@ -41,4 +53,3 @@ services:
 networks:
   gibd-network:
     external: true
-
