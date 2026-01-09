@@ -3938,13 +3938,34 @@ curl -X POST \
 - [ ] **Log Rotation**: Ensure logs are properly rotated and old logs archived
 - [ ] **Temporary Files**: Remove build artifacts and temporary files
 
-**Execute these commands on the target server:**
+**RECOMMENDED: Use the automated cleanup script:**
 
 ```bash
-# 1. Docker system prune (removes all unused containers, images, networks)
+# Run cleanup on target server (executes all steps automatically)
+./scripts/post-deployment-cleanup.sh <SERVER_IP>
+
+# Examples:
+./scripts/post-deployment-cleanup.sh 10.0.0.84
+
+# Dry run (preview what will be cleaned):
+./scripts/post-deployment-cleanup.sh 10.0.0.84 --dry-run
+```
+
+**Script performs these operations automatically:**
+
+1. Docker system prune (removes all unused containers, images, volumes)
+2. Drop system memory caches
+3. Verify disk space before/after
+4. Check for large log files (>100MB)
+5. Generate cleanup report
+
+**Manual cleanup (if script unavailable):**
+
+```bash
+# 1. Docker system prune
 ssh agent@<SERVER_IP> "sudo docker system prune -af --volumes"
 
-# 2. Drop system memory caches (requires sudo)
+# 2. Drop system memory caches
 ssh agent@<SERVER_IP> "sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches"
 
 # 3. Verify disk space after cleanup
