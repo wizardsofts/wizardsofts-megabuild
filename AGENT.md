@@ -8,6 +8,7 @@ This document defines the complete software development lifecycle (SDLC) protoco
 
 ## Table of Contents
 
+0. [Agent Execution Model](#0-agent-execution-model) ⚠️ READ FIRST
 1. [Session Lifecycle](#1-session-lifecycle)
 2. [Code Investigation Protocol](#2-code-investigation-protocol)
 3. [Behavior Change Protocol](#3-behavior-change-protocol)
@@ -16,7 +17,7 @@ This document defines the complete software development lifecycle (SDLC) protoco
    - [3.3 Removal/Deletion Protocol](#33-removaldeletion-protocol)
    - [3.4 Examples](#34-examples-of-when-to-stop)
    - [3.5 Decision Flowchart](#35-quick-decision-flowchart)
-   - [3.6 Breaking Changes Protocol](#36-breaking-changes-protocol-infrastructureservicesapplicationsfeatures) ⭐ NEW
+   - [3.6 Breaking Changes Protocol](#36-breaking-changes-protocol-infrastructureservicesapplicationsfeatures)
 4. [Reflection & Learning Protocol](#4-reflection--learning-protocol)
 5. [Critical Operational Policies](#5-critical-operational-policies)
 6. [Test-Driven Development (TDD)](#6-test-driven-development-tdd)
@@ -30,36 +31,133 @@ This document defines the complete software development lifecycle (SDLC) protoco
 
 ---
 
+## 0. Agent Execution Model
+
+⚠️ **READ THIS SECTION FIRST. It defines how to interpret ALL other sections.**
+
+### 0.1 Execute, Don't Document
+
+**This document describes actions to EXECUTE, not documents to create.**
+
+| When this document says... | You MUST... | You must NOT... |
+|---------------------------|-------------|-----------------|
+| "Verify X" | Run commands NOW, get real results | Create a document describing how to verify X |
+| "Check Y before planning" | Execute the check NOW, then plan | Add "Check Y" as Phase 0 in your plan |
+| "Investigate Z" | Run searches/reads NOW, gather data | Write an investigation plan document |
+| "Follow protocol" | Execute the protocol steps NOW | Create a script that follows the protocol |
+
+### 0.2 Pre-Flight Execution Rule
+
+**Every task begins with EXECUTION of verification, not DOCUMENTATION of verification steps.**
+
+```
+⛔ WRONG BEHAVIOR:
+   User: "Upgrade GitLab to 18.7.1"
+   Agent: Creates "UPGRADE_PLAN.md" containing:
+          "Phase 0: Pre-Flight - Run docker ps to check current version..."
+
+✅ CORRECT BEHAVIOR:
+   User: "Upgrade GitLab to 18.7.1"
+   Agent: [Executes] ssh agent@10.0.0.84 "docker ps | grep gitlab"
+   Agent: [Executes] ssh agent@10.0.0.84 "docker exec gitlab gitlab-rake gitlab:env:info"
+   Agent: [With real data] Creates plan based on actual verified state
+```
+
+### 0.3 The Execution Sequence
+
+For ANY task requiring infrastructure or system verification:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE A: EXECUTE VERIFICATION (Do this NOW - no documents)                 │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  1. Run verification commands using Bash/SSH tools                          │
+│  2. Capture actual system state (versions, health, configs)                 │
+│  3. Note any discrepancies between docs and reality                         │
+│  4. Store findings in memory for use in Phase B                             │
+│                                                                             │
+│  ⛔ DO NOT create any files during this phase                               │
+│  ⛔ DO NOT proceed to Phase B without real execution results                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE B: CREATE PLAN (Only after Phase A is complete)                      │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  1. Use VERIFIED data from Phase A (not assumptions)                        │
+│  2. Create implementation plan/script based on reality                      │
+│  3. Plan reflects actual current state, not documented state                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE C: EXECUTE PLAN                                                      │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  1. Execute the steps in the plan                                           │
+│  2. Verify each step succeeded before proceeding                            │
+│  3. Handle blockers per Section 1.4                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 0.4 Prohibited Behaviors
+
+**⛔ NEVER do these:**
+
+| Prohibited Action | Why It's Wrong | Correct Alternative |
+|-------------------|----------------|---------------------|
+| Create "Pre-Flight Checklist.md" | Documents verification instead of executing it | Run the verification commands directly |
+| Add "Phase 0: Verification" to plan | Defers verification to later | Execute verification BEFORE creating plan |
+| Write scripts to run "later" | Substitutes documentation for action | Run commands now, create scripts for repeatable ops |
+| Copy template checklists into docs | Creates paperwork, not results | Execute each checklist item, record outcomes |
+| Skip verification because "docs say X" | Docs may be stale | Always verify current state |
+
+### 0.5 Document Creation Policy
+
+**Create documents ONLY for:**
+
+| Document Type | When to Create | Example |
+|--------------|----------------|---------|
+| Implementation scripts | After verification, for complex multi-step procedures | `upgrade-gitlab.sh` |
+| Handoff notes | At session end, summarizing completed work | `docs/handoffs/2026-01-09-task/` |
+| Retrospectives | After significant incidents or learnings | `docs/archive/retrospectives/` |
+| Plans requiring user approval | After verification, for breaking changes (Section 3.6) | Inline in conversation or plan file |
+
+**⛔ NEVER create documents as a substitute for execution.**
+
+---
+
 ## 1. Session Lifecycle
 
 ### 1.1 Session Startup (MANDATORY)
 
-Every session MUST begin with these steps:
+> **⚠️ Per Section 0:** Execute these steps NOW. Do not create a "Session Startup Checklist" document.
+
+Every session MUST begin by EXECUTING these steps:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  STEP 1: Load Context                                       │
-│  □ Read claude-progress.txt (if exists)                     │
-│  □ Read features.json (if exists)                           │
-│  □ Run: git log --oneline -10                               │
-│  □ Check: git status (any uncommitted work?)                │
+│  STEP 1: Load Context (EXECUTE NOW)                         │
+│  → Read claude-progress.txt (if exists)                     │
+│  → Read features.json (if exists)                           │
+│  → Run: git log --oneline -10                               │
+│  → Check: git status (any uncommitted work?)                │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  STEP 2: Verify Environment                                 │
-│  □ Run init.sh (if exists) OR npm install / mvn install    │
-│  □ Run existing test suite: npm test / mvn test            │
-│  □ Verify build passes: npm run build / mvn compile        │
-│  □ If tests fail → FIX FIRST before new work               │
+│  STEP 2: Verify Environment (EXECUTE NOW)                   │
+│  → Run init.sh (if exists) OR npm install / mvn install    │
+│  → Run existing test suite: npm test / mvn test            │
+│  → Verify build passes: npm run build / mvn compile        │
+│  → If tests fail → FIX FIRST before new work               │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 3: Identify Work                                      │
-│  □ Load features.json → find highest priority "failing"    │
-│  □ OR check GitHub/GitLab issues assigned                   │
-│  □ Select EXACTLY ONE task for this session                 │
+│  → Load features.json → find highest priority "failing"    │
+│  → OR check GitHub/GitLab issues assigned                   │
+│  → Select EXACTLY ONE task for this session                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -419,53 +517,32 @@ Documentation: Created Section 4.4 in plan document
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Investigation Checklist
+### 2.2 Investigation Process
 
-**For EVERY code change, complete this checklist:**
+> **⚠️ Per Section 0:** PERFORM the investigation using search tools. Do not create an "Investigation Report" document.
 
-```markdown
-## Investigation Report for: <function/class/file>
+**For EVERY code change, EXECUTE these searches:**
 
-### Level 0: Target Analysis
+**Level 0: Target Analysis**
+1. Read the target code using Read tool
+2. Identify the public API/interface
+3. Note any side effects (DB writes, API calls, file I/O)
 
-- [ ] Read and understand the target code completely
-- [ ] Identify the public API/interface
-- [ ] Note any side effects (DB writes, API calls, file I/O)
+**Level 1: Direct Dependencies (EXECUTE searches)**
+1. **Find Callers:** `grep -rn "functionName" --include="*.ts"`
+2. **Find Callees:** Read the file, note imports and function calls
+3. **Find Tests:** `grep -rn "functionName" --include="*.test.ts"`
+4. **Find Docs:** `grep -rn "functionName" docs/`
 
-### Level 1: Direct Dependencies
+**Level 2: Indirect Dependencies (EXECUTE searches)**
+1. **Caller's Callers:** For each caller found, search for ITS callers
+2. **Integration Tests:** `grep -rn "functionName" --include="*.integration.test.ts"`
+3. **API Contracts:** Check OpenAPI specs if this is an API endpoint
 
-- [ ] **Callers**: Who calls this code?
-  - List: file:line for each caller
-  - Count: N callers found
-- [ ] **Callees**: What does this code call?
-  - List: external functions/services called
-  - Note: Any I/O operations, DB queries, API calls
-- [ ] **Unit Tests**: What tests cover this?
-  - Files: list test files
-  - Coverage: X% of lines covered
-  - Missing: Note untested paths
-- [ ] **Documentation**: Where is this documented?
-  - API docs: link
-  - README: link
-  - Comments: inline or missing
-
-### Level 2: Indirect Dependencies
-
-- [ ] **Caller's Callers**: What calls the callers?
-  - Impact radius: N files/functions affected
-- [ ] **Callee's Callees**: What do dependencies depend on?
-  - External services: list
-  - Database tables: list
-- [ ] **Integration Tests**: What integration tests exercise this?
-  - Files: list
-  - Scenarios covered: list
-- [ ] **E2E Tests**: What E2E tests include this code path?
-  - Files: list
-  - User flows affected: list
-- [ ] **API Contracts**: What contracts depend on this?
-  - OpenAPI specs: list endpoints
-  - Consumer services: list
-```
+**After investigation:** Summarize findings mentally or in a brief note. Proceed to implementation based on what you learned. Only create a formal investigation document if:
+- The change affects 10+ files
+- User explicitly requests documentation
+- The investigation reveals complex dependencies requiring discussion
 
 ### 2.3 Investigation Commands
 
@@ -518,62 +595,20 @@ grep -B5 "functionName" --include="*.ts" --include="*.java" | grep -E "@|/\*\*"
 grep -rn "operationId.*functionName" --include="*.yaml" --include="*.json"
 ```
 
-### 2.4 Investigation Output Template
+### 2.4 When to Document Investigation Findings
 
-**Present findings to yourself (and user if behavior change) in this format:**
+> **⚠️ Per Section 0:** Most investigations do NOT require documentation. Proceed directly to implementation.
 
-```markdown
-## Code Investigation: <target>
+**Document findings ONLY when:**
 
-### Target Summary
+| Situation | Action |
+|-----------|--------|
+| Investigation reveals behavior change needed | Document per Section 3.2 (inline in conversation) |
+| Investigation reveals complex dependencies (10+ files) | Create brief summary inline |
+| User explicitly asks for investigation report | Create formal document |
+| Investigation will inform future sessions | Update relevant AGENT.md or create memory |
 
-- **Location**: `apps/service/src/path/File.ts:lineNumber`
-- **Type**: Function / Class / Method / API Endpoint
-- **Purpose**: Brief description of what it does
-- **Side Effects**: DB writes, API calls, file I/O, etc.
-
-### Dependency Map
-```
-
-                    ┌─────────────────┐
-                    │   Caller A      │ (apps/x/y.ts:10)
-                    │   Caller B      │ (apps/x/z.ts:25)
-                    └────────┬────────┘
-                             │ calls
-                             ▼
-
-┌────────────────────────────────────────────────────────────┐
-│ TARGET CODE │
-│ functionName(params) → returnType │
-│ Location: apps/service/src/path/File.ts:50 │
-└────────────────────────────────────────────────────────────┘
-│ calls
-▼
-┌─────────────────┐
-│ Callee X │ (database query)
-│ Callee Y │ (external API)
-└─────────────────┘
-
-```
-
-### Test Coverage
-| Test Type | Files | Coverage | Status |
-|-----------|-------|----------|--------|
-| Unit | `File.test.ts` | 85% | ✅ |
-| Integration | `File.integration.test.ts` | 60% | ⚠️ |
-| E2E | `user-flow.e2e.ts` | Path covered | ✅ |
-
-### Documentation Found
-- API Docs: `docs/api/endpoint.md`
-- README: `apps/service/README.md#section`
-- Inline: JSDoc present at line 48
-
-### Impact Assessment
-- **Direct Impact**: 3 callers will be affected
-- **Indirect Impact**: 2 services depend on callers
-- **Test Impact**: 5 tests will need updates
-- **Doc Impact**: 2 docs need updates
-```
+**For routine code changes:** Execute searches, note findings mentally, proceed to implementation. Do not create investigation documents for simple changes.
 
 ---
 
@@ -2492,193 +2527,119 @@ Brief description of what this PR does.
 
 ### 9.0 CRITICAL: Ground Truth Verification Protocol
 
-**MANDATORY: Before planning ANY work (infrastructure, feature development, bug fixes, tests, docs, service deployment, or blocker resolution), verify actual system state against documented assumptions.**
+> **⚠️ See [Section 0: Agent Execution Model](#0-agent-execution-model) for how to interpret this section.**
+>
+> This section describes commands to **EXECUTE NOW**, not documents to create.
 
-#### 9.0.1 When to Verify Ground Truth
+**EXECUTE verification commands BEFORE planning. Do not add verification as "Phase 0" in a plan document.**
 
-Verify ground truth in these scenarios:
+#### 9.0.1 When to Execute Ground Truth Verification
 
-| Scenario                                           | Verification Required | Why                                             |
-| -------------------------------------------------- | --------------------- | ----------------------------------------------- |
-| Any planning (features, bugs, tests, docs, infra)  | ✅ YES                | Plans must match reality, not assumptions       |
-| Resolving blockers from tests/reports              | ✅ YES                | Root cause may differ from symptoms             |
-| Following migration/deployment guides              | ✅ YES                | Actual state may differ from guide assumptions  |
-| Estimating/assessing effort (avoid time estimates) | ✅ YES                | Prevents effort mis-sizing                      |
-| User reports service down/broken                   | ✅ YES                | Service may be running (network/firewall issue) |
-| Documentation conflicts                            | ✅ YES                | Reality trumps documentation                    |
+Execute verification (not document it) in these scenarios:
 
-#### 9.0.2 Ground Truth Investigation Commands
+| Scenario | Action | Example |
+|----------|--------|---------|
+| Any infrastructure task | SSH and run commands NOW | `ssh agent@10.0.0.84 "docker ps"` |
+| Service deployment | Check actual service state NOW | `docker exec gitlab gitlab-rake gitlab:env:info` |
+| Bug fix / blocker | Verify the reported issue exists NOW | `curl http://service:port/health` |
+| Migration / upgrade | Check current version NOW | `docker inspect --format '{{.Config.Image}}'` |
+| Documentation conflicts | Check reality NOW | Reality trumps documentation |
 
-**Infrastructure State:**
+#### 9.0.2 Verification Commands - EXECUTE THESE
 
-```bash
-# Check running containers
-ssh user@host "docker ps -a | grep service-name"
+**⛔ Do not copy these into a plan. Run them using Bash tool.**
 
-# Check container health and uptime
-ssh user@host "docker inspect service-name --format '{{.State.Health.Status}} {{.State.StartedAt}}'"
-
-# Check container configuration and recent logs (if applicable)
-ssh user@host "docker inspect service-name | head -40"
-ssh user@host "docker logs --tail 200 service-name"
-
-# Check listening ports
-ssh user@host "ss -tlnp | grep ':PORT'"
-ssh user@host "docker exec service-name netstat -tlnp"
-
-# Check firewall rules
-ssh user@host "sudo ufw status"
-
-# Check mounted filesystems
-ssh user@host "mount | grep nfs"
-ssh user@host "df -h | grep /mnt"
-
-# Check NFS exports
-ssh user@nfs-server "cat /etc/exports"
-ssh user@nfs-server "showmount -e localhost"
-```
-
-**Service Configuration:**
+**Infrastructure State (execute via SSH):**
 
 ```bash
-# Check actual config in container
-ssh user@host "docker exec service-name cat /etc/service/config.yml"
+# Container status - EXECUTE THIS
+ssh agent@10.0.0.84 "docker ps -a | grep SERVICE_NAME"
 
-# Check environment variables
-ssh user@host "docker exec service-name env | grep SERVICE"
+# Container health - EXECUTE THIS
+ssh agent@10.0.0.84 "docker inspect SERVICE_NAME --format '{{.State.Health.Status}}'"
 
-# Check service internal health
-ssh user@host "curl -s http://127.0.0.1:PORT/health"
+# Service version - EXECUTE THIS
+ssh agent@10.0.0.84 "docker exec SERVICE_NAME cat /etc/VERSION || echo 'no version file'"
 
-# Check logs for errors (recent)
-ssh user@host "docker logs service-name 2>&1 | tail -200"
+# Recent logs - EXECUTE THIS
+ssh agent@10.0.0.84 "docker logs --tail 50 SERVICE_NAME"
+
+# Port listening - EXECUTE THIS
+ssh agent@10.0.0.84 "ss -tlnp | grep ':PORT'"
+
+# Disk space - EXECUTE THIS
+ssh agent@10.0.0.84 "df -h /mnt/data"
+
+# NFS mounts - EXECUTE THIS
+ssh agent@10.0.0.84 "mount | grep nfs"
 ```
 
-**Storage and Backups:**
+**Database/Service Health (execute via SSH):**
 
 ```bash
-# Check NFS directory structure
-ssh user@nfs-server "ls -la /mnt/data/Backups/server/"
-ssh user@nfs-server "du -sh /mnt/data/Backups/server/*"
+# PostgreSQL - EXECUTE THIS
+ssh agent@10.0.0.84 "docker exec SERVICE_NAME psql -U user -c 'SELECT 1'"
 
-# Check service backup configuration
-ssh user@host "docker exec service-name grep -i backup /etc/service/config"
+# Redis - EXECUTE THIS
+ssh agent@10.0.0.84 "docker exec SERVICE_NAME redis-cli ping"
+
+# HTTP health - EXECUTE THIS
+ssh agent@10.0.0.84 "curl -s http://127.0.0.1:PORT/health"
 ```
 
-#### 9.0.3 Ground Truth Validation Checklist
+#### 9.0.3 After Verification: What to Do with Results
 
-**Before planning, verify:**
+Once you have EXECUTED the verification commands and have real data:
 
-```markdown
-## Ground Truth Verification for: <task/blocker>
+1. **If reality matches documentation:** Proceed to create plan based on verified state
+2. **If reality differs from documentation:**
+   - Note the discrepancy in your plan
+   - Base your plan on REALITY, not documentation
+   - Include a task to update stale documentation
+3. **If verification reveals different problem:** Adjust scope based on actual findings
 
-### Documentation Claims vs Reality
-
-| Claim from Docs | Command to Verify                | Actual Reality        | Match?      |
-| --------------- | -------------------------------- | --------------------- | ----------- |
-| Service is down | `docker ps \| grep service`      | Container UP 39 hours | ❌ Mismatch |
-| Port 3000       | `netstat -tlnp \| grep service`  | Actually port 3002    | ❌ Mismatch |
-| NFS not mounted | `mount \| grep nfs`              | /mnt/data mounted     | ❌ Mismatch |
-| Config missing  | `docker exec service cat config` | Config exists         | ❌ Mismatch |
-
-### Root Cause Analysis
-
-**Documented Assumption:** [What docs/tests said was wrong]
-**Actual Reality:** [What ground truth investigation revealed]
-**Real Blocker:** [Actual issue, e.g., firewall blocking, not service down]
-
-### Corrected Plan
-
-**Original Effort Assumption (no time):** [Effort/complexity based on docs]
-**Updated Effort (no time):** [Effort/complexity based on ground truth]
-**Difference:** [Why the assumption was wrong]
-
-### Findings to Update
-
-- [ ] Update documentation: [file/section]
-- [ ] Update integration tests: [wrong URLs/assumptions]
-- [ ] Update blocker analysis: [severity/root cause]
-- [ ] Create memory: [troubleshooting guide based on findings]
-```
-
-#### 9.0.4 Flagging Documentation Mismatches
-
-**MANDATORY: If ground truth differs from documentation, STOP and report:**
-
-```markdown
-## ⚠️ DOCUMENTATION MISMATCH DETECTED
-
-### Mismatch Summary
-
-| Document    | Location | Claim                   | Reality                     | Impact              |
-| ----------- | -------- | ----------------------- | --------------------------- | ------------------- |
-| BLOCKERS.md | Line 63  | NFS /mnt/gitlab-backups | Actually /mnt/data exported | 1 hour wasted       |
-| test script | Line 45  | Grafana on .80:3000     | Actually .84:3002           | Test false negative |
-
-### Recommended Actions
-
-1. **Immediate:** Update [document] with correct information
-2. **Immediate:** Fix [test script] with actual endpoints
-3. **Next session:** Audit related docs for similar mismatches
-
-### Lessons Learned
-
-[What caused the mismatch? How to prevent in future?]
-```
-
-#### 9.0.5 Integration with Planning
-
-**Updated Planning Workflow (applies to ALL planning):**
+**Example of correct behavior:**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 1: Read Documentation/Reports                         │
-│  □ Understand documented issue/blocker                      │
-│  □ Note assumptions and claims                              │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 2: VERIFY GROUND TRUTH (NEW - MANDATORY)              │
-│  □ SSH to actual servers (or inspect environment)           │
-│  □ Check running services, health, configuration, recent logs│
-│  □ Verify ports, mounts, NFS, secrets, and configs           │
-│  □ Compare reality vs documentation                         │
-│  □ Document mismatches                                      │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 3: Create Corrected Plan                              │
-│  □ Base effort (not time) on actual state (not docs)        │
-│  □ Identify real blockers (not symptoms)                    │
-│  □ Flag docs that need updating                             │
-│  □ Present findings to user                                 │
-└─────────────────────────────────────────────────────────────┘
+User: "Upgrade GitLab to 18.7.1"
+
+Agent EXECUTES:
+  $ ssh agent@10.0.0.84 "docker ps | grep gitlab"
+  → Result: gitlab container healthy, running 18.4.1
+
+  $ ssh agent@10.0.0.84 "df -h /mnt/data"
+  → Result: 65% used, 320GB free
+
+  $ ssh agent@10.0.0.84 "docker exec gitlab gitlab-backup create --dry-run"
+  → Result: Backup path configured, NFS mounted
+
+Agent NOW creates plan:
+  "Current state verified: GitLab 18.4.1, healthy, 320GB disk free.
+   Proceeding with upgrade plan to 18.7.1..."
 ```
 
-#### 9.0.6 Automated Pre-Flight Verification (Scripts)
+#### 9.0.4 Handling Documentation Mismatches
 
-**PREFERRED: Use validation scripts instead of manual SSH commands.**
+If verification reveals documentation is wrong:
 
-For infrastructure work, run the validation script:
+1. **Do not stop to create a mismatch report document**
+2. **Note the discrepancy** in your plan or conversation
+3. **Proceed based on reality**
+4. **Add a task** to update the stale documentation
+
+#### 9.0.5 Use Existing Validation Scripts When Available
+
+If validation scripts exist, EXECUTE them (don't create new ones):
 
 ```bash
-./scripts/validate-service-infrastructure.sh <service-name> <host-ip>
-
-# Examples:
+# If this script exists, RUN IT:
 ./scripts/validate-service-infrastructure.sh gitlab 10.0.0.84
-./scripts/validate-service-infrastructure.sh keycloak 10.0.0.84 --strict
+
+# If this script exists, RUN IT:
+./scripts/test-service-integration.sh gitlab 10.0.0.84
 ```
 
-For backup configuration setup:
-
-```bash
-./scripts/setup-service-backups.sh <service-name> <host-ip> <nfs-server> --dry-run
-
-# Example:
-./scripts/setup-service-backups.sh nexus 10.0.0.84 10.0.0.80 --dry-run
-```
+If no validation script exists for your service, execute individual commands from 9.0.2.
 
 For integration testing after changes:
 
@@ -3546,12 +3507,21 @@ Some tools support configuration files to auto-load instructions:
 - Environment parity (staging = production)
 
 **Automation Users:**
-| Context | User | Purpose |
-|---------|------|---------|
-| SSH (general ops) | `agent` | General server operations (`ssh agent@10.0.0.84`) |
-| SSH (deployments) | `deploy` | CI/CD deployment operations (`ssh deploy@10.0.0.84`) |
-| GitLab CI/CD | `agent` | Pipeline execution, MR creation, variable management |
-| GitLab Admin | `mashfiqur.rahman` | Manual administration only |
+| Context | User | Purpose | Sudo Access |
+|---------|------|---------|-------------|
+| SSH (general ops) | `agent` | General server operations (`ssh agent@10.0.0.84`) | ✅ Passwordless sudo for docker, ufw, swap, systemctl |
+| SSH (deployments) | `deploy` | CI/CD deployment operations (`ssh deploy@10.0.0.84`) | ⚠️ Requires sudo password |
+| GitLab CI/CD | `agent` | Pipeline execution, MR creation, variable management | N/A (API-based) |
+| GitLab Admin | `mashfiqur.rahman` | Manual administration only | N/A (GitLab admin) |
+
+**Agent User Passwordless Sudo Commands:**
+- `docker` (all docker commands)
+- `docker-compose` / `docker compose`
+- `ufw` (firewall management)
+- `swapoff`, `swapon`, `sysctl` (swap management)
+- `systemctl status`, `journalctl` (read-only system monitoring)
+
+**Configuration:** `/etc/sudoers.d/91-agent-swap-management` on all servers (80, 81, 82, 84)
 
 **Note:** The `deploy` user exists on all servers (80, 81, 82, 84) with Docker group access for deployments.
 
@@ -3956,6 +3926,70 @@ curl -X POST \
   https://gitlab.example.com/api/v4/projects/1/trigger/pipeline
 ```
 
+### 13.11 Post-Deployment Cleanup (MANDATORY)
+
+**After ANY infrastructure operation (upgrade, deployment, migration), ALWAYS perform cleanup:**
+
+**Cleanup Checklist:**
+
+- [ ] **Docker System Cleanup**: Remove unused containers, images, and volumes
+- [ ] **Memory Cache Cleanup**: Drop system caches to free memory
+- [ ] **Disk Space Verification**: Confirm adequate free space remains
+- [ ] **Log Rotation**: Ensure logs are properly rotated and old logs archived
+- [ ] **Temporary Files**: Remove build artifacts and temporary files
+
+**Execute these commands on the target server:**
+
+```bash
+# 1. Docker system prune (removes all unused containers, images, networks)
+ssh agent@<SERVER_IP> "sudo docker system prune -af --volumes"
+
+# 2. Drop system memory caches (requires sudo)
+ssh agent@<SERVER_IP> "sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches"
+
+# 3. Verify disk space after cleanup
+ssh agent@<SERVER_IP> "df -h"
+
+# 4. Check for large log files
+ssh agent@<SERVER_IP> "find /var/log -type f -size +100M"
+
+# 5. Rotate logs if necessary
+ssh agent@<SERVER_IP> "sudo logrotate -f /etc/logrotate.conf"
+```
+
+**When to Execute Cleanup:**
+
+- ✅ **After GitLab upgrades** (multiple image layers accumulate)
+- ✅ **After Docker Swarm redeployments** (old service replicas remain)
+- ✅ **After failed deployments** (dangling containers/images)
+- ✅ **After database migrations** (temporary dump files)
+- ✅ **Weekly maintenance** (scheduled cleanup)
+
+**Cleanup Validation:**
+
+```bash
+# Verify cleanup success
+ssh agent@<SERVER_IP> "docker system df"  # Check Docker disk usage
+ssh agent@<SERVER_IP> "free -h"            # Check memory
+ssh agent@<SERVER_IP> "df -h | grep -E '(Filesystem|/dev)'"  # Check disk
+```
+
+**Document Cleanup in Handoff:**
+
+```markdown
+## Post-Deployment Cleanup (YYYY-MM-DD)
+
+**Executed:**
+- [x] Docker system prune: Freed XXX GB
+- [x] Dropped memory caches
+- [x] Verified disk space: XX% used, XXX GB free
+- [x] Log rotation completed
+
+**Before:** XX% disk used, XX GB free
+**After:** XX% disk used, XX GB free
+**Freed:** XX GB total
+```
+
 ---
 
 ## Appendix A: Quick Reference Card
@@ -3963,54 +3997,60 @@ curl -X POST \
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    SESSION QUICK REFERENCE                  │
+│                                                             │
+│  ⚠️  EXECUTE commands, don't document them (Section 0)      │
 ├─────────────────────────────────────────────────────────────┤
 │  START                                                      │
-│  □ git pull && git log -5                                   │
-│  □ Read claude-progress.txt                                 │
-│  □ npm test (or equivalent)                                 │
-│  □ Pick ONE task                                            │
-│  PLAN (Any work: infra, features, bugs, tests, docs)        │
-│  □ Verify ground truth: SSH/inspect actual state            │
-│  □ Check services, ports, configs, mounts, recent logs      │
-│  □ Compare reality vs docs - flag mismatches                │
-│  □ Base plan/effort (no time estimates) on actual state     │
+│  1. git pull && git log -5                                  │
+│  2. Read claude-progress.txt                                │
+│  3. npm test (or equivalent)                                │
+│  4. Pick ONE task                                           │
 ├─────────────────────────────────────────────────────────────┤
+│  BEFORE PLANNING: EXECUTE VERIFICATION (Section 9.0)        │
+│  ─────────────────────────────────────────────────────────  │
+│  ⛔ Do NOT add these as "Phase 0" in a plan document        │
+│  ⛔ Do NOT create a "Pre-Flight Checklist" file             │
+│                                                             │
+│  RUN THESE COMMANDS NOW (for infra/deployment tasks):       │
+│  → ssh agent@server "docker ps | grep SERVICE"              │
+│  → ssh agent@server "docker exec SERVICE version-cmd"       │
+│  → ssh agent@server "df -h /mnt/data"                       │
+│  → ssh agent@server "curl localhost:PORT/health"            │
+│                                                             │
+│  THEN create plan based on verified reality                 │
 ├─────────────────────────────────────────────────────────────┤
-│  INVESTIGATE (Before ANY change)                            │
-│  □ Level 0: Read target code completely                     │
-│  □ Level 1: Find callers + callees + tests + docs           │
-│  □ Level 2: Find callers' callers + integration tests       │
-│  □ Document findings in Investigation Report                │
+│  INVESTIGATE (Before ANY code change)                       │
+│  1. Level 0: Read target code completely                    │
+│  2. Level 1: Find callers + callees + tests + docs          │
+│  3. Level 2: Find callers' callers + integration tests      │
 ├─────────────────────────────────────────────────────────────┤
 │  BEHAVIOR CHANGE? → STOP & INFORM USER                      │
-│  □ Changing return type/params? → STOP                      │
-│  □ Changing defaults/error handling? → STOP                 │
-│  □ Removing code/features? → STOP                           │
-│  □ Present options A/B/C → Wait for confirmation            │
+│  • Changing return type/params? → STOP                      │
+│  • Changing defaults/error handling? → STOP                 │
+│  • Removing code/features? → STOP                           │
+│  • Present options A/B/C → Wait for confirmation            │
 ├─────────────────────────────────────────────────────────────┤
 │  WORK (TDD)                                                 │
-│  □ Write failing test → commit                              │
-│  □ Implement → commit                                       │
-│  □ Refactor → commit                                        │
-│  □ Update docs → commit                                     │
+│  1. Write failing test → commit                             │
+│  2. Implement → commit                                      │
+│  3. Refactor → commit                                       │
+│  4. Update docs → commit                                    │
 ├─────────────────────────────────────────────────────────────┤
 │  HIT A BLOCKER?                                             │
-│  □ Easy fix (<15 min)? → Fix, document, continue            │
-│  □ Complex/unclear? → STOP, inform user, present options    │
-│  □ After resolution: Update plan, document learning         │
-│  □ Fix blockers BEFORE continuing implementation            │
+│  • Easy fix (<15 min)? → Fix it, continue                   │
+│  • Complex/unclear? → STOP, inform user, present options    │
+│  • After resolution: Update plan, capture learning          │
 ├─────────────────────────────────────────────────────────────┤
 │  END                                                        │
-│  □ All tests pass                                           │
-│  □ Update claude-progress.txt                               │
-│  □ git push                                                 │
+│  1. All tests pass                                          │
+│  2. Update claude-progress.txt                              │
+│  3. git push                                                │
 ├─────────────────────────────────────────────────────────────┤
 │  REFLECT (After EVERY session)                              │
-│  □ Did I make errors? → Create troubleshooting memory       │
-│  □ Did user correct me? → Update instructions               │
-│  □ Did I discover new process? → Create skill/memory        │
-│  □ Did I find config? → Update service AGENT.md             │
-│  □ Log learnings in claude-progress.txt                     │
+│  • Made errors? → Create troubleshooting memory             │
+│  • User corrected me? → Update instructions                 │
+│  • Discovered new process? → Create skill/memory            │
+│  • Found config? → Update service AGENT.md                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -4070,13 +4110,36 @@ Examples:
 
 ---
 
-_Document Version: 1.7.0_
-_Last Updated: 2026-01-08_
+_Document Version: 1.8.0_
+_Last Updated: 2026-01-09_
 _Applies to: All AI coding agents working on wizardsofts-megabuild_
 
 ---
 
 ## Changelog
+
+### v1.8.0 (2026-01-09)
+
+- **MAJOR: Added Section 0 - Agent Execution Model** ⚠️
+  - Defines how to interpret ALL other sections
+  - Clarifies: "Execute, Don't Document" principle
+  - Pre-Flight Execution Rule: Run verification BEFORE planning
+  - Execution Sequence: Phase A (verify) → Phase B (plan) → Phase C (execute)
+  - Prohibited Behaviors table with explicit "NEVER do these"
+  - Document Creation Policy: Only create docs for specific cases
+- **Rewrote Section 9.0 - Ground Truth Verification Protocol**
+  - Removed template/checklist format that encouraged documentation
+  - Changed to imperative "EXECUTE THESE" commands
+  - Added "Example of correct behavior" showing execution flow
+  - Simplified handling of documentation mismatches
+  - Removed "report to user" step - user verifies final plan
+- **Updated Appendix A - Quick Reference Card**
+  - Added warning: "EXECUTE commands, don't document them"
+  - Changed checkbox format to numbered steps
+  - Added explicit prohibition against "Phase 0" in plans
+  - Added "RUN THESE COMMANDS NOW" section with examples
+- Root cause: Agents were creating documents describing protocols instead of executing them
+- Fix: Imperative language, explicit prohibitions, and execution examples
 
 ### v1.7.0 (2026-01-08)
 

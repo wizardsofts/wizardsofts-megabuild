@@ -1,6 +1,6 @@
 services:
   gitlab:
-    image: gitlab/gitlab-ce:18.4.1-ce.0
+    image: gitlab/gitlab-ce:18.7.1-ce.0
     container_name: gitlab
     restart: always
     hostname: "10.0.0.84"
@@ -42,6 +42,7 @@ services:
       - /mnt/data/docker/gitlab/config:/etc/gitlab
       - /mnt/data/docker/gitlab/logs:/var/log/gitlab
       - /mnt/data/docker/gitlab/data:/var/opt/gitlab
+      - /mnt/data/Backups/server/gitlab:/var/opt/gitlab/backups
     networks:
       - gibd-network
     healthcheck:
@@ -49,6 +50,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 4G
+        reservations:
+          cpus: "2"
+          memory: 2G
 
 networks:
   gibd-network:
