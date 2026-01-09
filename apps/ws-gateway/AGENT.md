@@ -5,6 +5,33 @@
 
 ---
 
+## Pre-Flight Checklist
+
+**MANDATORY: Complete before starting any work on this service.**
+
+### Environment
+- [ ] JDK 21 installed: `java -version`
+- [ ] Maven wrapper available: `./mvnw --version`
+- [ ] Dependencies resolved: `./mvnw dependency:resolve`
+
+### State Verification
+- [ ] Code compiles: `./mvnw compile`
+- [ ] Unit tests pass: `./mvnw test`
+- [ ] Integration tests pass: `./mvnw verify -Pintegration-tests`
+
+### Dependencies (if running locally)
+- [ ] Keycloak accessible: `curl http://10.0.0.84:8180/health`
+- [ ] PostgreSQL accessible: `pg_isready -h localhost -p 5432`
+- [ ] Redis accessible: `redis-cli ping`
+- [ ] Eureka accessible: `curl http://10.0.0.84:8761/actuator/health`
+
+### Common Issues
+- **Maven cache corrupted**: Run `./mvnw clean compile -U`
+- **Keycloak connection refused**: Check if Keycloak container is running
+- **Test failures**: Check TestContainers Docker connectivity
+
+---
+
 ## Service Overview
 
 WS Gateway is the API Gateway for all WizardSofts microservices. It handles:

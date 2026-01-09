@@ -28,6 +28,7 @@
 DivinerReturns is a quantile regression model that predicts 1-5 day stock returns with confidence intervals for 247 DSE (Dhaka Stock Exchange) stocks. The model achieves excellent backtest performance (5.53% RMSE, 75.39% coverage) and is ready for user-facing applications.
 
 **Key Capabilities:**
+
 - Multi-horizon predictions (1d, 2d, 3d, 4d, 5d)
 - Confidence intervals (10th, 50th, 90th percentiles)
 - REST API integration with existing FastAPI service
@@ -35,24 +36,26 @@ DivinerReturns is a quantile regression model that predicts 1-5 day stock return
 
 **Next Logical Steps:**
 
-| Phase | Feature | Timeline | Impact |
-|-------|---------|----------|--------|
-| **Phase 1** | Web Dashboard Stock Screener | 2-4 weeks | 🔥 High |
-| **Phase 1** | Mobile Push Notifications | 1-2 weeks | 🔥 High |
-| **Phase 2** | Portfolio Risk Analyzer | 3-4 weeks | 🔥 High |
-| **Phase 3** | Paper Trading Mode | 4-6 weeks | 🔥 High |
+| Phase       | Feature                            | Timeline  | Impact  |
+| ----------- | ---------------------------------- | --------- | ------- |
+| **Phase 1** | Web Dashboard Stock Screener       | 2-4 weeks | 🔥 High |
+| **Phase 1** | Mobile Push Notifications          | 1-2 weeks | 🔥 High |
+| **Phase 2** | Portfolio Risk Analyzer            | 3-4 weeks | 🔥 High |
+| **Phase 3** | Paper Trading Mode                 | 4-6 weeks | 🔥 High |
 | **Phase 4** | Prediction Tracking & Transparency | 1-2 weeks | 🔥 High |
-| **Phase 5** | Multi-Model Ensemble | 12+ weeks | Medium |
+| **Phase 5** | Multi-Model Ensemble               | 12+ weeks | Medium  |
 
 **Full Roadmap:** [apps/gibd-quant-agent/docs/DIVINER_RETURNS_FUTURE_SCOPE.md](apps/gibd-quant-agent/docs/DIVINER_RETURNS_FUTURE_SCOPE.md)
 
 **Technical Integration:**
+
 - **Backend:** FastAPI endpoints already deployed (`/api/predict/returns`, `/api/predict/returns/batch`)
 - **Frontend Target:** `gibd-quant-web` (Next.js)
 - **Database:** PostgreSQL (Server 81) for prediction history
 - **Orchestration:** Celery (Server 84) for daily updates
 
 **Business Value:**
+
 - Retail investor stock screening tool
 - Portfolio risk management
 - Trading strategy backtesting platform
@@ -68,6 +71,7 @@ DivinerReturns is a quantile regression model that predicts 1-5 day stock return
 Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio optimization. Combines modified Diviner forecasts with PPO (Proximal Policy Optimization) agent using progressive reward curriculum (log returns → Sharpe → ICVaR).
 
 **Key Capabilities:**
+
 - 11-week implementation complete (~18,000 lines, 31 files)
 - 70% code reuse from existing codebase
 - Ray distributed training (Server 84: 9 nodes, 25 CPUs)
@@ -76,6 +80,7 @@ Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio 
 - Comprehensive backtesting vs. 5 classical baselines
 
 **Current Phase (Q1 2026):**
+
 - [ ] Quick validation (5 epochs) - Today
 - [ ] Full training (150 epochs) - Week 1
 - [ ] Baseline comparison & statistical analysis - Week 1-2
@@ -83,6 +88,7 @@ Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio 
 - [ ] Ablation studies - Week 5-6
 
 **Future Phases:**
+
 - **Q2 2026:** Real-time portfolio management, paper trading mode
 - **Q3 2026:** DivinerReturns dashboard integration, premium subscriptions
 - **Q4 2026:** Auto-trading (regulatory approval required), GPU acceleration
@@ -90,6 +96,7 @@ Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio 
 **Full Roadmap:** [apps/gibd-quant-agent/docs/TARP_DRL_FUTURE_SCOPE.md](apps/gibd-quant-agent/docs/TARP_DRL_FUTURE_SCOPE.md)
 
 **Technical Components:**
+
 - **Data Pipeline:** PostgreSQL (ws_dse_daily_prices), 40 indicators, 20 time features
 - **Forecasting:** Modified Diviner (80% code reuse)
 - **RL Agent:** PPO with time-aware attention, Dirichlet policy
@@ -97,11 +104,13 @@ Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio 
 - **Baselines:** Equal-Weight, Markowitz, HRP, Black-Litterman, MinVar
 
 **Research Success Criteria:**
+
 - Sharpe ratio > 1.2 (20% better than best baseline)
 - Max drawdown < 25%
 - Statistical significance (p < 0.05)
 
 **Business Value:**
+
 - Premium subscription feature ($20/month)
 - Portfolio optimization-as-a-service
 - Automated rebalancing for retail investors
@@ -117,6 +126,7 @@ Time-Aware Reinforcement Learning with Predictive Integration for DSE portfolio 
 Classification model predicting UP/DOWN/NEUTRAL price movements. Can be combined with DivinerReturns for ensemble predictions.
 
 **Next Steps:**
+
 - [ ] Add API endpoints to existing FastAPI service
 - [ ] Integrate with DivinerReturns for ensemble recommendations
 - [ ] Create combined confidence scoring system
@@ -128,10 +138,12 @@ Classification model predicting UP/DOWN/NEUTRAL price movements. Can be combined
 **Status:** ✅ Production | **Priority:** ⭐⭐ Low
 
 **Current Deployment:**
+
 - Prometheus metrics exporters (Server 84)
 - Automated news scrapers for DSE stocks
 
 **Future Enhancements:**
+
 - [ ] Sentiment analysis using LLMs (Ollama integration)
 - [ ] News impact on stock predictions correlation
 - [ ] Real-time alert system for market-moving news
@@ -146,6 +158,7 @@ Classification model predicting UP/DOWN/NEUTRAL price movements. Can be combined
 Comprehensive NLP pipeline for extracting structured information from newspaper articles (political, business, economic, general) and constructing a knowledge graph for advanced querying, sentiment analysis, and market intelligence.
 
 **Key Capabilities:**
+
 - Named Entity Recognition (NER) for persons, organizations, locations, dates, financial figures
 - Relationship extraction (employment, ownership, competition, partnerships)
 - Event detection (M&As, earnings, appointments, policy changes)
@@ -154,24 +167,25 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 
 **Entity Categories by News Type:**
 
-| News Type | Primary Entities | Key Events |
-|-----------|------------------|------------|
+| News Type     | Primary Entities                          | Key Events                                           |
+| ------------- | ----------------------------------------- | ---------------------------------------------------- |
 | **Political** | Politicians, parties, government agencies | Elections, policy announcements, diplomatic meetings |
-| **Business** | Companies, executives, investors | Earnings, M&As, IPOs, product launches |
-| **Economic** | Central banks, regulators, markets | Interest rate changes, GDP reports, trade agreements |
-| **General** | People, places, organizations | Incidents, cultural events, discoveries |
+| **Business**  | Companies, executives, investors          | Earnings, M&As, IPOs, product launches               |
+| **Economic**  | Central banks, regulators, markets        | Interest rate changes, GDP reports, trade agreements |
+| **General**   | People, places, organizations             | Incidents, cultural events, discoveries              |
 
 **Implementation Phases:**
 
-| Phase | Focus | Timeline |
-|-------|-------|----------|
-| Phase 1 | Core NLP pipeline (NER, entity linking) | Weeks 1-4 |
-| Phase 2 | Relationship & event extraction | Weeks 5-8 |
-| Phase 3 | Knowledge graph population | Weeks 9-12 |
-| Phase 4 | Query interface & integration | Weeks 13-16 |
-| Phase 5 | Advanced intelligence (market impact) | Weeks 17-24 |
+| Phase   | Focus                                   | Timeline    |
+| ------- | --------------------------------------- | ----------- |
+| Phase 1 | Core NLP pipeline (NER, entity linking) | Weeks 1-4   |
+| Phase 2 | Relationship & event extraction         | Weeks 5-8   |
+| Phase 3 | Knowledge graph population              | Weeks 9-12  |
+| Phase 4 | Query interface & integration           | Weeks 13-16 |
+| Phase 5 | Advanced intelligence (market impact)   | Weeks 17-24 |
 
 **Technical Stack:**
+
 - NER: spaCy 3.x with transformer models
 - Entity Linking: Wikidata/Wikipedia
 - Graph Database: Neo4j 5.x (Server 84)
@@ -179,11 +193,13 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 - API: FastAPI + GraphQL
 
 **Integration Points:**
+
 - gibd-quant-web: News feed with entity highlights, sentiment charts
 - DivinerReturns: News sentiment as prediction feature
 - Knowledge Base Service: Shared embedding infrastructure
 
 **Business Value:**
+
 - Stock impact analysis from news sentiment
 - Executive movement tracking across companies
 - Competitor mention monitoring
@@ -197,12 +213,14 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 ### GIBD-Quant Services Ecosystem
 
 **Components:**
+
 - `gibd-quant-signal` - Technical indicators service
 - `gibd-quant-nlq` - Natural language query service
 - `gibd-quant-calibration` - Model calibration service
 - `gibd-quant-celery` - Task orchestration
 
 **Future Integration:**
+
 - [ ] Unified prediction API combining all models
 - [ ] Real-time data streaming from DSE
 - [ ] Backtesting-as-a-Service platform
@@ -214,15 +232,16 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 
 ### Core Microservices
 
-| Service | Status | Priority | Future Scope |
-|---------|--------|----------|--------------|
-| **ws-gateway** | ✅ Production | ⭐⭐⭐⭐⭐ | OAuth2 integration (Keycloak), rate limiting, circuit breakers |
-| **ws-discovery** | ✅ Production | ⭐⭐⭐ | Health check dashboard, auto-scaling triggers |
-| **ws-company** | ✅ Production | ⭐⭐ | Advanced search, company relationships graph |
-| **ws-trades** | ✅ Production | ⭐⭐⭐ | Real-time trade notifications, trade analytics |
-| **ws-news** | ✅ Production | ⭐⭐ | Content recommendation engine |
+| Service          | Status        | Priority   | Future Scope                                                   |
+| ---------------- | ------------- | ---------- | -------------------------------------------------------------- |
+| **ws-gateway**   | ✅ Production | ⭐⭐⭐⭐⭐ | OAuth2 integration (Keycloak), rate limiting, circuit breakers |
+| **ws-discovery** | ✅ Production | ⭐⭐⭐     | Health check dashboard, auto-scaling triggers                  |
+| **ws-company**   | ✅ Production | ⭐⭐       | Advanced search, company relationships graph                   |
+| **ws-trades**    | ✅ Production | ⭐⭐⭐     | Real-time trade notifications, trade analytics                 |
+| **ws-news**      | ✅ Production | ⭐⭐       | Content recommendation engine                                  |
 
 **Platform-Wide Initiatives:**
+
 - [ ] Complete OAuth2/OIDC implementation (ws-gateway + Keycloak)
 - [ ] Distributed tracing (Jaeger integration)
 - [ ] GraphQL federation across services
@@ -234,12 +253,12 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 
 ### Frontend Applications
 
-| Application | Status | Priority | Future Scope |
-|-------------|--------|----------|--------------|
-| **gibd-quant-web** | ✅ Production | ⭐⭐⭐⭐⭐ | [Stock charts, DivinerReturns dashboard, portfolio analytics, social trading](apps/gibd-quant-web/FUTURE_SCOPE.md) |
-| **ws-wizardsofts-web** | ✅ Production | ⭐⭐⭐ | User profile system, notification center |
-| **ws-daily-deen-web** | ✅ Production | ⭐⭐ | Prayer time widgets, Islamic content library |
-| **pf-padmafoods-web** | 🚧 Development | ⭐⭐⭐ | E-commerce features, inventory management |
+| Application            | Status         | Priority   | Future Scope                                                                                                       |
+| ---------------------- | -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| **gibd-quant-web**     | ✅ Production  | ⭐⭐⭐⭐⭐ | [Stock charts, DivinerReturns dashboard, portfolio analytics, social trading](apps/gibd-quant-web/FUTURE_SCOPE.md) |
+| **ws-wizardsofts-web** | ✅ Production  | ⭐⭐⭐     | User profile system, notification center                                                                           |
+| **ws-daily-deen-web**  | ✅ Production  | ⭐⭐       | Prayer time widgets, Islamic content library                                                                       |
+| **pf-padmafoods-web**  | 🚧 Development | ⭐⭐⭐     | E-commerce features, inventory management                                                                          |
 
 ---
 
@@ -250,12 +269,14 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 **Status:** ✅ Production (Phase 1 & 2 Complete)
 
 **Current Capabilities:**
+
 - Ray cluster (9 nodes, 25 CPUs)
 - Celery task queue (10 workers)
 - Redis coordination
 - Flower monitoring
 
 **Future Enhancements:**
+
 - [ ] GPU node integration for deep learning
 - [ ] Auto-scaling based on workload
 - [ ] Multi-tenant ML resource allocation
@@ -269,10 +290,12 @@ Comprehensive NLP pipeline for extracting structured information from newspaper 
 Replace Ollama with vLLM for distributed LLM inference, leveraging the existing Ray cluster for auto-scaling. vLLM has native Ray integration and supports tensor/pipeline parallelism across multiple GPUs and nodes.
 
 **Current Limitation:**
+
 - Ollama runs single-threaded on one server (bottleneck for parallel extraction)
 - Entity extraction for 50 hadiths took 9+ minutes with 14 Ray workers waiting on Ollama
 
 **Proposed Architecture:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Ray Cluster (Existing)                   │
@@ -306,6 +329,7 @@ Replace Ollama with vLLM for distributed LLM inference, leveraging the existing 
 | Throughput | ~5 req/min | 50+ req/min (estimated) |
 
 **Implementation Steps:**
+
 1. Install vLLM on Ray cluster nodes
 2. Configure Ray Serve deployment for LLM inference
 3. Update entity extraction code to use vLLM API
@@ -313,6 +337,7 @@ Replace Ollama with vLLM for distributed LLM inference, leveraging the existing 
 5. Add Prometheus metrics for inference monitoring
 
 **Example Configuration:**
+
 ```python
 from vllm import LLM
 from ray import serve
@@ -334,11 +359,13 @@ class LLMDeployment:
 ```
 
 **Resources:**
+
 - [vLLM Distributed Serving](https://docs.vllm.ai/en/stable/serving/distributed_serving.html)
 - [Ray Serve LLM Integration](https://docs.ray.io/en/latest/serve/tutorials/vllm-example.html)
 - [Ray Data LLM Module](https://docs.ray.io/en/latest/data/working-with-llms.html)
 
 **Documentation:**
+
 - [infrastructure/distributed-ml/README.md](infrastructure/distributed-ml/README.md)
 - [docs/PHASE2_CELERY_VALIDATION_REPORT.md](docs/PHASE2_CELERY_VALIDATION_REPORT.md)
 
@@ -349,6 +376,7 @@ class LLMDeployment:
 **Status:** 🔴 CRITICAL | **Priority:** ⭐⭐⭐⭐⭐ URGENT
 
 **Current State:**
+
 - ❌ Traefik not running via Docker Compose (manual deployment only)
 - ❌ 7 critical security vulnerabilities identified
 - ❌ No CI/CD automation (all manual SSH deployments)
@@ -358,14 +386,15 @@ class LLMDeployment:
 
 **Roadmap:**
 
-| Phase | Timeline | Focus | Status |
-|-------|----------|-------|--------|
-| **Phase 1: Critical Fixes** | Week 1 | Password rotation, socket proxy, security headers, CORS fixes, rate limiting, OAuth2, dashboard security | 📋 Ready |
-| **Phase 2: Configuration** | Week 2-3 | Health checks, TLS hardening, IP whitelisting, custom error pages, request validation | 📋 Planned |
-| **Phase 3: CI/CD Automation** | Week 3-4 | GitLab secrets, secure pipeline, image scanning, runner setup, automated deployment | 📋 Planned |
-| **Phase 4: Advanced Security** | Month 2+ | mTLS, WAF (ModSecurity), centralized logging, intrusion detection, disaster recovery | 📋 Future |
+| Phase                          | Timeline | Focus                                                                                                    | Status     |
+| ------------------------------ | -------- | -------------------------------------------------------------------------------------------------------- | ---------- |
+| **Phase 1: Critical Fixes**    | Week 1   | Password rotation, socket proxy, security headers, CORS fixes, rate limiting, OAuth2, dashboard security | 📋 Ready   |
+| **Phase 2: Configuration**     | Week 2-3 | Health checks, TLS hardening, IP whitelisting, custom error pages, request validation                    | 📋 Planned |
+| **Phase 3: CI/CD Automation**  | Week 3-4 | GitLab secrets, secure pipeline, image scanning, runner setup, automated deployment                      | 📋 Planned |
+| **Phase 4: Advanced Security** | Month 2+ | mTLS, WAF (ModSecurity), centralized logging, intrusion detection, disaster recovery                     | 📋 Future  |
 
 **Key Deliverables:**
+
 - ✅ [Executive Summary](TRAEFIK_AUDIT_EXECUTIVE_SUMMARY.md) - Leadership overview
 - ✅ [Security Audit Report](TRAEFIK_SECURITY_AUDIT_REPORT.md) - Detailed vulnerabilities (37 KB, 26 issues)
 - ✅ [Implementation Guide](TRAEFIK_IMPLEMENTATION_GUIDE.md) - Step-by-step instructions (21 KB)
@@ -374,6 +403,7 @@ class LLMDeployment:
 - ✅ [Future Scope Document](TRAEFIK_SECURITY_FUTURE_SCOPE.md) - Complete roadmap (this initiative)
 
 **Success Metrics:**
+
 - Zero hardcoded passwords in codebase
 - 100% deployments via CI/CD
 - SSL Labs grade A or higher
@@ -391,12 +421,14 @@ class LLMDeployment:
 **Status:** ✅ Production | **Priority:** ⭐⭐⭐⭐ High
 
 **Current State:**
+
 - Automated testing for all services
 - Docker image builds
 - Multi-stage deployments
 - Security scanning
 
 **Future Improvements:**
+
 - [ ] Automated security dependency updates
 - [ ] Performance benchmarking in CI
 - [ ] Blue-green deployment strategy
@@ -405,17 +437,88 @@ class LLMDeployment:
 
 ---
 
+### GitLab Infrastructure Enhancements
+
+**Status:** 🔧 In Progress | **Priority:** ⭐⭐⭐ Medium-High
+
+**Current State:**
+
+- ✅ GitLab CE 18.7.1 running on 10.0.0.84:8090
+- ✅ PostgreSQL 16 migration complete (from PG15)
+- ✅ Redis integration functional
+- ✅ Container registry operational
+- ✅ Basic monitoring (built-in)
+
+**Integration Gaps Identified (2026-01-08):**
+
+#### 1. Keycloak SSO Integration
+
+**Priority:** ⭐⭐ Medium | **Effort:** 8-12 hours | **Timeline:** Q2 2026
+
+**Description:**
+Enable Single Sign-On (SSO) for GitLab using Keycloak as identity provider. This will allow users to authenticate once and access multiple services across the WizardSofts platform.
+
+**Benefits:**
+
+- 🔐 Centralized authentication across all services
+- 👥 Simplified user management (single source of truth)
+- 🔑 Multi-factor authentication (MFA) support
+- 📊 Audit logging for authentication events
+
+**Implementation Steps:**
+
+1. Deploy Keycloak service (docker-compose or swarm)
+2. Create GitLab realm and OAuth2 client in Keycloak
+3. Configure GitLab omniauth with Keycloak client credentials
+4. Test SSO login flow end-to-end
+5. Migrate existing users (optional)
+
+**Technical Requirements:**
+
+- Keycloak service on 10.0.0.84:8180
+- OpenID Connect configuration in GitLab
+- Client ID and secret generation
+- Realm setup and user federation
+
+**Status:** 📋 Planned (not a blocker for current use)  
+**Reference:** [GitLab Integration Blockers](../../infrastructure/gitlab/GITLAB_INTEGRATION_BLOCKERS.md#2-keycloak-sso-integration-future-scope)
+
+#### 2. Grafana/Prometheus Monitoring Integration
+
+**Priority:** 🔥 P1 BLOCKER | **Effort:** 4-8 hours | **Timeline:** 2026-01-10
+
+**Status:** 🔴 **MOVED TO BLOCKERS** - Required for production observability  
+**Reference:** [GitLab Integration Blockers](../../infrastructure/gitlab/GITLAB_INTEGRATION_BLOCKERS.md#3-monitoring-grafanaprometheus-blocker)
+
+**See blocker document for detailed remediation steps.**
+
+#### 3. NFS Backup Storage (BLOCKER - IN PROGRESS)
+
+**Priority:** 🔥 P0 Immediate | **Effort:** 1 hour | **Timeline:** 2026-01-09
+
+**Description:**
+Configure NFS mount for GitLab automated backups. Currently no backup storage is configured, creating data loss risk.
+
+**Status:** 🔴 **CRITICAL BLOCKER** - Must complete before Phase 3 activation  
+**Reference:** [GitLab Integration Blockers](../../infrastructure/gitlab/GITLAB_INTEGRATION_BLOCKERS.md#1-nfs-backup-storage-critical-blocker)
+
+**Detailed Plan:** See blocker document for step-by-step remediation
+
+---
+
 ### Monitoring & Observability
 
 **Status:** ✅ Production | **Priority:** ⭐⭐⭐⭐ High
 
 **Current Stack:**
+
 - Prometheus (metrics collection)
 - Grafana (dashboards)
 - Alertmanager (notifications)
 - fail2ban (intrusion prevention)
 
 **Future Enhancements:**
+
 - [ ] Centralized logging (ELK/Loki)
 - [ ] Distributed tracing (Jaeger/Zipkin)
 - [ ] Application Performance Monitoring (APM)
@@ -423,6 +526,7 @@ class LLMDeployment:
 - [ ] Cost tracking dashboard
 
 **Recent Additions:**
+
 - ✅ Server 82 metrics exporters deployed (2025-12-31)
 - ✅ fail2ban security on Server 84 (2026-01-01)
 
@@ -435,6 +539,7 @@ class LLMDeployment:
 **Status:** 🔒 Hardened | **Priority:** ⭐⭐⭐⭐⭐ Critical
 
 **Recent Security Improvements (2025-12-31):**
+
 - ✅ Next.js updated to 15.5.7 (CVE-2025-66478 patched)
 - ✅ Rate limiting on all FastAPI services
 - ✅ Input validation (SQL injection, path traversal)
@@ -443,6 +548,7 @@ class LLMDeployment:
 - ✅ fail2ban intrusion prevention (Server 84)
 
 **Future Security Initiatives:**
+
 - [ ] Deploy fail2ban to all servers (80, 81, 82)
 - [ ] Web Application Firewall (WAF) with ModSecurity
 - [ ] Secrets rotation automation (Vault integration)
@@ -461,6 +567,7 @@ class LLMDeployment:
 **Application:** `pf-padmafoods-web` (Next.js)
 
 **Future Scope:**
+
 - [ ] E-commerce platform (product catalog, shopping cart)
 - [ ] Inventory management system
 - [ ] Order tracking and fulfillment
@@ -478,11 +585,13 @@ class LLMDeployment:
 Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-knowledge-graph` into a standalone, production-grade service with multi-tenant support. Reduces code duplication (70-75% reuse), improves developer velocity, and enables new applications to access unified knowledge APIs.
 
 **Current Architecture:**
+
 - gibd-web-scraper: Web scraping + hybrid search (FastAPI, Qdrant, BM25)
 - hadith-knowledge-graph: Entity extraction + graph relationships (Neo4j, ChromaDB)
 - ws-daily-deen-web: No backend integration (target for Phase 3)
 
 **Recommended Stack:**
+
 - API: Python FastAPI (async, ML-friendly)
 - Database: PostgreSQL (structured) + Qdrant (vectors) + Neo4j (optional)
 - Multi-Tenancy: Namespace-based isolation
@@ -490,12 +599,14 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 - Cost: $20-$100/month for <10 tenants
 
 **4-Phase Implementation Timeline (9 weeks):**
+
 1. **Phase 1 (Weeks 1-2):** Service boundary definition - Extract shared interfaces
 2. **Phase 2 (Weeks 3-5):** API gateway development - Build FastAPI service
 3. **Phase 3 (Weeks 6-7):** Client migration - Update ws-daily-deen-web
 4. **Phase 4 (Weeks 8-9):** Infrastructure consolidation - Deploy to production
 
 **Expected Outcomes:**
+
 - ✅ 70-75% code reuse from existing implementations
 - ✅ p95 latency <500ms, 1000 concurrent users
 - ✅ TypeScript SDK for seamless frontend integration
@@ -503,11 +614,13 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 - ✅ SOC 2 Type II compliance path
 
 **Full Documentation:**
+
 - [docs/KNOWLEDGE_BASE_SERVICE_ARCHITECTURE_RESEARCH.md](docs/KNOWLEDGE_BASE_SERVICE_ARCHITECTURE_RESEARCH.md) - IEEE-style research paper (15,000+ words)
 - [docs/KNOWLEDGE_BASE_SERVICE_FUTURE_SCOPE.md](docs/KNOWLEDGE_BASE_SERVICE_FUTURE_SCOPE.md) - Implementation roadmap and strategic objectives
 - [docs/KNOWLEDGE_BASE_SERVICE_RETROSPECTIVE.md](docs/KNOWLEDGE_BASE_SERVICE_RETROSPECTIVE.md) - Research process evaluation
 
 **Key Features:**
+
 - [ ] Unified REST API for web scraping, entity extraction, RAG search
 - [ ] Multi-tenant namespace isolation (each tenant gets own Qdrant namespace)
 - [ ] Multi-provider embeddings (FastEmbed local, OpenAI cloud)
@@ -516,6 +629,7 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 - [ ] Comprehensive audit logging
 
 **Business Value:**
+
 - Faster feature development (20% velocity improvement)
 - Cost reduction (30% infrastructure savings)
 - Improved knowledge accessibility (3+ apps integrated)
@@ -539,11 +653,13 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 **Status:** ✅ Infrastructure Deployed | **Priority:** ⭐⭐⭐ Medium
 
 **Current State:**
+
 - Neo4j graph database (Server 84)
 - ChromaDB vector store (Server 84)
 - CI/CD deployment pipeline
 
 **Future Development:**
+
 - [ ] Hadith ingestion pipeline (Bukhari, Muslim, Abu Dawud, etc.)
 - [ ] Semantic search with embeddings
 - [ ] Hadith chain (Isnad) visualization
@@ -558,6 +674,7 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 ### Islamic Content Features
 
 **Future Enhancements:**
+
 - [ ] Prayer time widgets with location services
 - [ ] Quran recitation with translations
 - [ ] Islamic calendar and events
@@ -570,24 +687,24 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 
 ### Q1 2026 (Jan-Mar) - Immediate Priorities
 
-| Initiative | Team | Timeline | Status |
-|------------|------|----------|--------|
-| **DivinerReturns Web Dashboard** | GIBD Quant | 4 weeks | 🟡 Planning |
-| **News Entity Extraction Pipeline** | GIBD Quant | 8 weeks | 🟡 Planning |
-| **ws-gateway OAuth2 Completion** | Platform | 2 weeks | 🟡 Pending |
-| **Security Hardening (fail2ban rollout)** | DevOps | 1 week | 🟢 In Progress |
-| **Hadith Knowledge Graph Data Ingestion** | Daily Deen | 6 weeks | 🔴 Not Started |
-| **PadmaFoods E-commerce MVP** | PadmaFoods | 8 weeks | 🔴 Not Started |
+| Initiative                                | Team       | Timeline | Status         |
+| ----------------------------------------- | ---------- | -------- | -------------- |
+| **DivinerReturns Web Dashboard**          | GIBD Quant | 4 weeks  | 🟡 Planning    |
+| **News Entity Extraction Pipeline**       | GIBD Quant | 8 weeks  | 🟡 Planning    |
+| **ws-gateway OAuth2 Completion**          | Platform   | 2 weeks  | 🟡 Pending     |
+| **Security Hardening (fail2ban rollout)** | DevOps     | 1 week   | 🟢 In Progress |
+| **Hadith Knowledge Graph Data Ingestion** | Daily Deen | 6 weeks  | 🔴 Not Started |
+| **PadmaFoods E-commerce MVP**             | PadmaFoods | 8 weeks  | 🔴 Not Started |
 
 ### Q2 2026 (Apr-Jun) - Growth Phase
 
-| Initiative | Team | Timeline |
-|------------|------|----------|
-| **DivinerReturns Portfolio Analytics** | GIBD Quant | 4 weeks |
-| **Multi-Model Ensemble (DivinerReturns + DivinerDirection)** | GIBD Quant | 8 weeks |
-| **Distributed Tracing Rollout** | Platform | 6 weeks |
-| **Mobile Apps (React Native)** | All Teams | 12 weeks |
-| **API Marketplace Beta** | Platform | 10 weeks |
+| Initiative                                                   | Team       | Timeline |
+| ------------------------------------------------------------ | ---------- | -------- |
+| **DivinerReturns Portfolio Analytics**                       | GIBD Quant | 4 weeks  |
+| **Multi-Model Ensemble (DivinerReturns + DivinerDirection)** | GIBD Quant | 8 weeks  |
+| **Distributed Tracing Rollout**                              | Platform   | 6 weeks  |
+| **Mobile Apps (React Native)**                               | All Teams  | 12 weeks |
+| **API Marketplace Beta**                                     | Platform   | 10 weeks |
 
 ### Q3-Q4 2026 - Scale & Innovation
 
@@ -601,6 +718,7 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 ## Contributing to Future Scope
 
 **Process:**
+
 1. Create detailed future scope document in your service's `docs/` directory
 2. Update this global index with a brief summary and link
 3. Assign priority (⭐-⭐⭐⭐⭐⭐) and status (🔴 Not Started, 🟡 Planning, 🟢 In Progress, ✅ Complete)
@@ -616,16 +734,19 @@ Consolidate knowledge base infrastructure from `gibd-web-scraper` and `hadith-kn
 ### 2026 Focus Areas
 
 1. **Revenue Generation** 🎯
+
    - DivinerReturns premium subscriptions
    - API marketplace
    - PadmaFoods e-commerce
 
 2. **User Growth** 📈
+
    - Mobile apps across all platforms
    - Social trading features
    - Content recommendation engines
 
 3. **Platform Maturity** 🏗️
+
    - Complete OAuth2/OIDC rollout
    - Distributed tracing
    - Advanced monitoring & alerting
