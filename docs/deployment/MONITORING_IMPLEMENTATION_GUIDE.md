@@ -103,7 +103,7 @@ docker-compose ps
 
 ```bash
 # Dashboards are auto-loaded from:
-# infrastructure/auto-scaling/monitoring/grafana/dashboards/
+# infrastructure/monitoring/grafana/dashboards/
 
 # Access Grafana: http://10.0.0.81:3002
 # Default credentials (if not using Keycloak): admin / <GF_SECURITY_ADMIN_PASSWORD>
@@ -134,15 +134,17 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
 
 **Location**: Server 84  
 **Port**: 9090  
-**Configuration**: `infrastructure/auto-scaling/monitoring/prometheus/prometheus.yml`
+**Configuration**: `infrastructure/monitoring/prometheus/prometheus.yml`
 
 **Scrape Targets**:
+
 - `server-80`: node-exporter (9100), cAdvisor (8081), security-metrics (9101)
 - `server-81`: node-exporter (9100), security-metrics (9101)
 - `server-82`: node-exporter (9100), cAdvisor (8080)
 - `server-84`: node-exporter (9100), cAdvisor (8080), security-metrics (9101)
 
 **Alert Rules**:
+
 - `security-alerts.yml`: Security-focused alerts
 - `infrastructure-alerts.yml`: Infrastructure monitoring alerts (50+ rules)
 
@@ -155,6 +157,7 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
 **Dashboards**:
 
 1. **All-Servers Executive Dashboard** (`all-servers-executive.json`)
+
    - Unified view of all 4 servers
    - Server status, CPU, memory, disk, network
    - Critical services health
@@ -162,6 +165,7 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
    - **Panels**: 26
 
 2. **DevOps Dashboard** (`devops-dashboard.json`)
+
    - SLA tracking (30-day uptime, 99.9% target)
    - Container health and restart monitoring
    - Capacity planning and forecasting
@@ -169,6 +173,7 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
    - **Panels**: 21
 
 3. **DBA Dashboard** (`dba-dashboard.json`)
+
    - PostgreSQL performance metrics
    - Redis monitoring
    - Connection pools and query performance
@@ -186,20 +191,21 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
 
 **Location**: Server 84  
 **Port**: 9093  
-**Configuration**: `infrastructure/auto-scaling/monitoring/alertmanager/alertmanager.yml`
+**Configuration**: `infrastructure/monitoring/alertmanager/alertmanager.yml`
 
 **Alert Routing**:
 
-| Severity | Wait Time | Repeat Interval | Receivers |
-|----------|-----------|-----------------|-----------|
-| emergency | 0s | 30m | critical-team (webhook, email, Slack) |
-| critical | 10s | 1h | critical-team (webhook, email, Slack) |
-| warning | 5m | 12h | warning-team (email) |
-| security | 20s | 2h | security-team (webhook, email) |
-| database | 1m | 3h | dba-team (webhook, email) |
-| mlops | 1m | 3h | mlops-team (webhook, email) |
+| Severity  | Wait Time | Repeat Interval | Receivers                             |
+| --------- | --------- | --------------- | ------------------------------------- |
+| emergency | 0s        | 30m             | critical-team (webhook, email, Slack) |
+| critical  | 10s       | 1h              | critical-team (webhook, email, Slack) |
+| warning   | 5m        | 12h             | warning-team (email)                  |
+| security  | 20s       | 2h              | security-team (webhook, email)        |
+| database  | 1m        | 3h              | dba-team (webhook, email)             |
+| mlops     | 1m        | 3h              | mlops-team (webhook, email)           |
 
 **Inhibition Rules**:
+
 - Critical alerts suppress warnings for same alert
 - ServerDown suppresses all other alerts from that instance
 
@@ -216,6 +222,7 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
 **Webhook URL**: `https://appwrite.wizardsofts.com/v1/functions/alert-processor/executions`
 
 **Features**:
+
 - Alert storage with deduplication
 - Smart notification routing
 - Push notifications for critical alerts
@@ -227,8 +234,9 @@ Follow the detailed steps in [Appwrite Integration](#appwrite-integration).
 ### Automatic Provisioning
 
 Grafana automatically loads dashboards from:
+
 ```
-infrastructure/auto-scaling/monitoring/grafana/dashboards/*.json
+infrastructure/monitoring/grafana/dashboards/*.json
 ```
 
 To add a new dashboard:
@@ -261,35 +269,42 @@ Each dashboard supports customization:
 ### Alert Rule Categories
 
 1. **Server Availability** (2 rules)
+
    - ServerDown: Server unreachable for 1 minute
    - ServerUnreachable: Server down for 5+ minutes
 
 2. **CPU Monitoring** (3 rules)
+
    - HighCPUUsage: >80% for 5 minutes (warning)
    - CriticalCPUUsage: >95% for 2 minutes (critical)
    - HighIOWait: >20% for 5 minutes (warning)
 
 3. **Memory Monitoring** (3 rules)
+
    - HighMemoryUsage: >85% for 5 minutes (warning)
    - CriticalMemoryUsage: >95% for 2 minutes (critical)
    - HighSwapUsage: >80% for 10 minutes (warning)
 
 4. **Disk Monitoring** (4 rules)
+
    - HighDiskUsage: <20% free space (warning)
    - CriticalDiskUsage: <10% free space (critical)
    - DiskWillFillIn4Hours: Predictive alert (warning)
    - HighInodeUsage: <20% free inodes (warning)
 
 5. **Network Monitoring** (2 rules)
+
    - HighNetworkErrors: >10 errors/sec (warning)
    - HighNetworkDrops: >10 drops/sec (warning)
 
 6. **System Health** (3 rules)
+
    - HighLoadAverage: Load > 2x CPU count (warning)
    - TooManyOpenFiles: >80% file descriptors (warning)
    - ClockSkew: >0.05s time offset (warning)
 
 7. **Container Monitoring** (2 rules)
+
    - HighContainerRestartRate: Frequent restarts (warning)
    - ContainerDown: cAdvisor unavailable (warning)
 
@@ -301,11 +316,13 @@ Each dashboard supports customization:
 ### Adding Custom Alerts
 
 1. Edit alert rule file:
+
    ```bash
-   vim infrastructure/auto-scaling/monitoring/prometheus/infrastructure-alerts.yml
+   vim infrastructure/monitoring/prometheus/infrastructure-alerts.yml
    ```
 
 2. Add new alert rule:
+
    ```yaml
    - alert: MyCustomAlert
      expr: my_metric > threshold
@@ -321,6 +338,7 @@ Each dashboard supports customization:
    ```
 
 3. Validate configuration:
+
    ```bash
    docker exec prometheus promtool check rules /etc/prometheus/infrastructure-alerts.yml
    ```
@@ -342,28 +360,29 @@ Each dashboard supports customization:
 
 **Attributes**:
 
-| Attribute | Type | Size | Required |
-|-----------|------|------|----------|
-| alertname | string | 255 | Yes |
-| instance | string | 255 | Yes |
-| severity | enum | [info, warning, critical, emergency] | Yes |
-| category | string | 100 | Yes |
-| service | string | 255 | No |
-| status | enum | [firing, resolved] | Yes |
-| startsAt | datetime | - | Yes |
-| endsAt | datetime | - | No |
-| summary | string | 500 | No |
-| description | string | 2000 | No |
-| runbook | url | 500 | No |
-| impact | string | 1000 | No |
-| fingerprint | string | 255 | Yes |
-| groupKey | string | 255 | No |
-| externalURL | url | - | No |
-| rawAlert | string | 65535 | Yes |
-| createdAt | datetime | - | Yes |
-| updatedAt | datetime | - | Yes |
+| Attribute   | Type     | Size                                 | Required |
+| ----------- | -------- | ------------------------------------ | -------- |
+| alertname   | string   | 255                                  | Yes      |
+| instance    | string   | 255                                  | Yes      |
+| severity    | enum     | [info, warning, critical, emergency] | Yes      |
+| category    | string   | 100                                  | Yes      |
+| service     | string   | 255                                  | No       |
+| status      | enum     | [firing, resolved]                   | Yes      |
+| startsAt    | datetime | -                                    | Yes      |
+| endsAt      | datetime | -                                    | No       |
+| summary     | string   | 500                                  | No       |
+| description | string   | 2000                                 | No       |
+| runbook     | url      | 500                                  | No       |
+| impact      | string   | 1000                                 | No       |
+| fingerprint | string   | 255                                  | Yes      |
+| groupKey    | string   | 255                                  | No       |
+| externalURL | url      | -                                    | No       |
+| rawAlert    | string   | 65535                                | Yes      |
+| createdAt   | datetime | -                                    | Yes      |
+| updatedAt   | datetime | -                                    | Yes      |
 
 **Indexes**:
+
 - `fingerprint` (unique, key)
 - `status` (key)
 - `severity` (key)
@@ -405,7 +424,7 @@ ONCALL_PHONE_NUMBERS=+1234567890,+0987654321
 
 1. Navigate to API Keys → Create API Key
 2. **Name**: Alertmanager Webhook
-3. **Scopes**: 
+3. **Scopes**:
    - `functions.read`
    - `functions.execute`
    - `databases.write`
@@ -501,6 +520,7 @@ curl -X POST http://10.0.0.84:9090/-/reload
 ### Prometheus Issues
 
 **Problem**: Targets are down
+
 ```bash
 # Check Prometheus targets
 curl http://10.0.0.84:9090/api/v1/targets
@@ -514,6 +534,7 @@ telnet 10.0.0.80 9100
 ```
 
 **Problem**: Alert rules not loading
+
 ```bash
 # Validate rule files
 docker exec prometheus promtool check rules /etc/prometheus/*.yml
@@ -528,6 +549,7 @@ docker exec prometheus ls -la /etc/prometheus/
 ### Grafana Issues
 
 **Problem**: Dashboards not loading
+
 ```bash
 # Check Grafana logs
 docker logs grafana
@@ -540,6 +562,7 @@ docker exec grafana wget -O- http://prometheus:9090/api/v1/query?query=up
 ```
 
 **Problem**: "No data" in panels
+
 ```bash
 # Check if metrics exist in Prometheus
 curl 'http://10.0.0.84:9090/api/v1/query?query=up'
@@ -551,6 +574,7 @@ curl 'http://10.0.0.84:9090/api/v1/query?query=up'
 ### Alertmanager Issues
 
 **Problem**: Alerts not sending
+
 ```bash
 # Check Alertmanager logs
 docker logs alertmanager
@@ -563,6 +587,7 @@ docker exec alertmanager amtool config routes test
 ```
 
 **Problem**: Environment variables not loading
+
 ```bash
 # Check .env file exists
 ls -la infrastructure/auto-scaling/.env
@@ -577,6 +602,7 @@ docker-compose --env-file .env up -d alertmanager
 ### Appwrite Function Issues
 
 **Problem**: Function not receiving webhooks
+
 ```bash
 # Check function logs in Appwrite Console
 # Verify API key has correct permissions
@@ -587,6 +613,7 @@ curl https://appwrite.wizardsofts.com/v1/functions/alert-processor
 ```
 
 **Problem**: Alerts not stored in database
+
 ```bash
 # Verify database and collection exist
 # Check function has database write permissions
@@ -597,6 +624,7 @@ curl https://appwrite.wizardsofts.com/v1/functions/alert-processor
 ### Network Issues
 
 **Problem**: Cross-server communication failing
+
 ```bash
 # Test connectivity from Server 84 to other servers
 ssh user@10.0.0.84
@@ -632,7 +660,7 @@ docker-compose up -d prometheus
 ```bash
 # Backup monitoring configs
 tar -czf monitoring-backup-$(date +%Y%m%d).tar.gz \
-  infrastructure/auto-scaling/monitoring/ \
+  infrastructure/monitoring/ \
   infrastructure/auto-scaling/docker-compose.yml \
   infrastructure/auto-scaling/.env \
   infrastructure/appwrite/functions/alert-processor/
@@ -669,6 +697,7 @@ docker-compose up -d alertmanager
 ## Support
 
 For issues or questions:
+
 - Check [Troubleshooting](#troubleshooting) section
 - Review function logs in Appwrite Console
 - Check Prometheus/Grafana/Alertmanager logs

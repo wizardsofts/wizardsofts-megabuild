@@ -1,9 +1,12 @@
 # Monitoring Stack for WizardSofts Infrastructure
 # Deployed on Server 84 (10.0.0.84)
-# Includes: Prometheus, Grafana, Loki, Promtail, Node Exporter, cAdvisor
+# Includes: Prometheus, Grafana, Loki, Promtail, Alertmanager, Node Exporter, cAdvisor
+#
+# Resource Limits & Security Hardening per AGENT.md § 13
+# Backup mounts per AGENT.md § 9.1
 
 services:
-  # Prometheus - Metrics Collection
+  # Prometheus - Metrics Collection & Alerting
   prometheus:
     image: prom/prometheus:v2.47.0
     container_name: prometheus
@@ -23,6 +26,18 @@ services:
     networks:
       - monitoring
     user: "65534:65534"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
       interval: 30s
@@ -48,6 +63,18 @@ services:
     networks:
       - monitoring
     user: "472:472"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 30s
@@ -70,13 +97,25 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     networks:
       - monitoring
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Promtail - Log Shipping
+  # Promtail - Log Shipping to Loki
   promtail:
     image: grafana/promtail:2.9.2
     container_name: promtail
@@ -88,8 +127,54 @@ services:
     command: -config.file=/etc/promtail/config.yml
     networks:
       - monitoring
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
     depends_on:
       - loki
+
+  # Alertmanager - Alert Routing & Notifications
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://10.0.0.84:9093"
+    networks:
+      - monitoring
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Node Exporter - Host Metrics (Server 84)
   node-exporter:
@@ -109,15 +194,27 @@ services:
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     networks:
       - monitoring
-    pid: host
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
 
-  # cAdvisor - Container Metrics (Server 84)
+  # cAdvisor - Container Metrics
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
     container_name: cadvisor
     restart: unless-stopped
     ports:
-      - "8088:8080"  # Using 8088 to avoid conflict with other services
+      - "8088:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -129,22 +226,14 @@ services:
     privileged: true
     devices:
       - /dev/kmsg
-
-  # Alertmanager - Alert Routing
-  alertmanager:
-    image: prom/alertmanager:v0.26.0
-    container_name: alertmanager
-    restart: unless-stopped
-    ports:
-      - "9093:9093"
-    volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    command:
-      - "--config.file=/etc/alertmanager/alertmanager.yml"
-      - "--storage.path=/alertmanager"
-    networks:
-      - monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
 
 volumes:
   prometheus-data:

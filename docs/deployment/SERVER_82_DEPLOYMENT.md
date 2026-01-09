@@ -28,13 +28,13 @@ Status: active
 
 #### Allowed Ports (Local Network Only - 10.0.0.0/24)
 
-| Port | Protocol | Service | Description |
-|------|----------|---------|-------------|
-| 22   | TCP      | SSH     | SSH access from local network |
-| 3000 | TCP      | Grafana | Grafana web interface |
-| 8080 | TCP      | cAdvisor | Container metrics |
-| 9100 | TCP      | Node Exporter | System metrics |
-| 9090 | TCP      | Prometheus | Prometheus (if enabled) |
+| Port | Protocol | Service       | Description                   |
+| ---- | -------- | ------------- | ----------------------------- |
+| 22   | TCP      | SSH           | SSH access from local network |
+| 3000 | TCP      | Grafana       | Grafana web interface         |
+| 8080 | TCP      | cAdvisor      | Container metrics             |
+| 9100 | TCP      | Node Exporter | System metrics                |
+| 9090 | TCP      | Prometheus    | Prometheus (if enabled)       |
 
 **All access is restricted to the local network (10.0.0.0/24)**. External access is blocked.
 
@@ -54,18 +54,21 @@ Status: active
 All services are managed via Docker Compose at `~/server-82/docker-compose.yml`
 
 #### 1. Node Exporter (node-exporter-82)
+
 - **Image**: `prom/node-exporter:latest`
 - **Port**: 9100
 - **Purpose**: Exposes system metrics (CPU, memory, disk, network)
 - **Health**: No health check (stateless exporter)
 
 #### 2. cAdvisor (cadvisor-82)
+
 - **Image**: `gcr.io/cadvisor/cadvisor:latest`
 - **Port**: 8080
 - **Purpose**: Container metrics and resource usage
 - **Health**: Built-in health check
 
 #### 3. Grafana (grafana-82)
+
 - **Image**: `grafana/grafana:latest`
 - **Port**: 3000
 - **Purpose**: Metrics visualization and dashboards
@@ -100,41 +103,45 @@ docker ps
 
 Server 82 metrics are scraped by the central Prometheus instance on server 84 (10.0.0.84:9090).
 
-The following scrape jobs were added to `infrastructure/auto-scaling/monitoring/prometheus/prometheus.yml`:
+The following scrape jobs were added to `infrastructure/monitoring/prometheus/prometheus.yml`:
 
 ```yaml
 # Server 82 (HPR Server)
-- job_name: 'node-exporter-82'
+- job_name: "node-exporter-82"
   static_configs:
-    - targets: ['10.0.0.82:9100']
+    - targets: ["10.0.0.82:9100"]
       labels:
-        instance: 'server-82'
-        server: 'hpr-server'
-        environment: 'production'
+        instance: "server-82"
+        server: "hpr-server"
+        environment: "production"
 
 # cAdvisor - Server 82
-- job_name: 'cadvisor-82'
+- job_name: "cadvisor-82"
   static_configs:
-    - targets: ['10.0.0.82:8080']
+    - targets: ["10.0.0.82:8080"]
       labels:
-        instance: 'server-82'
+        instance: "server-82"
 ```
 
 ### Grafana Configuration
 
 #### Default Credentials
+
 - **Username**: `admin`
 - **Password**: `admin` (default, should be changed)
 
 #### Data Source
+
 - **Prometheus**: Auto-provisioned to connect to `http://10.0.0.84:9090`
 
 #### Pre-loaded Dashboards
+
 - **Server 82 - System Metrics**: Displays CPU, memory, disk, network, system load, and disk I/O
 
 #### Accessing Grafana
 
 From any machine on the local network:
+
 ```
 http://10.0.0.82:3000
 ```
@@ -173,11 +180,13 @@ sudo ufw status verbose
 ### 4. Verify Prometheus Scraping
 
 On server 84, check Prometheus targets:
+
 ```
 http://10.0.0.84:9090/targets
 ```
 
 Look for:
+
 - `node-exporter-82` (up)
 - `cadvisor-82` (up)
 
@@ -207,11 +216,13 @@ sudo ufw allow from 10.0.0.0/24 to any port <PORT>
 ### Grafana Not Loading Dashboards
 
 Check provisioning logs:
+
 ```bash
 docker logs grafana-82 | grep provisioning
 ```
 
 Verify file permissions:
+
 ```bash
 ls -la ~/server-82/grafana/provisioning
 ```
@@ -268,14 +279,14 @@ docker compose up -d
 ## Related Documentation
 
 - [Server 82 Monitoring Stack README](../infrastructure/server-82/README.md)
-- [Prometheus Configuration](../infrastructure/auto-scaling/monitoring/prometheus/prometheus.yml)
+- [Prometheus Configuration](../infrastructure/monitoring/prometheus/prometheus.yml)
 - [Appwrite Deployment](./APPWRITE_DEPLOYMENT.md)
 - [Security Improvements Changelog](./SECURITY_IMPROVEMENTS_CHANGELOG.md)
 
 ## Change Log
 
-| Date | Change | Author |
-|------|--------|--------|
+| Date       | Change                                                 | Author      |
+| ---------- | ------------------------------------------------------ | ----------- |
 | 2025-12-31 | Initial deployment: Docker, firewall, monitoring stack | Claude Code |
-| 2025-12-31 | Fixed Grafana provisioning permissions | Claude Code |
-| 2025-12-31 | Added to central Prometheus monitoring | Claude Code |
+| 2025-12-31 | Fixed Grafana provisioning permissions                 | Claude Code |
+| 2025-12-31 | Added to central Prometheus monitoring                 | Claude Code |

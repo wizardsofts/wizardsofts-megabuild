@@ -2,89 +2,117 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# Alerting rules for security and infrastructure monitoring
+# SECURITY: Alerting rules for security monitoring
 rule_files:
   - security-alerts.yml
+  - infrastructure-alerts.yml
 
 # Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - 10.0.0.84:9093
+          - alertmanager:9093
 
 scrape_configs:
-  - job_name: "prometheus"
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: ['localhost:9090']
 
-  # Server 84 (Swarm Leader - Production)
-  - job_name: "node-exporter-84"
+  # Server 84 (HP Server - Production)
+  - job_name: 'node-exporter-84'
     static_configs:
-      - targets: ["10.0.0.84:9100"]
+      - targets: ['node-exporter:9100']
         labels:
-          instance: "server-84"
-          server: "hp-server"
-          environment: "production"
+          instance: 'server-84'
+          server: 'hp-server'
+          environment: 'production'
 
   # Server 80 (GIBD Services)
-  - job_name: "node-exporter-80"
+  - job_name: 'node-exporter-80'
     static_configs:
-      - targets: ["10.0.0.80:9100"]
+      - targets: ['10.0.0.80:9100']
         labels:
-          instance: "server-80"
-          server: "gibd-server"
-          environment: "production"
-
-  # Server 81 (Database Server)
-  - job_name: "node-exporter-81"
-    static_configs:
-      - targets: ["10.0.0.81:9100"]
-        labels:
-          instance: "server-81"
-          server: "database-server"
-          environment: "production"
-
-  # Server 82 (HPR Server)
-  - job_name: "node-exporter-82"
-    static_configs:
-      - targets: ["10.0.0.82:9100"]
-        labels:
-          instance: "server-82"
-          server: "hpr-server"
-          environment: "production"
+          instance: 'server-80'
+          server: 'gibd-server'
+          environment: 'production'
 
   # cAdvisor - Server 84
-  - job_name: "cadvisor-84"
+  - job_name: 'cadvisor-84'
     static_configs:
-      - targets: ["10.0.0.84:8088"]
+      - targets: ['cadvisor:8080']
         labels:
-          instance: "server-84"
+          instance: 'server-84'
 
   # cAdvisor - Server 80
-  - job_name: "cadvisor-80"
+  - job_name: 'cadvisor-80'
     static_configs:
-      - targets: ["10.0.0.80:8081"]
+      - targets: ['10.0.0.80:8081']
         labels:
-          instance: "server-80"
+          instance: 'server-80'
+
+  # Security Metrics - Server 80
+  - job_name: 'security-80'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['10.0.0.80:9101']
+        labels:
+          instance: 'server-80'
+          type: 'security'
+
+  # Server 81 (Database Server)
+  - job_name: 'node-exporter-81'
+    static_configs:
+      - targets: ['10.0.0.81:9100']
+        labels:
+          instance: 'server-81'
+          server: 'database-server'
+          environment: 'production'
+
+  # Security Metrics - Server 81
+  - job_name: 'security-81'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['10.0.0.81:9101']
+        labels:
+          instance: 'server-81'
+          type: 'security'
+
+  # Security Metrics - Server 84 (via Docker container)
+  - job_name: 'security-84'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['security-metrics-84:9101']
+        labels:
+          instance: 'server-84'
+          type: 'security'
+
+  # Server 82 (HPR Server)
+  - job_name: 'node-exporter-82'
+    static_configs:
+      - targets: ['10.0.0.82:9100']
+        labels:
+          instance: 'server-82'
+          server: 'hpr-server'
+          environment: 'production'
 
   # cAdvisor - Server 82
-  - job_name: "cadvisor-82"
+  - job_name: 'cadvisor-82'
     static_configs:
-      - targets: ["10.0.0.82:8080"]
+      - targets: ['10.0.0.82:8080']
         labels:
-          instance: "server-82"
+          instance: 'server-82'
 
-  # Loki (Log Aggregation)
-  - job_name: "loki"
+  # Grafana - Dashboard service
+  - job_name: 'grafana'
     static_configs:
-      - targets: ["10.0.0.84:3100"]
+      - targets: ['grafana:3000']
         labels:
-          service: "loki"
+          service: 'grafana'
 
-  # Grafana
-  - job_name: "grafana"
+  # Loki - Log aggregation
+  - job_name: 'loki'
     static_configs:
-      - targets: ["10.0.0.84:3002"]
+      - targets: ['loki:3100']
         labels:
-          service: "grafana"
+          service: 'loki'
